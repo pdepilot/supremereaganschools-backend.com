@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Session | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css">
+</head>
+<body data-page="sessions">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn active" aria-current="page" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Calendar · The academic year</p>
+            <h1 class="head-title">Academic sessions</h1>
+            <p class="head-copy" data-session-copy>Seal a year, open its terms, and make one live for the house.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Year</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Years</span><span class="value" data-metric="years">—</span><span class="delta" data-metric-delta="years"></span></article>
+          <article class="metric"><span class="label">Live</span><span class="value" data-metric="live">—</span><span class="delta" data-metric-delta="live"></span></article>
+          <article class="metric"><span class="label">Terms</span><span class="value" data-metric="terms">—</span><span class="delta" data-metric-delta="terms"></span></article>
+          <article class="metric"><span class="label">Weeks</span><span class="value" data-metric="weeks">—</span><span class="delta" data-metric-delta="weeks"></span></article>
+        </div>
+      </header>
+      <main class="workspace" data-session-root>
+        <p data-session-notice></p>
+        <div class="split">
+          <div class="surface" data-stamp="Years">
+            <div class="panel-title"><div><h2>On the books</h2><p>Activate, seal a term, or close a year.</p></div></div>
+            <div class="tickets" data-session-list><p>Connecting to the calendar…</p></div>
+          </div>
+          <div class="surface" data-stamp="Add" id="add-session">
+            <div class="panel-title"><div><h2>Add a session</h2><p>Name the year and the dates it will run.</p></div></div>
+            <form data-session-form>
+              <p data-session-form-notice></p>
+              <div class="field"><label for="yearName">Year name</label><input id="yearName" placeholder="2026/2027" required></div>
+              <div class="field-row">
+                <div class="field"><label for="startDate">Starts</label><input id="startDate" type="date" required></div>
+                <div class="field"><label for="endDate">Ends</label><input id="endDate" type="date" required></div>
+              </div>
+              <div class="field"><label for="termCount">Terms</label><input id="termCount" type="number" min="1" max="4" value="3"></div>
+              <label class="field-check"><input id="yearLive" type="checkbox"> Make live</label>
+              <div class="form-actions"><button class="solid-btn" type="submit">Add a session</button></div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="field" data-desk-assign-field hidden>
+        <label>Assign staff</label>
+        <select data-desk-assign-staff></select>
+      </div>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-structure.js"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Reports | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css">
+</head>
+<body class="faculty-house" data-page="reports">
+  <div class="house">
+    <aside class="rail" aria-label="Faculty navigation">
+      <div class="rail-mark">FACULTY</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="staff.html"><span>Desk</span></a>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn" href="assignments.html"><span>Work</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn active" href="reports.html" aria-current="page"><span>Reports</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn" href="messages.html"><span>Letters</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../staffLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="kicker">Faculty · The assay</p>
+            <h1>Your reports</h1>
+            <p class="head-copy">Draw a class list, attendance sheet, mark register, or term result for the forms you keep. Export a CSV or print the page.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Ledger open</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Forms</span><span class="value" data-report-metric="forms">—</span><span class="delta">On your desk</span></article>
+          <article class="metric"><span class="label">Pupils</span><span class="value" data-report-metric="pupils">—</span><span class="delta">This sheet</span></article>
+          <article class="metric"><span class="label">Average</span><span class="value" data-report-metric="average">—</span><span class="delta">When marks are drawn</span></article>
+          <article class="metric"><span class="label">Attendance</span><span class="value" data-report-metric="attendance">—</span><span class="delta">When the roll is drawn</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel" data-report-root>
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Choose a paper</p>
+              <h2>Generate a report</h2>
+            </div>
+          </div>
+          <div class="report-kinds" data-report-kinds></div>
+          <div class="toolbar report-filters">
+            <select id="reportForm" data-report-form><option value="">Choose a form</option></select>
+            <select id="reportSubject" data-report-subject hidden><option value="">Subject</option></select>
+            <select id="reportPaper" data-report-paper hidden><option value="">Assessment</option></select>
+            <select id="reportTerm" data-report-term hidden><option value="">Term</option></select>
+            <input type="date" id="reportFrom" data-report-from hidden>
+            <input type="date" id="reportTo" data-report-to hidden>
+          </div>
+          <div class="report-actions">
+            <button class="gold-btn" type="button" data-generate-report>Draw the report</button>
+            <button class="ghost-btn" type="button" data-export-report disabled>Export CSV</button>
+            <button class="ghost-btn" type="button" data-print-report disabled>Print</button>
+          </div>
+          <p data-report-notice></p>
+          <h3 class="report-title" data-report-title hidden></h3>
+          <div class="ledger-wrap">
+            <table class="ledger" data-report-table>
+              <thead data-report-head>
+                <tr><th>Choose a paper and a form</th></tr>
+              </thead>
+              <tbody data-report-body>
+                <tr><td>Your forms and subjects will appear here.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../JS/portal-staff-chrome.js"></script>
+  <script src="../JS/portal-staff-reports.js"></script>
+</body>
+</html>

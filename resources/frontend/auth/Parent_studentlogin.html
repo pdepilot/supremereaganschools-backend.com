@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family desk | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./CSS/staff-auth.css">
+</head>
+<body class="parent-auth">
+  <main class="staff-stage">
+    <section class="staff-gallery">
+      <div class="staff-gallery-media" data-auth-scene="panel"></div>
+      <div class="staff-gallery-shade"></div>
+      <header class="staff-top">
+        <a href="./index.html">Return to the school</a>
+        <span class="staff-clock" data-clock>00:00:00  WAT</span>
+        <span>Family</span>
+      </header>
+      <p class="staff-spine">Family desk · Knowledge · Character · Excellence</p>
+      <div class="staff-gallery-copy">
+        <p class="staff-kicker">Supreme Reagan Schools · Parents</p>
+        <h1>The family desk.</h1>
+        <div class="staff-rule"></div>
+        <p class="staff-lede">For parents and guardians. Sign in with your child’s name or admission number. The key is the phone number registered with the school.</p>
+        <div class="staff-meta">
+          <div>
+            <span>Seat</span>
+            <strong>Owerri, Imo State</strong>
+          </div>
+          <div>
+            <span>Channel</span>
+            <strong>Family session</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="staff-vault">
+      <div class="staff-card">
+        <div class="staff-mark">
+          <img src="./Image/logo_main.png" alt="Supreme Reagan Schools">
+          <p>Parents &amp; guardians</p>
+        </div>
+        <h1>Welcome back.</h1>
+        <div class="staff-rule"></div>
+        <p class="staff-note">Use your child’s name or admission number. The password is the phone number registered with the school.</p>
+        <p class="staff-alert" data-auth-alert hidden></p>
+
+        <form class="staff-form" data-auth-form action="/login" method="post">
+          <input type="hidden" name="_token" value="{{CSRF_TOKEN}}">
+          <input type="hidden" name="portal" value="parent">
+
+          <label class="staff-field">
+            <span>Child’s name or admission number</span>
+            <div class="staff-input">
+              <input id="admission-number" name="admission_number" type="text" autocomplete="username" placeholder="e.g. Chiamaka Okafor or SRS/2025/0142">
+            </div>
+          </label>
+
+          <label class="staff-field">
+            <span>Parent’s phone number</span>
+            <div class="staff-input">
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Registered parent phone" required>
+              <button type="button" data-toggle-pass aria-controls="password" aria-label="Show password" aria-pressed="false">Show</button>
+            </div>
+          </label>
+
+          <details class="staff-details">
+            <summary>Sign in with an office email instead</summary>
+            <label class="staff-field">
+              <span>Email</span>
+              <div class="staff-input">
+                <input id="email" name="email" type="email" autocomplete="username" placeholder="Your email">
+              </div>
+            </label>
+            <p class="staff-note">If you use email, the field above is your passphrase.</p>
+            <a href="/parent/forgot-password">Forgot password?</a>
+          </details>
+
+          <div class="staff-row">
+            <label><input type="checkbox" name="remember"> Remember me</label>
+            <a href="./contact.html">Need the office?</a>
+          </div>
+
+          <button class="staff-submit" type="submit">Enter the desk</button>
+        </form>
+
+        <p class="staff-foot">Supreme Reagan Schools · 15 Spibat Road, Owerri</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="./JS/portal-auth-scene.js"></script>
+  <script src="./JS/staff-auth.js"></script>
+  <script src="./JS/portal-login.js"></script>
+</body>
+</html>

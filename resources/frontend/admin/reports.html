@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>School reports | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css">
+</head>
+<body data-page="reports">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn active" aria-current="page" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Assay · The school ledger</p>
+            <h1 class="head-title">School reports</h1>
+            <p class="head-copy" data-report-copy>Roll, fees, attendance, and the year’s pulse — drawn live from the school ledger.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · <span data-report-house>—</span></div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Attendance</span><span class="value" data-metric="attendance">—</span><span class="delta" data-metric-delta="attendance"></span></article>
+          <article class="metric"><span class="label">Fees</span><span class="value" data-metric="fees">—</span><span class="delta" data-metric-delta="fees"></span></article>
+          <article class="metric"><span class="label">Admissions</span><span class="value" data-metric="admissions">—</span><span class="delta" data-metric-delta="admissions"></span></article>
+          <article class="metric"><span class="label">Staff</span><span class="value" data-metric="staff">—</span><span class="delta" data-metric-delta="staff"></span></article>
+        </div>
+      </header>
+      <main class="workspace">
+        <p data-report-notice></p>
+        <div class="matrix report-ledger status-row">
+          <div class="status-item"><span>Invoiced</span><strong data-ledger="invoiced">—</strong></div>
+          <div class="status-item"><span>Collected</span><strong data-ledger="collected">—</strong></div>
+          <div class="status-item"><span>Outstanding</span><strong data-ledger="outstanding">—</strong></div>
+          <div class="status-item"><span>Share</span><strong data-ledger="percent">—</strong></div>
+        </div>
+        <div class="status-row">
+          <div class="status-item"><span>Paid in full</span><strong data-ledger="paid-in-full">—</strong></div>
+          <div class="status-item"><span>Partial</span><strong data-ledger="partial">—</strong></div>
+          <div class="status-item"><span>Unpaid</span><strong data-ledger="unpaid">—</strong></div>
+        </div>
+        <div class="matrix" data-report-cells>
+          <button class="cell is-active" type="button" data-draw="roll">
+            <div class="tag">Roll</div>
+            <h3>Enrolment</h3>
+            <p data-cell-value="roll">—</p>
+            <p data-cell-copy="roll">Pupils on the books</p>
+          </button>
+          <button class="cell" type="button" data-draw="fees">
+            <div class="tag">Ledger</div>
+            <h3>Fee collection</h3>
+            <p data-cell-value="fees">—</p>
+            <p data-cell-copy="fees">Posted collections</p>
+          </button>
+          <button class="cell" type="button" data-draw="attendance">
+            <div class="tag">Week</div>
+            <h3>Attendance</h3>
+            <p data-cell-value="attendance">—</p>
+            <p data-cell-copy="attendance">The week’s roll</p>
+          </button>
+          <button class="cell" type="button" data-draw="staff">
+            <div class="tag">Staff</div>
+            <h3>Masters’ presence</h3>
+            <p data-cell-value="staff">—</p>
+            <p data-cell-copy="staff">On duty</p>
+          </button>
+        </div>
+        <div class="split">
+          <div class="surface" data-stamp="Paper">
+            <div class="panel-title">
+              <div>
+                <h2>Draw a paper</h2>
+                <p>Choose a kind, then generate, export, or print.</p>
+              </div>
+            </div>
+            <div class="report-filters">
+              <select data-report-session><option value="">Current session</option></select>
+              <select data-report-form><option value="">All forms</option></select>
+              <select data-report-term hidden><option value="">All terms</option></select>
+              <select data-report-status hidden>
+                <option value="">All statuses</option>
+                <option value="paid">Paid</option>
+                <option value="partial">Partial</option>
+                <option value="unpaid">Unpaid</option>
+              </select>
+              <input data-report-from type="date" hidden>
+              <input data-report-to type="date" hidden>
+            </div>
+            <div class="report-actions">
+              <button class="solid-btn" type="button" data-generate-report>Generate</button>
+              <button class="ghost-btn" type="button" data-export-report disabled>Export</button>
+              <button class="ghost-btn" type="button" data-print-report disabled>Print</button>
+            </div>
+            <p data-draw-notice></p>
+            <h3 class="report-title" data-report-title hidden></h3>
+            <div class="ledger-wrap">
+              <table class="ledger">
+                <thead data-report-head></thead>
+                <tbody data-report-body>
+                  <tr><td>Choose a paper to draw the ledger.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="split-stack">
+            <div class="surface" data-stamp="Wings">
+              <div class="panel-title"><div><h2>Wings</h2><p>Nursery, primary, secondary</p></div></div>
+              <div class="tickets" data-report-wings><p>Connecting to the wings…</p></div>
+            </div>
+            <div class="surface" data-stamp="Chute">
+              <div class="panel-title"><div><h2>Admissions</h2><p>Papers on this year</p></div></div>
+              <div class="tickets" data-report-pipeline><p>Connecting to the chute…</p></div>
+            </div>
+            <div class="surface" data-stamp="Week">
+              <div class="panel-title"><div><h2>This week</h2><p>Morning attendance</p></div></div>
+              <div class="assay-week" data-report-week><p>Connecting to the roll…</p></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="field" data-desk-assign-field hidden>
+        <label>Assign staff</label>
+        <select data-desk-assign-staff></select>
+      </div>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-reports.js"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pupil Desk | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css">
+</head>
+<body class="faculty-house pupil-house" data-page="student-desk">
+  <div class="house">
+    <aside class="rail" aria-label="Pupil navigation">
+      <div class="rail-mark">PUPIL</div>
+      <nav class="rail-nav">
+        <a class="rail-btn active" href="student_dashboard.html" aria-current="page"><span>Desk</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="academics.html"><span>Marks</span></a>
+        <a class="rail-btn" href="assignments.html"><span>Work</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn" href="messages.html"><span>Letters</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../Parent_studentPage.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="hero">
+        <div class="hero-media" aria-hidden="true"></div>
+        <div class="hero-shade" aria-hidden="true"></div>
+        <div class="hero-mesh" aria-hidden="true"></div>
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-top">
+          <div class="hero-brand">
+            <img src="../Image/logo_main.png" alt="" width="36" height="36" data-school-logo>
+            <div>
+              <strong data-school>Supreme Reagan Schools</strong>
+              <span data-session-line>Pupil house</span>
+            </div>
+          </div>
+          <div class="live-pill">
+            <i class="live-dot"></i>
+            <span data-clock>00:00:00</span>
+            <span class="live-sep">·</span>
+            <span>Desk open</span>
+          </div>
+        </div>
+        <div class="hero-copy">
+          <p class="kicker" data-date>Pupil house</p>
+          <h1 data-greeting>Good day.</h1>
+          <p class="hero-lede" data-lede>Your bells, work, and letters — drawn live from the school ledger.</p>
+          <div class="hero-crest">
+            <span data-hero-avatar>—</span>
+            <div>
+              <strong data-full-name>Pupil</strong>
+              <small data-title-line>Admission</small>
+            </div>
+          </div>
+        </div>
+        <div class="launches" aria-label="Quick launches">
+          <a href="timetable.html">Today’s bells</a>
+          <a href="assignments.html">Open work</a>
+          <a href="academics.html">Marks</a>
+          <a href="messages.html">Letters</a>
+        </div>
+      </header>
+
+      <section class="orbit" aria-label="Live pupil pulse">
+        <div class="dial" aria-hidden="true">
+          <svg viewBox="0 0 120 120">
+            <circle class="dial-ring dial-track" cx="60" cy="60" r="46"></circle>
+            <circle class="dial-ring dial-value" cx="60" cy="60" r="46" data-dial></circle>
+          </svg>
+          <div class="dial-core">
+            <strong data-metric="attendance">—</strong>
+            <span>Your roll</span>
+          </div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric">
+            <span class="label">Average</span>
+            <span class="value" data-metric="average">—</span>
+            <span class="delta" data-metric-delta="average">This term</span>
+          </article>
+          <article class="metric">
+            <span class="label">Position</span>
+            <span class="value" data-metric="position">—</span>
+            <span class="delta" data-metric-delta="position">No position yet</span>
+          </article>
+          <article class="metric">
+            <span class="label">Open work</span>
+            <span class="value" data-metric="assignments">—</span>
+            <span class="delta" data-metric-delta="assignments">Assignments</span>
+          </article>
+          <article class="metric">
+            <span class="label">Letters</span>
+            <span class="value" data-metric="letters">—</span>
+            <span class="delta" data-metric-delta="letters">Unread</span>
+          </article>
+        </div>
+      </section>
+
+      <p class="desk-note" data-desk-note hidden></p>
+
+      <main class="atelier">
+        <div class="board">
+          <section class="panel bells-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Today’s bells</p>
+                <h2>Your periods</h2>
+              </div>
+              <a href="timetable.html">Timetable</a>
+            </div>
+            <ol class="bells" data-schedule></ol>
+          </section>
+          <section class="panel attention-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">The board</p>
+                <h2>Open work</h2>
+              </div>
+              <span class="task-count" data-task-count>0</span>
+            </div>
+            <div class="tasks" data-assignments></div>
+          </section>
+        </div>
+        <div class="board second">
+          <section class="panel house-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Your form</p>
+                <h2 data-form>Unplaced</h2>
+              </div>
+              <a href="profile.html">Profile</a>
+            </div>
+            <div class="house-stats">
+              <div>
+                <strong data-admission>—</strong>
+                <span>Admission</span>
+              </div>
+              <div>
+                <strong data-class-teacher>—</strong>
+                <span>Class teacher</span>
+              </div>
+              <div>
+                <strong data-campus>—</strong>
+                <span>Campus</span>
+              </div>
+            </div>
+          </section>
+          <section class="panel notices-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">The hall</p>
+                <h2>Notices</h2>
+              </div>
+              <a href="announcements.html">All notices</a>
+            </div>
+            <div class="notices" data-notices></div>
+          </section>
+        </div>
+        <section class="panel dates-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Calendar</p>
+              <h2>Coming days</h2>
+            </div>
+          </div>
+          <div class="dates" data-dates></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../JS/portal-student-desk.js"></script>
+</body>
+</html>

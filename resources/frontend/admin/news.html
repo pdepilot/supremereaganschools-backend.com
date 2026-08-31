@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>News & Insights | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css">
+  <style>
+    .editor-bar { display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:.5rem; }
+    .editor-bar button { font:inherit; padding:.25rem .55rem; border:1px solid #c9c4d6; background:#fff; border-radius:.35rem; }
+    [data-news-editor] { min-height:16rem; border:1px solid #c9c4d6; padding:.8rem; background:#fff; }
+    .ticket .row-actions { display:flex; flex-wrap:wrap; gap:.4rem; }
+    .ticket .row-actions .ghost-btn { font:inherit; }
+    .ticket-photo, [data-news-image-preview] img {
+      width: 74px; height: 74px; object-fit: cover; background: #ece8dc; display: block;
+    }
+    .ticket-photo.is-empty { display:grid; place-items:center; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:#7a7488; }
+    [data-news-image-preview] { margin: 0 0 .75rem; }
+    [data-news-image-preview] img { width: min(100%, 280px); height: auto; max-height: 180px; }
+    .news-desk-pager { margin-top: 1rem; display:grid; gap:.55rem; }
+    .news-desk-count { margin:0; font-size:.82rem; color:#5c5670; }
+    .news-desk-pages { display:flex; flex-wrap:wrap; gap:.35rem; }
+    .news-desk-pages .ghost-btn.is-current { background:#243A8F; color:#fff; border-color:#243A8F; }
+    .warn-list { color:#6a1f2a; font-size:.9rem; }
+    .tag-picks { display:flex; flex-wrap:wrap; gap:.4rem; }
+    .tag-picks label { font-size:.85rem; }
+  </style>
+</head>
+<body data-page="news">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn active" href="news.html" aria-current="page"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Publishing · The house journal</p>
+            <h1 class="head-title">News &amp; Insights</h1>
+            <p class="head-copy">Write for families. Save a draft. Review. Schedule or publish. Do not invent traffic or fill pages for advertisements.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Journal</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Articles</span><span class="value" data-metric="total">—</span></article>
+          <article class="metric"><span class="label">Published</span><span class="value" data-metric="published">—</span></article>
+          <article class="metric"><span class="label">Drafts</span><span class="value" data-metric="drafts">—</span></article>
+          <article class="metric"><span class="label">Scheduled</span><span class="value" data-metric="scheduled">—</span></article>
+          <article class="metric"><span class="label">Featured</span><span class="value" data-metric="featured">—</span></article>
+          <article class="metric"><span class="label">Needs SEO</span><span class="value" data-metric="needs_seo">—</span></article>
+          <article class="metric"><span class="label">Needs image</span><span class="value" data-metric="needs_image">—</span></article>
+          <article class="metric"><span class="label">Review due</span><span class="value" data-metric="needs_review">—</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <div class="split">
+          <div class="surface" data-stamp="Board">
+            <div class="panel-title">
+              <div>
+                <h2>The journal</h2>
+                <p data-news-copy>Connecting to the desk…</p>
+              </div>
+            </div>
+            <div class="toolbar">
+              <input id="newsSearch" type="search" placeholder="Search a title">
+              <select id="newsStatusFilter">
+                <option value="">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="review">Review</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div class="tickets" data-news-board><p>Loading the journal…</p></div>
+            <nav class="news-desk-pager" data-news-pager aria-label="Journal pages"></nav>
+          </div>
+
+          <div class="surface" data-stamp="Copy">
+            <div class="panel-title">
+              <div>
+                <h2 data-news-form-title>Compose an article</h2>
+                <p>Headings, paragraphs, and real guidance. The server will clean unsafe HTML.</p>
+              </div>
+            </div>
+            <form data-news-form>
+              <input type="hidden" id="newsId" value="">
+              <div class="field">
+                <label for="newsTitle">Title</label>
+                <input id="newsTitle" name="title" required>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsCategory">Category</label>
+                  <select id="newsCategory" required></select>
+                </div>
+                <div class="field">
+                  <label for="newsStatus">Status</label>
+                  <select id="newsStatus">
+                    <option value="draft">Draft</option>
+                    <option value="review">Review</option>
+                    <option value="scheduled">Schedule</option>
+                    <option value="published">Publish</option>
+                    <option value="archived">Archive</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsType">Content type</label>
+                  <select id="newsType">
+                    <option value="article">Article</option>
+                    <option value="guide">Guide</option>
+                    <option value="resource">Resource</option>
+                    <option value="announcement">Announcement</option>
+                    <option value="event">Event</option>
+                    <option value="admission_update">Admission update</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="newsCtaType">School CTA</label>
+                  <select id="newsCtaType">
+                    <option value="">Auto from topic</option>
+                    <option value="none">None</option>
+                    <option value="about">About</option>
+                    <option value="academics">Academics</option>
+                    <option value="admissions">Admissions</option>
+                    <option value="contact">Contact</option>
+                    <option value="student-life">Student life</option>
+                    <option value="parent-resources">Parent resources</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsCtaStrength">CTA strength</label>
+                  <select id="newsCtaStrength">
+                    <option value="soft">Soft</option>
+                    <option value="standard" selected>Standard</option>
+                    <option value="strong">Strong</option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="newsAudience">Audience (planning)</label>
+                  <select id="newsAudience">
+                    <option value="">Not set</option>
+                    <option value="parents">Parents</option>
+                    <option value="students">Students</option>
+                    <option value="teachers">Teachers</option>
+                    <option value="general">General public</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsLevel">Educational level (planning)</label>
+                  <select id="newsLevel">
+                    <option value="">Not set</option>
+                    <option value="early_years">Early years</option>
+                    <option value="primary">Primary</option>
+                    <option value="junior_secondary">Junior secondary</option>
+                    <option value="senior_secondary">Senior secondary</option>
+                    <option value="all">All</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="newsIntent">Intent (planning)</label>
+                  <select id="newsIntent">
+                    <option value="">Not set</option>
+                    <option value="informational">Informational</option>
+                    <option value="educational">Educational</option>
+                    <option value="admissions">Admissions</option>
+                    <option value="school_information">School information</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsPillar">Pillar topic</label>
+                  <input id="newsPillar" placeholder="e.g. Examination preparation">
+                </div>
+                <div class="field">
+                  <label for="newsSupport">Supporting topic</label>
+                  <input id="newsSupport" placeholder="e.g. Time management">
+                </div>
+              </div>
+              <div class="field">
+                <label for="newsExcerpt">Excerpt</label>
+                <textarea id="newsExcerpt" rows="3"></textarea>
+              </div>
+              <div class="field">
+                <label>Body</label>
+                <div class="editor-bar">
+                  <button type="button" data-cmd="h2">H2</button>
+                  <button type="button" data-cmd="h3">H3</button>
+                  <button type="button" data-cmd="bold">Bold</button>
+                  <button type="button" data-cmd="italic">Italic</button>
+                  <button type="button" data-cmd="ul">List</button>
+                  <button type="button" data-cmd="ol">Numbers</button>
+                  <button type="button" data-cmd="quote">Quote</button>
+                  <button type="button" data-cmd="link">Link</button>
+                </div>
+                <div data-news-editor contenteditable="true"></div>
+              </div>
+              <div class="field">
+                <label>Tags</label>
+                <div class="tag-picks" data-news-tags></div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsScheduled">Schedule / publish at</label>
+                  <input id="newsScheduled" type="datetime-local">
+                </div>
+                <div class="field">
+                  <label for="newsImage">Featured image</label>
+                  <figure data-news-image-preview hidden>
+                    <img alt="Current featured image">
+                    <figcaption>Current featured image</figcaption>
+                  </figure>
+                  <input id="newsImage" type="file" accept="image/jpeg,image/png,image/webp">
+                </div>
+              </div>
+              <div class="field">
+                <label for="newsImageAlt">Image alt text</label>
+                <input id="newsImageAlt">
+              </div>
+              <div class="field">
+                <label for="newsMetaTitle">SEO title</label>
+                <input id="newsMetaTitle" maxlength="70">
+              </div>
+              <div class="field">
+                <label for="newsMetaDescription">SEO description</label>
+                <textarea id="newsMetaDescription" maxlength="170" rows="2"></textarea>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsCanonical">Canonical URL</label>
+                  <input id="newsCanonical" type="url">
+                </div>
+                <div class="field">
+                  <label for="newsOgTitle">Open Graph title</label>
+                  <input id="newsOgTitle">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="newsReviewed">Last reviewed</label>
+                  <input id="newsReviewed" type="date">
+                </div>
+                <div class="field">
+                  <label for="newsReviewDue">Review due</label>
+                  <input id="newsReviewDue" type="date">
+                </div>
+              </div>
+              <div class="field">
+                <label for="newsResource">Resource PDF (real files only)</label>
+                <input id="newsResource" type="file" accept="application/pdf">
+              </div>
+              <label><input type="checkbox" id="newsFeatured"> Feature on the journal</label>
+              <label><input type="checkbox" id="newsPinned"> Pin</label>
+              <label><input type="checkbox" id="newsParent"> Mark as parent resource</label>
+              <label><input type="checkbox" id="newsAds" checked> Allow ads on this public article</label>
+              <label><input type="checkbox" id="newsChild"> Child-directed — disable ads on this page</label>
+              <label><input type="checkbox" id="newsIndex" checked> Allow search indexing</label>
+              <label><input type="checkbox" id="newsComments"> Allow comments (kept closed unless the house later opens moderation)</label>
+              <p class="warn-list" data-news-warnings></p>
+              <ul class="warn-list" data-news-checklist></ul>
+              <p data-news-form-notice></p>
+              <button class="solid-btn" type="submit" data-news-save>Save</button>
+              <button class="ghost-btn" type="button" data-news-preview hidden>Preview</button>
+              <button class="ghost-btn" type="button" data-news-clear>Clear</button>
+              <button class="ghost-btn" type="button" data-news-remove hidden>Delete</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="surface" data-stamp="Taxonomy">
+            <h2>Categories</h2>
+            <form data-category-form>
+              <input type="hidden" id="categoryId">
+              <div class="field"><label for="categoryName">Name</label><input id="categoryName" required></div>
+              <div class="field"><label for="categoryDescription">Description</label><input id="categoryDescription"></div>
+              <div class="field"><label for="categoryMetaTitle">SEO title</label><input id="categoryMetaTitle"></div>
+              <div class="field"><label for="categoryMetaDescription">SEO description</label><input id="categoryMetaDescription"></div>
+              <label><input type="checkbox" id="categoryActive" checked> Active</label>
+              <button class="solid-btn" type="submit">Save category</button>
+            </form>
+            <div data-category-board></div>
+          </div>
+          <div class="surface" data-stamp="Tags">
+            <h2>Tags</h2>
+            <form data-tag-form>
+              <input type="hidden" id="tagId">
+              <div class="field"><label for="tagName">Name</label><input id="tagName" required></div>
+              <div class="field"><label for="tagDescription">Description</label><input id="tagDescription"></div>
+              <button class="solid-btn" type="submit">Save tag</button>
+            </form>
+            <div data-tag-board></div>
+          </div>
+        </div>
+
+        <div class="surface" data-stamp="Calendar">
+          <h2>Scheduled calendar</h2>
+          <p>Upcoming notes. The desk does not republish old articles automatically.</p>
+          <div data-news-calendar><p>Loading…</p></div>
+        </div>
+
+        <div class="surface" data-stamp="AdSense">
+          <h2>Publishing &amp; AdSense</h2>
+          <p>Do not invent a publisher ID. Leave the fields empty until Google issues one. Enabling ads never means the site is approved.</p>
+          <form data-publish-settings>
+            <label><input type="checkbox" id="adsenseEnabled"> Enable AdSense when a valid ID exists</label>
+            <div class="field"><label for="adsenseClient">Publisher ID (ca-pub-…)</label><input id="adsenseClient" placeholder="Leave empty until issued"></div>
+            <label><input type="checkbox" id="adsenseAuto"> Auto ads on eligible public pages</label>
+            <div class="field"><label for="adsenseVerify">Google site verification token</label><input id="adsenseVerify"></div>
+            <label><input type="checkbox" id="analyticsEnabled"> Enable analytics when a measurement ID exists</label>
+            <div class="field"><label for="analyticsId">Measurement ID (G-…)</label><input id="analyticsId"></div>
+            <p data-settings-ready></p>
+            <button class="solid-btn" type="submit">Save publishing settings</button>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-news.js?v=20260829e"></script>
+</body>
+</html>

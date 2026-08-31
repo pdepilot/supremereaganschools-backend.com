@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Setup | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css">
+</head>
+<body data-page="settings">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn active" aria-current="page" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Command · The house seal</p>
+            <h1 class="head-title">School setup</h1>
+            <p class="head-copy">Name, hours, live session, and the desks that keep the ledger.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Setup</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Founded</span><span class="value">—</span><span class="delta"></span></article>
+          <article class="metric"><span class="label">Campus</span><span class="value">—</span><span class="delta"></span></article>
+          <article class="metric"><span class="label">Levels</span><span class="value">—</span><span class="delta"></span></article>
+          <article class="metric"><span class="label">Office hours</span><span class="value">—</span><span class="delta"></span></article>
+        </div>
+      </header>
+      <main class="workspace">
+        <div class="split">
+          <div class="surface" data-stamp="House">
+            <div class="panel-title">
+              <div>
+                <h2>School identity</h2>
+                <p>What families see on letters and the public site.</p>
+              </div>
+            </div>
+            <form data-school-form>
+              <div class="field-row">
+                <div class="field"><label for="schoolName">School name</label><input id="schoolName" required></div>
+                <div class="field"><label for="shortName">Short name</label><input id="shortName"></div>
+              </div>
+              <div class="field"><label for="motto">Motto</label><input id="motto"></div>
+              <div class="field"><label for="address">Address</label><input id="address"></div>
+              <div class="field-row">
+                <div class="field"><label for="phone">Telephone</label><input id="phone" type="tel"></div>
+                <div class="field"><label for="officeEmail">Office email</label><input id="officeEmail" type="email"></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label for="whatsapp">WhatsApp</label><input id="whatsapp"></div>
+                <div class="field"><label for="website">Website</label><input id="website"></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label for="officeOpens">Opens</label><input id="officeOpens" type="time"></div>
+                <div class="field"><label for="officeCloses">Closes</label><input id="officeCloses" type="time"></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label for="currentSession">Live session</label><select id="currentSession"><option value="">Not set</option></select></div>
+                <div class="field"><label for="currentTerm">Live term</label><select id="currentTerm"><option value="">Not set</option></select></div>
+              </div>
+              <p class="field-hint"><a href="academic_sessions.html">Add a session</a> before sealing the live year.</p>
+              <div class="form-actions">
+                <button class="solid-btn" type="submit">Save school</button>
+              </div>
+            </form>
+          </div>
+          <div class="split-stack">
+            <div class="surface" data-stamp="Desks">
+              <div class="panel-title"><div><h2>Desk access</h2><p>Who may keep the ledger.</p></div></div>
+              <div class="tickets" data-desk-list><p>Connecting to the desks…</p></div>
+            </div>
+            <div class="surface" data-stamp="You">
+              <div class="panel-title"><div><h2>Your account</h2><p>Name and email on this desk.</p></div></div>
+              <form data-account-form>
+                <div class="field"><label for="accountName">Name</label><input id="accountName" required></div>
+                <div class="field"><label for="accountEmail">Email</label><input id="accountEmail" type="email" required></div>
+                <div class="form-actions"><button class="solid-btn" type="submit">Save account</button></div>
+              </form>
+            </div>
+            <div class="surface" data-stamp="Key">
+              <div class="panel-title"><div><h2>Passphrase</h2><p>Reset the key to this desk.</p></div></div>
+              <form data-password-form>
+                <div class="field"><label for="currentPassword">Current passphrase</label><input id="currentPassword" type="password" required></div>
+                <div class="field"><label for="newPassword">New passphrase</label><input id="newPassword" type="password" required></div>
+                <div class="field"><label for="confirmPassword">Confirm</label><input id="confirmPassword" type="password" required></div>
+                <div class="form-actions"><button class="solid-btn" type="submit">Reset passphrase</button></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="field" data-desk-assign-field hidden>
+        <label>Assign staff</label>
+        <select data-desk-assign-staff></select>
+      </div>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-structure.js"></script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Marks | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css">
+</head>
+<body class="faculty-house" data-page="grades">
+  <div class="house">
+    <aside class="rail" aria-label="Faculty navigation">
+      <div class="rail-mark">FACULTY</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="staff.html"><span>Desk</span></a>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn" href="assignments.html"><span>Work</span></a>
+        <a class="rail-btn active" href="grades.html" aria-current="page"><span>Marks</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn" href="messages.html"><span>Letters</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../staffLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="kicker">Faculty · The mark book</p>
+            <h1>Grades &amp; results</h1>
+            <p class="head-copy">Enter scores for the paper in front of you. Once a mark is sealed, only the office can change it.</p>
+          </div>
+          <button class="ghost-btn" type="button" id="exportButton">Export</button>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">On the roll</span><span class="value" id="studentTotal">—</span><span class="delta">This form</span></article>
+          <article class="metric"><span class="label">Average</span><span class="value" id="classAverage">—</span><span class="delta">This paper</span></article>
+          <article class="metric"><span class="label">Highest</span><span class="value" id="highestScore">—</span><span class="delta">Top mark</span></article>
+          <article class="metric"><span class="label">Entered</span><span class="value" id="completedPercent">—</span><span class="delta">Of the roll</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel">
+          <div class="toolbar">
+            <select id="classSelect"><option value="">Select a form</option></select>
+            <select id="subjectSelect"><option value="">Subject</option></select>
+            <select id="assessmentSelect"><option value="">Assessment</option></select>
+            <select id="sessionSelect"><option value="">Session</option></select>
+          </div>
+          <div class="grades-toolbar">
+            <div>
+              <h4>Mark sheet</h4>
+              <p>Choose a form and paper</p>
+            </div>
+            <div class="toolbar">
+              <input type="search" id="gradeSearch" placeholder="Search a pupil">
+              <select id="gradeFilter">
+                <option value="all">All grades</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="F">F</option>
+              </select>
+            </div>
+          </div>
+          <div class="ledger-wrap">
+            <table class="ledger grades-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Pupil</th>
+                  <th>Admission</th>
+                  <th id="scoreColumnHeader">Score</th>
+                  <th>Grade</th>
+                  <th>Remark</th>
+                  <th>Bar</th>
+                </tr>
+              </thead>
+              <tbody id="gradesBody">
+                <tr><td colspan="7">Connecting to the mark book…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grades-footer">
+            <span>Showing <strong>0</strong> of <strong>0</strong> students</span>
+            <button class="gold-btn" type="button" id="saveGrades">Seal marks</button>
+          </div>
+        </section>
+        <section class="panel" data-term-report hidden>
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Term report</p>
+              <h2 data-term-report-title>Comments and print</h2>
+              <p class="head-copy" data-term-report-copy>Open a pupil from the Final Result sheet to write comments or print their report.</p>
+            </div>
+            <button class="ghost-btn" type="button" data-print-report-sheet>Print report</button>
+          </div>
+          <div class="report-comments" data-report-comments>
+            <div class="field">
+              <label>Class teacher's comment</label>
+              <textarea data-class-teacher-comment rows="3" maxlength="2000"></textarea>
+            </div>
+            <div class="field">
+              <label>Principal's comment</label>
+              <textarea data-principal-comment rows="3" maxlength="2000"></textarea>
+            </div>
+            <div class="report-comment-actions">
+              <button class="gold-btn" type="button" data-save-report-comments hidden>Save comments</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="term-report-sheet" data-report-sheet hidden></div>
+  <script src="../JS/portal-staff-chrome.js"></script>
+  <script src="../JS/portal-report-sheet.js"></script>
+  <script src="../JS/portal-grades.js"></script>
+</body>
+</html>

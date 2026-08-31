@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Notices | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css">
+</head>
+<body class="faculty-house" data-page="announcements">
+  <div class="house">
+    <aside class="rail" aria-label="Faculty navigation">
+      <div class="rail-mark">FACULTY</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="staff.html"><span>Desk</span></a>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn" href="assignments.html"><span>Work</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn" href="messages.html"><span>Letters</span></a>
+        <a class="rail-btn active" href="announcements.html" aria-current="page"><span>Notices</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../staffLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="kicker">Faculty · The hall</p>
+            <h1>Notices</h1>
+            <p class="head-copy">Word from the office, and circulars you may dispatch to staff.</p>
+          </div>
+          <button class="gold-btn" type="button" id="announcementButton" data-open-modal="announcementModal">Post a notice</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel">
+          <div class="toolbar">
+            <input type="search" id="announcementSearch" placeholder="Search a circular">
+            <select id="announcementFilter">
+              <option value="">All notices</option>
+              <option value="academic">Academic</option>
+              <option value="event">Event</option>
+              <option value="general">General</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <div class="announcement-grid" id="announcementGrid">
+            <p class="empty">Connecting to the hall…</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="house-modal" id="announcementModal">
+    <div class="house-modal-card">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Circular</p>
+          <h3>Post a notice</h3>
+        </div>
+        <button class="ghost-btn" type="button" id="closeAnnouncement" data-close-modal>Close</button>
+      </div>
+      <form id="announcementForm">
+        <label class="field"><span>Title</span><input id="announcementTitle" required></label>
+        <div class="field-grid">
+          <label class="field">
+            <span>Category</span>
+            <select id="announcementCategory" required>
+              <option value="">Select category</option>
+              <option value="academic">Academic</option>
+              <option value="event">Event</option>
+              <option value="general">General</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Audience</span>
+            <select id="announcementAudience" required>
+              <option value="staff">All staff</option>
+              <option value="teaching_staff">Teaching staff</option>
+              <option value="whole_school">Whole school</option>
+            </select>
+          </label>
+        </div>
+        <label class="field"><span>Body</span><textarea id="announcementBody" rows="5" required></textarea></label>
+        <div class="modal-actions">
+          <button class="ghost-btn" type="button" id="cancelAnnouncement" data-close-modal>Cancel</button>
+          <button class="gold-btn" type="submit">Dispatch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../JS/portal-staff-chrome.js"></script>
+  <script src="../JS/portal-classroom.js"></script>
+</body>
+</html>

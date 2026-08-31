@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Command Desk | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css">
+</head>
+<body data-page="dashboard">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+                <a class="rail-btn active" aria-current="page" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+                <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+                <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+                <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+                <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+                <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+                <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+                <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+                <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+                <a class="rail-btn" href="news.html"><span>News</span></a>
+                <a class="rail-btn" href="email.html"><span>Email</span></a>
+                <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+                <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+                <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+                <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Command · The house desk</p>
+            <h1 class="head-title">Command Desk</h1>
+            <p class="head-copy" data-greeting>The house desk.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Desk open</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Pupils</span><span class="value" data-metric="pupils">—</span><span class="delta" data-metric-delta="pupils"></span></article>
+          <article class="metric"><span class="label">Staff</span><span class="value" data-metric="staff">—</span><span class="delta" data-metric-delta="staff"></span></article>
+          <article class="metric"><span class="label">Fees</span><span class="value" data-metric="fees">—</span><span class="delta" data-metric-delta="fees"></span></article>
+          <article class="metric"><span class="label">Forms</span><span class="value" data-metric="forms">—</span><span class="delta" data-metric-delta="forms"></span></article>
+          <article class="metric"><span class="label">Attendance</span><span class="value" data-metric="attendance">—</span></article>
+        </div>
+      </header>
+      <main class="workspace">
+        <div class="ribbon" aria-label="Live school activity">
+          <div class="ribbon-label">Pulse</div>
+          <div class="ticker">
+            <p class="ticker-track" data-ticker></p>
+          </div>
+        </div>
+        <div class="split">
+          <div class="split-stack">
+            <div class="surface" data-stamp="Tickets">
+              <div class="panel-title">
+                <div>
+                  <h2>School tickets</h2>
+                  <p>What the ledger is asking of the office today.</p>
+                </div>
+              </div>
+              <div class="tickets" data-ticket-list><p>Connecting to the ledger…</p></div>
+            </div>
+            <div class="surface" data-stamp="Chute">
+              <div class="panel-title">
+                <div>
+                  <h2>Inbound chute</h2>
+                  <p>Letters waiting on the office.</p>
+                </div>
+              </div>
+              <div class="chute" data-inbox-list><p>Opening the chute…</p></div>
+            </div>
+            <div class="surface" data-stamp="Roll">
+              <div class="panel-title">
+                <div>
+                  <h2>Pupil lookup</h2>
+                  <p>Pull a live record from the school roll.</p>
+                </div>
+              </div>
+              <form class="lookup-form" data-pupil-lookup>
+                <div class="field">
+                  <label for="lookupQ">Name or admission number</label>
+                  <input id="lookupQ" data-lookup-q type="search" placeholder="Type at least two letters">
+                </div>
+                <p class="field-hint" data-lookup-copy>Type to pull a record from the live roll.</p>
+                <div class="lookup-results" data-lookup-results></div>
+                <div class="lookup-card" data-lookup-card hidden>
+                  <p class="tag" data-lookup-wing></p>
+                  <h3 data-lookup-name></h3>
+                  <p class="lookup-meta" data-lookup-meta></p>
+                  <div class="lookup-grid">
+                    <div><span>Admission</span><strong data-lookup-field="admission">—</strong></div>
+                    <div><span>Form</span><strong data-lookup-field="form">—</strong></div>
+                    <div><span>Status</span><strong data-lookup-field="status">—</strong></div>
+                    <div><span>Fees</span><strong data-lookup-field="fees">—</strong></div>
+                    <div><span>Guardian</span><strong data-lookup-field="guardian">—</strong></div>
+                    <div><span>Contact</span><strong data-lookup-field="contact">—</strong></div>
+                    <div><span>Campus</span><strong data-lookup-field="campus">—</strong></div>
+                    <div><span>Session</span><strong data-lookup-field="session">—</strong></div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div class="surface" data-stamp="House">
+            <div class="panel-title">
+              <div>
+                <h2>The house</h2>
+                <p data-house-copy>Connecting to the seal…</p>
+              </div>
+            </div>
+            <div class="status-row">
+              <div class="status-item"><span>Session</span><strong data-house="session">—</strong></div>
+              <div class="status-item"><span>Term</span><strong data-house="term">—</strong></div>
+              <div class="status-item"><span>Levels</span><strong data-house="levels">—</strong></div>
+              <div class="status-item"><span>Outstanding</span><strong data-house="outstanding">—</strong></div>
+            </div>
+            <div class="matrix">
+              <a class="cell" data-wing-cell="nursery" href="nursery.html">
+                <div>
+                  <div class="tag">Nursery</div>
+                  <h3>Early years</h3>
+                  <p data-wing-count="nursery">Connecting to this desk…</p>
+                </div>
+                <div class="go">Open wing</div>
+              </a>
+              <a class="cell" data-wing-cell="primary" href="primary.html">
+                <div>
+                  <div class="tag">Primary</div>
+                  <h3>The junior house</h3>
+                  <p data-wing-count="primary">Connecting to this desk…</p>
+                </div>
+                <div class="go">Open wing</div>
+              </a>
+              <a class="cell" data-wing-cell="secondary" href="secondary.html">
+                <div>
+                  <div class="tag">Secondary</div>
+                  <h3>The senior house</h3>
+                  <p data-wing-count="secondary">Connecting to this desk…</p>
+                </div>
+                <div class="go">Open wing</div>
+              </a>
+              <a class="cell" href="news.html">
+                <div>
+                  <div class="tag">Journal</div>
+                  <h3>Publish an article</h3>
+                  <p>Write for families from the house journal.</p>
+                </div>
+                <div class="go">Open news</div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="field" data-desk-assign-field hidden>
+        <label>Assign staff</label>
+        <select data-desk-assign-staff></select>
+      </div>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-dashboard.js"></script>
+</body>
+</html>

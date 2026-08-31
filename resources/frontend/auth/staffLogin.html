@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff desk | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./CSS/staff-auth.css">
+</head>
+<body class="staff-auth">
+  <main class="staff-stage">
+    <section class="staff-gallery">
+      <div class="staff-gallery-media" data-auth-scene="panel"></div>
+      <div class="staff-gallery-shade"></div>
+      <header class="staff-top">
+        <a href="./index.html">Return to the school</a>
+        <span class="staff-clock" data-clock>00:00:00  WAT</span>
+        <span>Faculty</span>
+      </header>
+      <p class="staff-spine">Staff desk · Knowledge · Character · Excellence</p>
+      <div class="staff-gallery-copy">
+        <p class="staff-kicker">Supreme Reagan Schools · Staff</p>
+        <h1>The staff desk.</h1>
+        <div class="staff-rule"></div>
+        <p class="staff-lede">For teachers and officers of the house. Sign in to continue the day’s work with the children.</p>
+        <div class="staff-meta">
+          <div>
+            <span>Seat</span>
+            <strong>Owerri, Imo State</strong>
+          </div>
+          <div>
+            <span>Channel</span>
+            <strong>Faculty session</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="staff-vault">
+      <div class="staff-card">
+        <div class="staff-mark">
+          <img src="./Image/logo_main.png" alt="Supreme Reagan Schools">
+          <p>Faculty &amp; staff</p>
+        </div>
+        <h1>Welcome back.</h1>
+        <div class="staff-rule"></div>
+        <p class="staff-note">Sign in with the address given by the school office.</p>
+        <p class="staff-alert" data-auth-alert hidden></p>
+
+        <form class="staff-form" data-auth-form action="/login" method="post">
+          <input type="hidden" name="_token" value="{{CSRF_TOKEN}}">
+          <input type="hidden" name="portal" value="staff">
+
+          <label class="staff-field">
+            <span>Email</span>
+            <div class="staff-input">
+              <input id="email" name="email" type="email" autocomplete="username" placeholder="Your school email" required>
+            </div>
+          </label>
+
+          <label class="staff-field">
+            <span>Password</span>
+            <div class="staff-input">
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••••" required>
+              <button type="button" data-toggle-pass aria-controls="password" aria-label="Show password" aria-pressed="false">Show</button>
+            </div>
+          </label>
+
+          <div class="staff-row">
+            <label><input type="checkbox" name="remember"> Remember me</label>
+            <a href="/staff/forgot-password">Forgot password?</a>
+          </div>
+
+          <button class="staff-submit" type="submit">Enter the desk</button>
+        </form>
+
+        <p class="staff-foot">Supreme Reagan Schools · 15 Spibat Road, Owerri</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="./JS/portal-auth-scene.js"></script>
+  <script src="./JS/staff-auth.js"></script>
+  <script src="./JS/portal-login.js"></script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Contact desk | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css">
+</head>
+<body data-page="contact">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn active" aria-current="page" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Front door · Correspondence</p>
+            <h1 class="head-title">Contact desk</h1>
+            <p class="head-copy" data-contact-copy>Letters from the public website, waiting on the office.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Front door</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Waiting</span><span class="value" data-metric="waiting">—</span><span class="delta" data-metric-delta="waiting"></span></article>
+          <article class="metric"><span class="label">Open</span><span class="value" data-metric="open">—</span><span class="delta" data-metric-delta="open"></span></article>
+          <article class="metric"><span class="label">Replied</span><span class="value" data-metric="replied">—</span><span class="delta" data-metric-delta="replied"></span></article>
+          <article class="metric"><span class="label">Total</span><span class="value" data-metric="total">—</span><span class="delta" data-metric-delta="total"></span></article>
+        </div>
+      </header>
+      <main class="workspace">
+        <p data-contact-notice></p>
+        <div class="split">
+          <div class="surface" data-stamp="Chute">
+            <div class="panel-title">
+              <div>
+                <h2>Letters</h2>
+                <p>From the public contact form.</p>
+              </div>
+            </div>
+            <div class="toolbar">
+              <input id="contactSearch" type="search" placeholder="Search a name or subject">
+              <select id="contactFilter">
+                <option value="">All letters</option>
+                <option value="waiting">Waiting</option>
+                <option value="open">Open</option>
+                <option value="replied">Replied</option>
+                <option value="cleared">Cleared</option>
+              </select>
+            </div>
+            <div class="tickets" data-contact-list><p>Opening the front door…</p></div>
+          </div>
+          <div class="surface" data-stamp="Letter" data-contact-letter>
+            <p data-contact-letter-empty>Choose a name on the left to read it here.</p>
+            <div data-contact-letter-sheet hidden>
+              <div class="panel-title">
+                <div>
+                  <h2 data-contact-letter-name>Open a letter</h2>
+                  <p data-contact-letter-subject>Choose a name on the left to read it here.</p>
+                </div>
+                <button class="ghost-btn" type="button" data-contact-delete hidden>Remove</button>
+              </div>
+              <dl class="letter-meta">
+                <div><dt>Status</dt><dd data-contact-letter-status>—</dd></div>
+                <div><dt>Email</dt><dd data-contact-letter-email>—</dd></div>
+                <div><dt>Telephone</dt><dd data-contact-letter-phone>—</dd></div>
+                <div><dt>Received</dt><dd data-contact-letter-time>—</dd></div>
+                <div><dt>Assignee</dt><dd data-contact-letter-assignee>—</dd></div>
+              </dl>
+              <p class="letter-body" data-contact-letter-body></p>
+              <div data-contact-thread></div>
+            </div>
+            <div data-contact-compose hidden>
+              <div class="panel-title"><div><h2>Reply</h2><p>A sealed answer from the office.</p></div></div>
+              <form data-contact-reply-form>
+                <p data-contact-form-notice></p>
+                <div class="field"><label for="contactReplyTo">To</label><input id="contactReplyTo" readonly></div>
+                <div class="field"><label for="contactReplySubject">Subject</label><input id="contactReplySubject"></div>
+                <div class="field"><label for="contactReplyBody">Letter</label><textarea id="contactReplyBody" required></textarea></div>
+                <div class="form-actions">
+                  <button class="solid-btn" type="submit" data-contact-send>Reply</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="field" data-desk-assign-field hidden>
+        <label>Assign staff</label>
+        <select data-desk-assign-staff></select>
+      </div>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-contact.js"></script>
+</body>
+</html>

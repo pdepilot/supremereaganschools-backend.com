@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Bells | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css">
+</head>
+<body class="faculty-house" data-page="timetable">
+  <div class="house">
+    <aside class="rail" aria-label="Faculty navigation">
+      <div class="rail-mark">FACULTY</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="staff.html"><span>Desk</span></a>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn" href="assignments.html"><span>Work</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn active" href="timetable.html" aria-current="page"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn" href="messages.html"><span>Letters</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../staffLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="kicker">Faculty · The week</p>
+            <h1>Your timetable</h1>
+            <p class="head-copy">The bells for each form you teach. Print the grid when you need it on paper.</p>
+          </div>
+          <button class="ghost-btn" type="button" id="printTimetable">Print</button>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Periods</span><span class="value" data-metric="periods">—</span><span class="delta">On this form</span></article>
+          <article class="metric"><span class="label">First bell</span><span class="value" data-metric="first">—</span><span class="delta">This grid</span></article>
+          <article class="metric"><span class="label">Last bell</span><span class="value" data-metric="last">—</span><span class="delta">Dismissal</span></article>
+          <article class="metric"><span class="label">Forms</span><span class="value" data-metric="mapped">—</span><span class="delta">With a bell</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 data-bell-title>The week</h2>
+              <p data-bell-copy>Connecting to the bell…</p>
+            </div>
+            <select id="classFilter"><option value="">Select a form</option></select>
+          </div>
+          <div class="ledger-wrap">
+            <table class="ledger timetable-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Mon</th>
+                  <th>Tue</th>
+                  <th>Wed</th>
+                  <th>Thu</th>
+                  <th>Fri</th>
+                </tr>
+              </thead>
+              <tbody id="timetableBody">
+                <tr><td colspan="6">Choose a form to open the week.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../JS/portal-staff-chrome.js"></script>
+  <script src="../JS/portal-classroom.js"></script>
+</body>
+</html>

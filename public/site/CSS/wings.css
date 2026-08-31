@@ -1,0 +1,499 @@
+.wing-page {
+  background: #f4f0e6;
+}
+
+.wing-kicker {
+  margin: 0 0 12px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.wing-kicker-ink {
+  color: #243A8F;
+}
+
+.wing-rule {
+  width: 72px;
+  height: 2px;
+  margin: 22px auto 26px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 #243A8F;
+}
+
+.wing-rule-left {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.wing-hero {
+  position: relative;
+  min-height: 0;
+  padding: 158px 20px 36px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  color: #ffffff;
+}
+
+.wing-hero-media,
+.wing-hero-shade {
+  position: absolute;
+  inset: 0;
+}
+
+.wing-hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.06);
+}
+
+.wing-hero-shade {
+  background:
+    linear-gradient(180deg, rgba(36, 58, 143, 0.22) 0%, rgba(36, 58, 143, 0.55) 42%, rgba(36, 58, 143, 0.94) 100%);
+}
+
+.wing-hero-copy {
+  position: relative;
+  z-index: 2;
+  width: min(820px, calc(100% - 48px));
+  margin: 0 auto;
+  text-align: center;
+}
+
+.wing-hero h1 {
+  margin: 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  line-height: 0.9;
+}
+
+.wing-lede {
+  margin: 8px auto 0;
+  max-width: 560px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.wing-marks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1180px;
+  margin: -44px auto 0;
+  position: relative;
+  z-index: 3;
+  padding: 0 20px;
+}
+
+.wing-marks article {
+  background: #fffdf8;
+  border: 1px solid #e4dcc8;
+  padding: 28px 24px 24px;
+  box-shadow: 0 18px 40px rgba(36, 58, 143, 0.08);
+}
+
+.wing-marks article + article {
+  border-left: 0;
+}
+
+.wing-marks span {
+  display: block;
+  margin-bottom: 12px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-style: italic;
+  letter-spacing: 0.18em;
+  color: #5B2D8B;
+}
+
+.wing-marks strong {
+  display: block;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  font-weight: 600;
+  color: #243A8F;
+  line-height: 1.05;
+}
+
+.wing-marks p {
+  margin: 10px 0 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: #5b6573;
+}
+
+.wing-story {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 88px 20px 20px;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.wing-story--flip {
+  grid-template-columns: 0.95fr 1.05fr;
+}
+
+.wing-story--flip .wing-story-copy {
+  order: 2;
+}
+
+.wing-story h2,
+.wing-foundation h2,
+.wing-foci-intro h2,
+.wing-close h2 {
+  margin: 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+  color: #243A8F;
+  line-height: 1.08;
+}
+
+.wing-story p,
+.wing-foundation p,
+.wing-foci-intro p {
+  font-family: "Montserrat", Arial, sans-serif;
+  color: #5b6573;
+  line-height: 1.85;
+  font-size: 1.02rem;
+}
+
+.wing-drop::first-letter {
+  float: left;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 4.4rem;
+  line-height: 0.72;
+  padding: 10px 12px 0 0;
+  color: #243A8F;
+  font-style: italic;
+}
+
+.wing-story-frame {
+  position: relative;
+  margin: 0;
+}
+
+.wing-story-frame::before {
+  content: "";
+  position: absolute;
+  inset: 22px -18px -18px 22px;
+  border: 1px solid #ffffff;
+  z-index: 0;
+}
+
+.wing-story-frame img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 500px;
+  object-fit: cover;
+  box-shadow: 0 24px 50px rgba(36, 58, 143, 0.18);
+}
+
+.wing-story-frame figcaption {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #5B2D8B;
+}
+
+.wing-foundation {
+  max-width: 1180px;
+  margin: 56px auto 0;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  min-height: 420px;
+}
+
+.wing-foundation-copy {
+  background: #243A8F;
+  color: #ffffff;
+  padding: 48px 42px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.wing-foundation-copy h2,
+.wing-foundation-copy p {
+  color: #ffffff;
+}
+
+.wing-foundation-media {
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+}
+
+.wing-foundation-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+}
+
+.wing-foci {
+  padding: 88px 20px 28px;
+}
+
+.wing-foci-intro {
+  max-width: 680px;
+  margin: 0 auto 44px;
+  text-align: center;
+}
+
+.wing-foci-grid {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.wing-focus {
+  background: #fffdf8;
+  border: 1px solid #e4dcc8;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.wing-focus + .wing-focus {
+  border-left: 0;
+}
+
+.wing-focus:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 48px rgba(36, 58, 143, 0.12);
+  color: inherit;
+  z-index: 1;
+}
+
+.wing-focus-media {
+  height: 220px;
+  overflow: hidden;
+}
+
+.wing-focus-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.wing-focus:hover .wing-focus-media img {
+  transform: scale(1.06);
+}
+
+.wing-focus-body {
+  padding: 26px 24px 30px;
+}
+
+.wing-focus-body span {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-style: italic;
+  letter-spacing: 0.18em;
+  color: #5B2D8B;
+}
+
+.wing-focus-body h3 {
+  margin: 8px 0 10px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 2rem;
+  color: #243A8F;
+}
+
+.wing-focus-body p {
+  margin: 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  color: #5b6573;
+  line-height: 1.7;
+}
+
+.wing-sisters {
+  max-width: 1180px;
+  margin: 48px auto 0;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.wing-sisters a {
+  position: relative;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 26px;
+  overflow: hidden;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.wing-sisters a img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.wing-sisters a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(36, 58, 143, 0.12), rgba(36, 58, 143, 0.8));
+}
+
+.wing-sisters a:hover img {
+  transform: scale(1.06);
+}
+
+.wing-sisters a.is-current::after {
+  background: linear-gradient(180deg, rgba(36, 58, 143, 0.2), rgba(36, 58, 143, 0.9));
+}
+
+.wing-sisters span,
+.wing-sisters h3,
+.wing-sisters p {
+  position: relative;
+  z-index: 1;
+}
+
+.wing-sisters span {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-style: italic;
+  letter-spacing: 0.18em;
+  color: #ffffff;
+}
+
+.wing-sisters h3 {
+  margin: 6px 0 6px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 2.2rem;
+}
+
+.wing-sisters p {
+  margin: 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.wing-close {
+  margin: 56px 20px 80px;
+  padding: 72px 28px;
+  text-align: center;
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(36, 58, 143, 0.55), rgba(36, 58, 143, 0.88)),
+    url("../Image/school_view.jpg") center / cover no-repeat;
+}
+
+.wing-page--nursery .wing-close {
+  background-image:
+    linear-gradient(180deg, rgba(36, 58, 143, 0.55), rgba(36, 58, 143, 0.88)),
+    url("../Image/nursery.jpg");
+}
+
+.wing-page--primary .wing-close {
+  background-image:
+    linear-gradient(180deg, rgba(36, 58, 143, 0.55), rgba(36, 58, 143, 0.88)),
+    url("../Image/primary.jpg");
+}
+
+.wing-page--secondary .wing-close {
+  background-image:
+    linear-gradient(180deg, rgba(36, 58, 143, 0.55), rgba(36, 58, 143, 0.88)),
+    url("../Image/secondary (1).jpg");
+}
+
+.wing-close h2 {
+  max-width: 680px;
+  margin: 0 auto 28px;
+  color: #ffffff;
+}
+
+.wing-close-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.wing-close-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-family: "Montserrat", Arial, sans-serif;
+}
+
+.wing-close-actions a:first-child {
+  background: #ffffff;
+  color: #243A8F;
+}
+
+@media (max-width: 991px) {
+  .wing-marks,
+  .wing-story,
+  .wing-story--flip,
+  .wing-foundation,
+  .wing-foci-grid,
+  .wing-sisters {
+    grid-template-columns: 1fr;
+  }
+
+  .wing-story--flip .wing-story-copy {
+    order: 0;
+  }
+
+  .wing-marks article + article,
+  .wing-focus + .wing-focus {
+    border-left: 1px solid #e4dcc8;
+  }
+
+  .wing-hero {
+    padding: 128px 16px 28px;
+  }
+
+  .wing-story-frame::before {
+    display: none;
+  }
+
+  .wing-story-frame img,
+  .wing-foundation-media {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  .wing-foundation-copy,
+  .wing-close {
+    padding: 36px 24px;
+  }
+}

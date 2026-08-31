@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sovereign Access | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./CSS/admin-auth.css">
+</head>
+<body class="auth-page auth-sovereign">
+  <div class="auth-noise"></div>
+  <div class="auth-grid"></div>
+  <div class="auth-vignette"></div>
+
+  <main class="auth-stage">
+    <section class="auth-gallery">
+      <div class="auth-gallery-media" data-parallax data-auth-scene="panel" style="background-image: url('./Image/founders.jpg');"></div>
+      <div class="auth-gallery-shade"></div>
+      <canvas data-dust></canvas>
+      <header class="auth-top">
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+        <a href="./index.html">Return to the school</a>
+        <span class="auth-clock" data-clock>00:00:00  WAT</span>
+        <span class="auth-class">Clearance Ω</span>
+      </header>
+      <p class="auth-spine">Restricted · Sovereign channel · Knowledge · Character · Excellence</p>
+      <div class="auth-gallery-copy">
+        <p class="auth-kicker">Supreme Reagan Schools · Est. 2010</p>
+        <h1>The highest desk.</h1>
+        <div class="auth-rule"></div>
+        <p class="auth-lede">This chamber is reserved for the founders’ authority. Every keystroke is a matter of the school’s life, not a login.</p>
+        <div class="auth-meta-row">
+          <div>
+            <span>Seat</span>
+            <strong>Owerri, Imo State</strong>
+          </div>
+          <div>
+            <span>Founded</span>
+            <strong>13 September 2010</strong>
+          </div>
+          <div>
+            <span>Channel</span>
+            <strong>Encrypted session</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-vault">
+      <div class="auth-card">
+        <div class="auth-seal" aria-hidden="true">
+          <svg viewBox="0 0 200 200">
+            <defs>
+              <path id="sealPath" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"></path>
+            </defs>
+            <circle cx="100" cy="100" r="96" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"></circle>
+            <g class="auth-seal-ring-slow auth-seal-ring">
+              <circle cx="100" cy="100" r="88" fill="none" stroke="#ffffff" stroke-width="0.6" stroke-dasharray="3 7"></circle>
+            </g>
+            <g class="auth-seal-ring">
+              <text fill="#ffffff" font-size="9" letter-spacing="4" font-family="Montserrat, Arial, sans-serif">
+                <textPath href="#sealPath">SUPREME REAGAN SCHOOLS · EST. 2010 · SOVEREIGN ACCESS ·</textPath>
+              </text>
+            </g>
+            <circle cx="100" cy="100" r="52" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1"></circle>
+            <text x="100" y="96" text-anchor="middle" fill="#ffffff" font-family="Montserrat, Arial, sans-serif" font-size="28" font-style="italic">SRS</text>
+            <text x="100" y="116" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Montserrat, Arial, sans-serif" font-size="6" letter-spacing="3">OMEGA</text>
+          </svg>
+        </div>
+
+        <p class="auth-kicker" style="text-align:center;">Sovereign access</p>
+        <h1>Identify yourself.</h1>
+        <div class="auth-rule"></div>
+        <p class="auth-vault-note">Only the office that commands the whole school may enter here.</p>
+
+        <div class="auth-alert" data-auth-alert role="alert" aria-live="polite"></div>
+
+        <form class="auth-form" data-auth-form action="/login" method="post">
+          <input type="hidden" name="_token" value="{{CSRF_TOKEN}}">
+          <input type="hidden" name="portal" value="portal">
+
+          <label class="auth-field">
+            <span>Official address</span>
+            <div class="auth-input">
+              <input id="sovereignEmail" name="email" type="email" autocomplete="username" placeholder="Sign-in email from Setup → Your desk" required>
+            </div>
+          </label>
+
+          <label class="auth-field">
+            <span>Passphrase</span>
+            <div class="auth-input">
+              <input id="sovereignPassword" name="password" type="password" autocomplete="current-password" placeholder="••••••••••••" required>
+              <button type="button" data-toggle-pass aria-controls="sovereignPassword" aria-label="Show password" aria-pressed="false">Show</button>
+            </div>
+          </label>
+
+          <label class="auth-field">
+            <span>Clearance key</span>
+            <div class="auth-input">
+              <input id="sovereignKey" name="clearance" type="password" placeholder="Ω — founders’ key" required>
+              <button type="button" data-toggle-pass aria-controls="sovereignKey" aria-label="Show clearance key" aria-pressed="false">Show</button>
+            </div>
+          </label>
+
+          <div class="auth-row">
+            <label><input type="checkbox" name="remember"> Keep this chamber open</label>
+            <a href="/portal/forgot-password">Request restoration</a>
+          </div>
+
+          <button class="auth-submit" type="submit" data-auth-submit>Unlock the school</button>
+        </form>
+
+        <p class="auth-foot">Supreme Reagan Schools · 15 Spibat Road, Owerri</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="auth-unlock" role="status" aria-live="polite">
+    <div>
+      <div class="auth-unlock-mark"><span></span></div>
+      <p>Authority recognized.</p>
+      <small>Opening the sovereign desk</small>
+    </div>
+  </div>
+
+  <script src="./JS/portal-auth-scene.js"></script>
+  <script src="./JS/admin-auth.js"></script>
+</body>
+</html>

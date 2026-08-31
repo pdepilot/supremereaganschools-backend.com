@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Letters | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css">
+</head>
+<body class="faculty-house pupil-house" data-page="parent_messages">
+  <div class="house">
+    <aside class="rail" aria-label="Family navigation">
+      <div class="rail-mark">FAMILY</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <a class="rail-btn" href="children.html"><span>Children</span></a>
+        <a class="rail-btn" href="academics.html"><span>Marks</span></a>
+        <a class="rail-btn" href="assignments.html"><span>Work</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn active" href="messages.html" aria-current="page"><span>Letters</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../Parent_studentlogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="kicker">Family · The chute</p>
+            <h1>Messages</h1>
+            <p class="head-copy">Letters between this household and the school office.</p>
+          </div>
+          <div class="head-aside">
+            <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Desk open</div>
+          </div>
+        </div>
+      </header>
+      <p class="desk-note" data-desk-note hidden></p>
+      <main class="workspace">
+        <section class="panel">
+          <div class="toolbar student-compose">
+            <select data-message-recipient>
+              <option value="">Write to…</option>
+            </select>
+            <input type="text" data-message-subject placeholder="Subject">
+            <textarea data-message-body placeholder="Write a letter to the office"></textarea>
+            <button class="gold-btn" type="button" data-message-send>Send letter</button>
+          </div>
+          <p class="form-notice" data-message-notice></p>
+        </section>
+        <div class="letters">
+          <div class="letter-list" data-conversation-list>
+            <div class="chat-head">
+              <div>
+                <h2>Inbox</h2>
+                <p class="head-copy" data-inbox-copy>No letters yet</p>
+              </div>
+            </div>
+            <div data-conversation-items></div>
+          </div>
+          <div class="letter-thread" data-chat-pane>
+            <p class="empty">Open a letter from the list.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../JS/portal-parent-pages.js"></script>
+</body>
+</html>

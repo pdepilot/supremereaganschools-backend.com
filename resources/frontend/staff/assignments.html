@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Work | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css">
+</head>
+<body class="faculty-house" data-page="assignments">
+  <div class="house">
+    <aside class="rail" aria-label="Faculty navigation">
+      <div class="rail-mark">FACULTY</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="staff.html"><span>Desk</span></a>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn active" href="assignments.html" aria-current="page"><span>Work</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn" href="messages.html"><span>Letters</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../staffLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="kicker">Faculty · Set work</p>
+            <h1>Assignments</h1>
+            <p class="head-copy">Work on the board for your forms. Open a sheet to see who has handed in.</p>
+          </div>
+          <button class="gold-btn" type="button" id="createAssignmentButton" data-open-modal="assignmentModal">Set work</button>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Open work</span><span class="value" data-metric="open">—</span><span class="delta" data-metric-delta="open">On the board</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel">
+          <div class="toolbar">
+            <input type="search" id="assignmentSearch" placeholder="Search work">
+            <select id="assignmentFilter">
+              <option value="all">All work</option>
+              <option value="pending">Pending</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+          <div class="ledger-wrap">
+            <table class="ledger assignments-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Subject</th>
+                  <th>Form</th>
+                  <th>Due</th>
+                  <th>Handed in</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="assignmentTableBody">
+                <tr><td colspan="6">Connecting to the work board…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="panel" data-submission-inbox hidden>
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Class papers</p>
+              <h3 data-inbox-title>Handed in</h3>
+            </div>
+          </div>
+          <div class="ledger-wrap">
+            <table class="ledger">
+              <thead>
+                <tr>
+                  <th>Pupil</th>
+                  <th>Admission</th>
+                  <th>Status</th>
+                  <th>Paper</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody data-inbox-body></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="house-modal assignment-modal" id="assignmentModal">
+    <div class="house-modal-card">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">New sheet</p>
+          <h3>Set work</h3>
+        </div>
+        <button class="ghost-btn" type="button" data-close-modal>Close</button>
+      </div>
+      <form id="assignmentForm">
+        <div class="field-grid">
+          <label class="field"><span>Title</span><input id="assignmentTitle" required></label>
+          <label class="field"><span>Due</span><input id="assignmentDue" type="date" required></label>
+          <label class="field"><span>Form</span><select id="assignmentClass" required><option value="">Select a form</option></select></label>
+          <label class="field"><span>Subject</span><select id="assignmentSubject" required><option value="">Select subject</option></select></label>
+        </div>
+        <label class="field"><span>Instructions</span><textarea id="assignmentInstructions" rows="4"></textarea></label>
+        <div class="modal-actions">
+          <button class="ghost-btn" type="button" id="cancelModal" data-close-modal>Cancel</button>
+          <button class="gold-btn" type="submit">Seal work</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../JS/portal-staff-chrome.js"></script>
+  <script src="../JS/portal-classroom.js"></script>
+</body>
+</html>

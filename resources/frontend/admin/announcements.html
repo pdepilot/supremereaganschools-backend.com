@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Notices | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css">
+</head>
+<body data-page="announcements">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+                <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+                <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+                <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+                <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+                <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+                <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+                <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+                <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+                <a class="rail-btn active" aria-current="page" href="announcements.html"><span>Notices</span></a>
+                <a class="rail-btn" href="news.html"><span>News</span></a>
+                <a class="rail-btn" href="email.html"><span>Email</span></a>
+                <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+                <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+                <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+                <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Correspondence · Circulars</p>
+            <h1 class="head-title">School notices</h1>
+            <p class="head-copy">Word from the office to houses and homes.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Board</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Live</span><span class="value" data-metric="live">—</span><span class="delta" data-metric-delta="live"></span></article>
+          <article class="metric"><span class="label">Drafts</span><span class="value" data-metric="drafts">—</span><span class="delta" data-metric-delta="drafts"></span></article>
+          <article class="metric"><span class="label">Archived</span><span class="value" data-metric="archived">—</span><span class="delta" data-metric-delta="archived"></span></article>
+          <article class="metric"><span class="label">Last</span><span class="value" data-metric="last">—</span><span class="delta" data-metric-delta="last"></span></article>
+        </div>
+      </header>
+      <main class="workspace">
+        <div class="split">
+          <div class="surface" data-stamp="Board" data-notice-root>
+            <div class="panel-title">
+              <div>
+                <h2>The board</h2>
+                <p data-notice-copy>Connecting to the board…</p>
+              </div>
+            </div>
+            <p data-notice-notice></p>
+            <div class="toolbar">
+              <input id="noticeSearch" type="search" placeholder="Search a circular">
+              <select id="noticeStatusFilter">
+                <option value="">All statuses</option>
+                <option value="published">Live</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
+              </select>
+              <select id="noticeAudienceFilter">
+                <option value="">All audiences</option>
+                <option value="whole_school">Whole school</option>
+                <option value="parents">Parents</option>
+                <option value="staff">Staff</option>
+                <option value="students">Students</option>
+                <option value="secondary">Secondary</option>
+                <option value="teaching_staff">Teaching staff</option>
+                <option value="non_teaching_staff">Non-teaching staff</option>
+                <option value="department">Department</option>
+              </select>
+            </div>
+            <div class="tickets" data-notice-board><p>Loading circulars…</p></div>
+          </div>
+          <div class="surface" data-stamp="Copy" id="compose-notice">
+            <div class="panel-title">
+              <div>
+                <h2 data-notice-form-title>Compose a circular</h2>
+                <p>Seal a notice to a house, a department, or the whole school.</p>
+              </div>
+            </div>
+            <form data-notice-form>
+              <input type="hidden" id="noticeId" value="">
+              <p data-notice-form-notice></p>
+              <div class="field">
+                <label for="noticeTitle">Title</label>
+                <input id="noticeTitle" name="title" required>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="noticeCategory">Kind</label>
+                  <select id="noticeCategory">
+                    <option value="general">General</option>
+                    <option value="academic">Academic</option>
+                    <option value="event">Event</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="audience">Audience</label>
+                  <select id="audience">
+                    <option value="whole_school">Whole school</option>
+                    <option value="parents">Parents</option>
+                    <option value="staff">Staff</option>
+                    <option value="students">Students</option>
+                    <option value="secondary">Secondary</option>
+                    <option value="teaching_staff">Teaching staff</option>
+                    <option value="non_teaching_staff">Non-teaching staff</option>
+                    <option value="department">Department</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" data-notice-department hidden>
+                <label for="noticeDepartment">Department</label>
+                <select id="noticeDepartment">
+                  <option value="">Select a department</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="body">Letter</label>
+                <textarea id="body" name="body" required></textarea>
+              </div>
+              <div class="form-actions">
+                <button class="solid-btn" type="submit" data-notice-dispatch>Dispatch notice</button>
+                <button class="ghost-btn" type="button" data-notice-draft>Save draft</button>
+                <button class="ghost-btn" type="button" data-notice-clear hidden>Clear form</button>
+                <button class="ghost-btn" type="button" data-notice-archive hidden>Archive</button>
+                <button class="ghost-btn" type="button" data-notice-remove hidden>Remove</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="field" data-desk-assign-field hidden>
+        <label>Assign staff</label>
+        <select data-desk-assign-staff></select>
+      </div>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-classroom.js"></script>
+</body>
+</html>

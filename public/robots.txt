@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /news
+Allow: /site/Image/
+Allow: /storage/news/
+Disallow: /portal
+Disallow: /staff
+Disallow: /parent
+Disallow: /student
+Disallow: /login
+Disallow: /api
+Disallow: /news/preview
+
+Sitemap: /sitemap.xml
