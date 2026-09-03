@@ -134,9 +134,11 @@ class FrontendPage
       <p id="consent-copy">Necessary cookies keep the site working. Analytics and advertising cookies are optional, and the desks never show ads. <a href="/privacy">Privacy Policy</a></p>
     </div>
     <form class="consent-actions" method="post" action="/privacy/consent">
+      <input type="hidden" name="ads" value="0">
+      <input type="hidden" name="analytics" value="0">
       <button type="submit" class="consent-btn ghost">Necessary only</button>
       <button type="submit" class="consent-btn" name="analytics" value="1">Allow analytics</button>
-      <button type="submit" class="consent-btn solid" data-consent-all>Accept optional</button>
+      <button type="submit" class="consent-btn solid" name="ads" value="1" data-consent-all>Accept optional</button>
     </form>
   </div>
 </aside>

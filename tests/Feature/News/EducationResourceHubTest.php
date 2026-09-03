@@ -277,7 +277,7 @@ class EducationResourceHubTest extends TestCase
             'ads_enabled' => true,
         ]);
 
-        $this->withCookie('srs_ad_consent', '1')
+        $this->withUnencryptedCookie('srs_ad_consent', '1')
             ->get($blocked->publicUrl())
             ->assertOk()
             ->assertDontSee('pagead2.googlesyndication.com', false);

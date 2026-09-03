@@ -35,22 +35,28 @@
     body.set("ads", ads ? "1" : "0");
     body.set("analytics", analytics ? "1" : "0");
     const csrf = document.querySelector('meta[name="csrf-token"], input[name="_token"]');
-    if (csrf && csrf.value) {
-      body.set("_token", csrf.value);
+    if (csrf) {
+      const value = csrf.getAttribute("content") || csrf.value;
+      if (value) body.set("_token", value);
     }
 
     return fetch("/privacy/consent", {
       method: "POST",
       credentials: "same-origin",
       headers: {
-        "Accept": "application/json, text/html",
+        "Accept": "application/json",
         "X-Requested-With": "XMLHttpRequest",
         "X-XSRF-TOKEN": token(),
         "Content-Type": "application/x-www-form-urlencoded"
       },
       body: body.toString()
-    }).then(function () {
+    }).then(function (response) {
+      if (!response.ok) {
+        throw new Error("Consent could not be saved.");
+      }
       reveal(false);
+    }).catch(function () {
+      reveal(true);
     });
   };
 

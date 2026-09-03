@@ -94,19 +94,19 @@ class NewsAuthorizationAndAdSenseTest extends TestCase
         $article = $this->article(['slug' => 'adsense-on']);
         $blocked = $this->article(['slug' => 'ads-off-page', 'ads_enabled' => false]);
 
-        $this->withCookie('srs_ad_consent', '1')
+        $this->withUnencryptedCookie('srs_ad_consent', '1')
             ->get($article->publicUrl())
             ->assertOk()
             ->assertSee('pagead2.googlesyndication.com', false)
             ->assertSee('ca-pub-0000000000000000', false)
             ->assertSee('Advertisement', false);
 
-        $this->withCookie('srs_ad_consent', '1')
+        $this->withUnencryptedCookie('srs_ad_consent', '1')
             ->get($blocked->publicUrl())
             ->assertOk()
             ->assertDontSee('pagead2.googlesyndication.com', false);
 
-        $this->actingAs($this->admin())->withCookie('srs_ad_consent', '1')->get($article->publicUrl())
+        $this->actingAs($this->admin())->withUnencryptedCookie('srs_ad_consent', '1')->get($article->publicUrl())
             ->assertOk()
             ->assertDontSee('pagead2.googlesyndication.com', false);
 
@@ -130,7 +130,7 @@ class NewsAuthorizationAndAdSenseTest extends TestCase
             ->assertDontSee('G-L1TL37XYN7', false)
             ->assertDontSee('googletagmanager.com/gtag', false);
 
-        $this->withCookie('srs_consent', json_encode(['analytics' => true]))
+        $this->withUnencryptedCookie('srs_consent', json_encode(['analytics' => true]))
             ->get($article->publicUrl())
             ->assertOk()
             ->assertSee('googletagmanager.com/gtag/js?id=G-L1TL37XYN7', false)

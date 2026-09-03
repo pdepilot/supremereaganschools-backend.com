@@ -119,6 +119,31 @@ class FrontendRoutingTest extends TestCase
         $this->assertStringContainsString('body.is-consenting', $css);
     }
 
+    public function test_cookie_consent_is_readable_by_the_browser_after_accepting(): void
+    {
+        $response = $this->postJson('/privacy/consent', [
+            'ads' => true,
+            'analytics' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertPlainCookie('srs_ad_consent', '1');
+
+        $consent = urldecode((string) $response->getCookie('srs_consent', false)?->getValue());
+        $decoded = json_decode($consent, true);
+
+        $this->assertIsArray($decoded);
+        $this->assertTrue($decoded['necessary'] ?? false);
+        $this->assertTrue($decoded['ads'] ?? false);
+        $this->assertTrue($decoded['analytics'] ?? false);
+
+        $this->withUnencryptedCookie('srs_consent', $consent)
+            ->withUnencryptedCookie('srs_ad_consent', '1')
+            ->get('/')
+            ->assertOk();
+    }
+
     public function test_legacy_html_paths_redirect_to_laravel_routes(): void
     {
         $this->get('/site/about.html')->assertRedirect('/about');

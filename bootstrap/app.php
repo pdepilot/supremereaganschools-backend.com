@@ -26,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->encryptCookies(except: [
+            'srs_consent',
+            'srs_ad_consent',
+        ]);
+
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'guest.portal' => RedirectIfAuthenticatedForPortal::class,
