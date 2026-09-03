@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -35,23 +35,7 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => (static function () {
-                $database = env('DB_DATABASE', 'supreme_reagan');
-
-                if ($database === ':memory:') {
-                    return ':memory:';
-                }
-
-                if ($database === null || $database === '') {
-                    return database_path('supreme_reagan.sqlite');
-                }
-
-                if (str_contains($database, '/') || str_contains($database, '\\') || str_starts_with($database, ':')) {
-                    return $database;
-                }
-
-                return database_path(str_ends_with($database, '.sqlite') ? $database : $database.'.sqlite');
-            })(),
+            'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,

@@ -15,7 +15,7 @@ Nothing in application code. Documentation only.
 Laravel project `C:\Laravel-Projects\supreme-reagan-schools`:
 
 - Laravel 13.26.1, PHP 8.3.32, Composer 2.10.1
-- SQLite `database/database.sqlite` exists; default migrations have run
+- Default database connection is MySQL via `DB_*` environment variables; run migrations against the configured MySQL database
 - App code is a skeleton: `User` model, empty `Controller`, welcome route
 - No API routes, policies, form requests, school models, Sanctum, Breeze, or Spatie
 

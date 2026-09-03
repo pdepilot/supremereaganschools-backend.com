@@ -39,8 +39,8 @@ The frontend folder is named `LWA_S` (Living Word Academy heritage is still visi
 
 | Item | Value |
 |------|--------|
-| Connection | `sqlite` |
-| File | `database/database.sqlite` (exists, ~98 KB) |
+| Connection | `mysql` (via `DB_CONNECTION`; Hostinger production must use MySQL) |
+| Credentials | From `.env` `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` only |
 | MySQL | configured in `config/database.php` but **not** used |
 | Migrations run | default Laravel 13 batch only |
 | School tables | **none** |
