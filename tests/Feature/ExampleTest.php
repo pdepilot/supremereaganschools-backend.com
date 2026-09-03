@@ -18,7 +18,7 @@ class ExampleTest extends TestCase
             ->assertSee('Supreme Reagan Schools', false)
             ->assertSee('/site/CSS/index.css', false)
             ->assertSee('/site/Image/logo_main.png', false)
-            ->assertSee('/site/Image/home.jpg', false)
+            ->assertSee('/site/Image/index_library_pupils.jpg', false)
             ->assertSee('rel="icon"', false);
     }
 

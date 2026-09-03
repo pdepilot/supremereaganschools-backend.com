@@ -81,7 +81,7 @@ class FrontendRoutingTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('src="/site/Image/home.jpg', false)
+            ->assertSee('src="/site/Image/index_library_pupils.jpg', false)
             ->assertSee('href="/staff/login"', false)
             ->assertDontSee('href="/portal/login"', false)
             ->assertSee('href="/alumni"', false)
