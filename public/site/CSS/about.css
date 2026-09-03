@@ -531,7 +531,7 @@
   text-align: center;
   background:
     linear-gradient(180deg, rgba(36, 58, 143, 0.55), rgba(36, 58, 143, 0.88)),
-    url("../Image/founders.jpg") center / cover no-repeat;
+    url("../Image/about_hero.jpg") center / cover no-repeat;
   color: #ffffff;
 }
 
