@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../CSS/admin-command.css">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260904e">
 </head>
 <body data-page="students">
   <div class="vault">
@@ -197,18 +197,21 @@
               <div class="field"><label for="pupilAddress">Home address</label><input id="pupilAddress"></div>
               <div class="form-block" data-photo-block>
                 <p class="eyebrow">Photograph</p>
+                <p class="photo-hint">Upload a pupil image, or open the camera and snap a still.</p>
                 <div class="photo-desk">
                   <div class="photo-frame">
                     <img data-pupil-photo-preview alt="" hidden>
-                    <p data-pupil-photo-empty>No photograph yet</p>
-                    <video data-pupil-camera hidden></video>
+                    <p class="photo-placeholder" data-pupil-photo-empty>No photograph yet</p>
+                    <video data-pupil-camera playsinline muted hidden></video>
                   </div>
                   <div>
                     <input id="pupilPhoto" type="file" accept="image/*">
-                    <div class="form-actions">
-                      <button class="ghost-btn" type="button" data-open-camera>Camera</button>
-                      <button class="ghost-btn" type="button" data-snap-photo hidden>Snap</button>
+                    <div class="photo-actions">
+                      <button class="solid-btn" type="button" data-pick-photo>Upload image</button>
+                      <button class="ghost-btn" type="button" data-open-camera>Open camera</button>
+                      <button class="solid-btn" type="button" data-snap-photo hidden>Snap still</button>
                       <button class="ghost-btn" type="button" data-cancel-camera hidden>Cancel camera</button>
+                      <button class="ghost-btn" type="button" data-clear-photo hidden>Clear photo</button>
                     </div>
                   </div>
                 </div>
@@ -255,6 +258,6 @@
     </div>
   </div>
   <script src="../JS/admin-command.js"></script>
-  <script src="../JS/portal-people.js"></script>
+  <script src="../JS/portal-people.js?v=20260904e"></script>
 </body>
 </html>

@@ -253,9 +253,11 @@
     const photoPreview = document.querySelector("[data-pupil-photo-preview]");
     const photoEmpty = document.querySelector("[data-pupil-photo-empty]");
     const camera = document.querySelector("[data-pupil-camera]");
+    const pickPhotoBtn = document.querySelector("[data-pick-photo]");
     const openCameraBtn = document.querySelector("[data-open-camera]");
     const snapPhotoBtn = document.querySelector("[data-snap-photo]");
     const cancelCameraBtn = document.querySelector("[data-cancel-camera]");
+    const clearPhotoBtn = document.querySelector("[data-clear-photo]");
     const wing = pathWing();
     let rows = [];
     let offerings = [];
@@ -266,6 +268,10 @@
     let photoObjectUrl = null;
     let existingPhotoUrl = null;
     let cameraStream = null;
+
+    const syncPhotoActions = function () {
+      if (clearPhotoBtn) clearPhotoBtn.hidden = !(photoFile || existingPhotoUrl) || !!(camera && !camera.hidden);
+    };
 
     const fieldValue = function (id, value) {
       const node = document.getElementById(id);
@@ -290,8 +296,10 @@
         camera.srcObject = null;
       }
       if (openCameraBtn) openCameraBtn.hidden = false;
+      if (pickPhotoBtn) pickPhotoBtn.hidden = false;
       if (snapPhotoBtn) snapPhotoBtn.hidden = true;
       if (cancelCameraBtn) cancelCameraBtn.hidden = true;
+      syncPhotoActions();
     };
 
     const showPhotoPreview = function (src) {
@@ -306,6 +314,7 @@
       }
       if (photoEmpty) photoEmpty.hidden = !!src;
       if (camera) camera.hidden = true;
+      syncPhotoActions();
     };
 
     const setPhotoFile = function (file) {
@@ -849,25 +858,62 @@
       });
     }
 
+    if (pickPhotoBtn && photoInput) {
+      pickPhotoBtn.addEventListener("click", function () {
+        stopCamera();
+        photoInput.click();
+      });
+    }
+
+    if (clearPhotoBtn) {
+      clearPhotoBtn.addEventListener("click", function () {
+        stopCamera();
+        setPhotoFile(null);
+        if (notice && !editingId && !existingPhotoUrl) {
+          notice.textContent = "A pupil photograph is required before you can save.";
+        } else if (notice) {
+          notice.textContent = "";
+        }
+      });
+    }
+
     if (openCameraBtn && camera) {
       openCameraBtn.addEventListener("click", function () {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           if (notice) notice.textContent = "This browser cannot open a camera. Upload an image instead.";
+          if (photoInput) photoInput.click();
           return;
         }
         if (notice) notice.textContent = "";
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).then(function (stream) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(function (stream) {
           cameraStream = stream;
           camera.srcObject = stream;
           camera.hidden = false;
           if (photoPreview) photoPreview.hidden = true;
           if (photoEmpty) photoEmpty.hidden = true;
           openCameraBtn.hidden = true;
+          if (pickPhotoBtn) pickPhotoBtn.hidden = true;
           if (snapPhotoBtn) snapPhotoBtn.hidden = false;
           if (cancelCameraBtn) cancelCameraBtn.hidden = false;
+          syncPhotoActions();
           return camera.play();
         }).catch(function () {
+          return navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
+            cameraStream = stream;
+            camera.srcObject = stream;
+            camera.hidden = false;
+            if (photoPreview) photoPreview.hidden = true;
+            if (photoEmpty) photoEmpty.hidden = true;
+            openCameraBtn.hidden = true;
+            if (pickPhotoBtn) pickPhotoBtn.hidden = true;
+            if (snapPhotoBtn) snapPhotoBtn.hidden = false;
+            if (cancelCameraBtn) cancelCameraBtn.hidden = false;
+            syncPhotoActions();
+            return camera.play();
+          });
+        }).catch(function () {
           if (notice) notice.textContent = "The camera could not be opened. Upload an image instead.";
+          if (photoInput) photoInput.click();
         });
       });
     }
