@@ -187,6 +187,33 @@ class EducationResourceHubTest extends TestCase
             ->assertSee('How a child joins the house', false);
     }
 
+    public function test_homepage_latest_slot_is_replaced_while_news_archive_keeps_all(): void
+    {
+        $older = $this->article([
+            'title' => 'Older Campus Note',
+            'slug' => 'older-campus-note',
+            'published_at' => now()->subDays(2),
+        ]);
+
+        $newer = $this->article([
+            'title' => 'Newer Campus Note',
+            'slug' => 'newer-campus-note',
+            'published_at' => now()->subHour(),
+        ]);
+
+        $home = $this->get('/')->assertOk();
+        $home->assertSee('Newer Campus Note', false);
+        $home->assertDontSee('Older Campus Note', false);
+
+        $this->get('/news')
+            ->assertOk()
+            ->assertSee('Newer Campus Note', false)
+            ->assertSee('Older Campus Note', false);
+
+        $this->assertTrue($older->fresh()->isPubliclyVisible());
+        $this->assertTrue($newer->fresh()->isPubliclyVisible());
+    }
+
     public function test_admission_enquiry_accepts_level_and_source_without_public_leak(): void
     {
         $post = $this->article(['slug' => 'enquiry-source']);

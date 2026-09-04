@@ -11,6 +11,7 @@ html, body {
 }
 
 .whatsapp-float {
+  --wa-green: #25d366;
   position: fixed;
   right: 22px;
   bottom: 22px;
@@ -20,15 +21,136 @@ html, body {
   gap: 8px;
   padding: 12px 18px;
   border-radius: 999px;
-  background: #25d366;
+  background: var(--wa-green);
   color: #ffffff;
   text-decoration: none;
   font-weight: 700;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  isolation: isolate;
+  transform-origin: 70% 100%;
+  animation: waPorchKnock 5.2s cubic-bezier(0.34, 1.3, 0.64, 1) infinite;
 }
 
-.whatsapp-float:hover {
+.whatsapp-float::before,
+.whatsapp-float::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid rgba(37, 211, 102, 0.45);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  animation: waDoorEcho 5.2s ease-out infinite;
+}
+
+.whatsapp-float::after {
+  animation-delay: 0.42s;
+}
+
+.whatsapp-float i {
+  display: inline-block;
+  font-size: 1.35rem;
+  line-height: 1;
+  transform-origin: 50% 80%;
+  animation: waHelloTilt 5.2s ease-in-out infinite;
+}
+
+.whatsapp-float span {
+  letter-spacing: 0.02em;
+}
+
+.whatsapp-float:hover,
+.whatsapp-float:focus-visible {
   color: #ffffff;
+  animation-play-state: paused;
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 14px 28px rgba(37, 211, 102, 0.35);
+}
+
+.whatsapp-float:hover::before,
+.whatsapp-float:hover::after,
+.whatsapp-float:focus-visible::before,
+.whatsapp-float:focus-visible::after,
+.whatsapp-float:hover i,
+.whatsapp-float:focus-visible i {
+  animation-play-state: paused;
+}
+
+/* Classic double-knock on the house door — then a soft hello tilt. */
+@keyframes waPorchKnock {
+  0%,
+  58%,
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+
+  62% {
+    transform: translateY(-10px) scale(1.045) rotate(-2deg);
+  }
+
+  66% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+
+  70% {
+    transform: translateY(-6px) scale(1.03) rotate(1.5deg);
+  }
+
+  74% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes waHelloTilt {
+  0%,
+  74%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  78% {
+    transform: rotate(-18deg);
+  }
+
+  84% {
+    transform: rotate(14deg);
+  }
+
+  90% {
+    transform: rotate(-8deg);
+  }
+
+  96% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes waDoorEcho {
+  0%,
+  60% {
+    transform: scale(1);
+    opacity: 0;
+  }
+
+  64% {
+    opacity: 0.55;
+  }
+
+  86%,
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-float,
+  .whatsapp-float::before,
+  .whatsapp-float::after,
+  .whatsapp-float i {
+    animation: none !important;
+  }
 }
 
 .scroll-top {
@@ -4172,47 +4294,159 @@ body.inner-page .navbar {
 }
 
 .home-journal {
-  background: #f6f4fb;
-  padding: 3rem 1.25rem;
+  background: #fffdf8;
+  padding: 72px 20px 64px;
+  color: #5b6573;
 }
 
 .home-journal-inner {
-  max-width: 1100px;
+  width: min(1180px, 100%);
   margin: 0 auto;
 }
 
-.home-journal-kicker {
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
+.home-journal .school-section-heading {
+  margin-bottom: 36px;
+}
+
+.home-journal-feature,
+.home-journal-panel {
+  background: #ffffff;
+  border: 1px solid #e4dcc8;
+}
+
+.home-journal-feature {
+  margin: 0 0 24px;
+  padding: 28px 26px 30px;
+}
+
+.home-journal-label {
+  margin: 0 0 10px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #5b2d8b;
-  font-weight: 600;
+  color: #5B2D8B;
 }
 
-.home-journal h2,
-.home-journal h3 {
-  color: #243a8f;
+.home-journal-feature h3,
+.home-journal-panel h3 {
+  margin: 0 0 10px;
+  color: #243A8F;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
-.home-journal-lead,
-.home-journal-cta {
-  max-width: 40rem;
-  line-height: 1.6;
+.home-journal-feature p {
+  margin: 0;
+  max-width: 46rem;
+  line-height: 1.7;
+  color: #5b6573;
+}
+
+.home-journal-feature a,
+.home-journal-panel a,
+.home-journal-cta a {
+  color: #243A8F;
+  text-decoration: none;
+}
+
+.home-journal-feature a:hover,
+.home-journal-panel a:hover,
+.home-journal-cta a:hover {
+  color: #5B2D8B;
+  text-decoration: underline;
 }
 
 .home-journal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0;
+  margin-top: 8px;
+  border: 1px solid #e4dcc8;
+  background: #ffffff;
 }
 
-.home-journal a {
-  color: #243a8f;
+.home-journal-panel {
+  border: 0;
+  border-right: 1px solid #e4dcc8;
+  padding: 28px 22px 26px;
+  background: transparent;
 }
 
-.home-journal-feature {
-  margin: 1.25rem 0;
+.home-journal-panel:last-child {
+  border-right: 0;
+}
+
+.home-journal-panel ul {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.home-journal-panel li + li {
+  border-top: 1px solid #efe9db;
+}
+
+.home-journal-panel li a {
+  display: block;
+  padding: 12px 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #0d1b2a;
+}
+
+.home-journal-more {
+  margin: 0;
+}
+
+.home-journal-more a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #243A8F;
+}
+
+.home-journal-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 36px 0 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #8a8270;
+}
+
+.home-journal-cta span {
+  color: #c4bba6;
+}
+
+@media (max-width: 991px) {
+  .home-journal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-journal-panel {
+    border-right: 0;
+    border-bottom: 1px solid #e4dcc8;
+  }
+
+  .home-journal-panel:last-child {
+    border-bottom: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

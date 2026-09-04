@@ -13,6 +13,9 @@ class HomepageJournalService
 
     /**
      * Compact crawlable HTML for the public homepage. Empty when there is nothing useful to show.
+     *
+     * The homepage always spotlights the single newest published article. Publishing a newer
+     * article replaces that slot; older articles remain on /news.
      */
     public function html(): string
     {
@@ -20,53 +23,49 @@ class HomepageJournalService
             return '';
         }
 
-        $latest = $this->latest(3);
-        $featured = $this->featured();
+        $current = $this->latest(1)->first();
         $parents = $this->hubs->parentResources(3);
         $admissions = $this->admissionNotes(2);
 
-        if ($latest->isEmpty() && $featured === null && $parents->isEmpty() && $admissions->isEmpty()) {
+        if ($current === null && $parents->isEmpty() && $admissions->isEmpty()) {
             return '';
         }
 
         $parts = ['<section class="home-journal" aria-label="From the house journal">'];
         $parts[] = '<div class="home-journal-inner">';
-        $parts[] = '<p class="home-journal-kicker">News &amp; Insights</p>';
+        $parts[] = '<div class="school-section-heading text-center">';
+        $parts[] = '<span class="section-label">News &amp; Insights</span>';
         $parts[] = '<h2>From the education desk</h2>';
-        $parts[] = '<p class="home-journal-lead">Useful notes for families — then the school, if you wish to know us.</p>';
+        $parts[] = '<p>Useful notes for families — then the school, if you wish to know us.</p>';
+        $parts[] = '</div>';
 
-        if ($featured) {
-            $parts[] = $this->card($featured, 'Featured', true);
+        if ($current) {
+            $parts[] = $this->card($current, 'Latest news', true);
         }
 
-        if ($latest->isNotEmpty()) {
+        if ($parents->isNotEmpty() || $admissions->isNotEmpty()) {
             $parts[] = '<div class="home-journal-grid">';
-            $parts[] = '<article><h3>Latest news</h3><ul>';
-            foreach ($latest as $post) {
-                $parts[] = '<li><a href="'.e($post->publicUrl()).'">'.e($post->title).'</a></li>';
-            }
-            $parts[] = '</ul><p><a href="/news">All News &amp; Insights</a></p></article>';
 
             if ($parents->isNotEmpty()) {
-                $parts[] = '<article><h3>Parent resources</h3><ul>';
+                $parts[] = '<article class="home-journal-panel"><h3>Parent resources</h3><ul>';
                 foreach ($parents as $post) {
                     $parts[] = '<li><a href="'.e($post->publicUrl()).'">'.e($post->title).'</a></li>';
                 }
-                $parts[] = '</ul><p><a href="/resources/parenting">Parent resource hub</a></p></article>';
+                $parts[] = '</ul><p class="home-journal-more"><a href="/resources/parenting">Parent resource hub</a></p></article>';
             }
 
             if ($admissions->isNotEmpty()) {
-                $parts[] = '<article><h3>Admissions</h3><ul>';
+                $parts[] = '<article class="home-journal-panel"><h3>Admissions</h3><ul>';
                 foreach ($admissions as $post) {
                     $parts[] = '<li><a href="'.e($post->publicUrl()).'">'.e($post->title).'</a></li>';
                 }
-                $parts[] = '</ul><p><a href="/admissions">Admissions at the house</a></p></article>';
+                $parts[] = '</ul><p class="home-journal-more"><a href="/admissions">Admissions at the house</a></p></article>';
             }
 
             $parts[] = '</div>';
         }
 
-        $parts[] = '<p class="home-journal-cta"><a href="/resources">Education &amp; parent resources</a> · <a href="/admissions">Admissions</a> · <a href="/contact">Contact</a></p>';
+        $parts[] = '<p class="home-journal-cta"><a href="/news">All News &amp; Insights</a><span aria-hidden="true">·</span><a href="/resources">Education &amp; parent resources</a><span aria-hidden="true">·</span><a href="/admissions">Admissions</a><span aria-hidden="true">·</span><a href="/contact">Contact</a></p>';
         $parts[] = '</div></section>';
 
         return implode('', $parts);
@@ -75,22 +74,19 @@ class HomepageJournalService
     /**
      * @return Collection<int, Post>
      */
-    public function latest(int $limit = 3): Collection
+    public function latest(int $limit = 1): Collection
     {
         return Post::query()
             ->publiclyVisible()
             ->orderByDesc('published_at')
+            ->orderByDesc('id')
             ->limit($limit)
             ->get();
     }
 
     public function featured(): ?Post
     {
-        return Post::query()
-            ->publiclyVisible()
-            ->where('is_featured', true)
-            ->orderByDesc('published_at')
-            ->first();
+        return $this->latest(1)->first();
     }
 
     /**
@@ -116,3 +112,4 @@ class HomepageJournalService
         return '<article class="'.$class.'"><p class="home-journal-label">'.e($label).'</p><h3><a href="'.e($post->publicUrl()).'">'.e($post->title).'</a></h3><p>'.e((string) $post->excerpt).'</p></article>';
     }
 }
+
