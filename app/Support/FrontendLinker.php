@@ -107,6 +107,7 @@ class FrontendLinker
                 'messages.html' => '/portal/messages',
                 'reports.html' => '/portal/reports',
                 'settings.html' => '/portal/settings',
+                'admins.html' => '/portal/admins',
                 'nursery.html' => '/portal/nursery',
                 'primary.html' => '/portal/primary',
                 'secondary.html' => '/portal/secondary',

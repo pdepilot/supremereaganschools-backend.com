@@ -19,7 +19,7 @@ class MeAccountController extends Controller
     {
         return ApiResponse::success(
             'Account retrieved.',
-            (new UserResource($request->user()->load('roles')))->resolve(),
+            (new UserResource($request->user()->load(['roles', 'permissions'])))->resolve(),
         );
     }
 
