@@ -24,6 +24,7 @@ class StudentService
         private readonly SchoolNumberService $numbers,
         private readonly EnrollmentService $enrollments,
         private readonly GuardianService $guardians,
+        private readonly PupilRegistrationMailer $registrationMailer,
     ) {}
 
     /**
@@ -31,7 +32,7 @@ class StudentService
      */
     public function create(array $attributes, ?int $createdBy = null): StudentProfile
     {
-        return DB::transaction(function () use ($attributes, $createdBy) {
+        $student = DB::transaction(function () use ($attributes, $createdBy) {
             $admissionNumber = $attributes['admission_number'] ?? $this->numbers->nextAdmissionNumber();
             $fullName = trim($attributes['surname'].' '.$attributes['first_name'].' '.($attributes['other_names'] ?? ''));
             $email = $attributes['user_email'] ?? $attributes['email'] ?? $this->numbers->studentLoginEmail($admissionNumber);
@@ -74,6 +75,10 @@ class StudentService
 
             return $student->fresh(['user', 'enrollments.classSectionOffering.classSection', 'guardians']);
         });
+
+        $this->registrationMailer->notifyGuardian($student);
+
+        return $student;
     }
 
     /**

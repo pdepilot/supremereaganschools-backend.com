@@ -2,16 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GuardianRelationship;
 use App\Enums\RoleSlug;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\CreatesAcademicContext;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
+    use CreatesAcademicContext;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -50,8 +53,9 @@ class AuthenticationTest extends TestCase
             ->assertSee('The family desk.', false)
             ->assertSee('name="portal"', false)
             ->assertSee('value="parent"', false)
-            ->assertSee('name="admission_number"', false)
-            ->assertSee('Parent’s phone number', false);
+            ->assertSee('name="email"', false)
+            ->assertSee('Phone number', false)
+            ->assertSee('name="admission_number"', false);
 
         $this->get('/student/login')
             ->assertOk()
@@ -59,8 +63,7 @@ class AuthenticationTest extends TestCase
             ->assertSee('data-auth-scene="panel"', false)
             ->assertSee('The pupil desk.', false)
             ->assertSee('name="admission_number"', false)
-            ->assertSee('Passphrase', false)
-            ->assertDontSee('Parent’s phone number', false)
+            ->assertSee('Parent’s phone number', false)
             ->assertSee('value="student"', false);
 
         $script = (string) file_get_contents(public_path('site/JS/portal-auth-scene.js'));
@@ -398,6 +401,62 @@ class AuthenticationTest extends TestCase
         $this->getJson('/parent/home')
             ->assertOk()
             ->assertJsonPath('data.portal', 'parent');
+    }
+
+    public function test_parent_can_sign_in_with_email_and_registered_phone(): void
+    {
+        $child = $this->student($this->userWithRole(RoleSlug::Student), [
+            'admission_number' => 'SRS/2025/0888',
+            'surname' => 'Okoro',
+            'first_name' => 'Amaka',
+        ]);
+        $guardian = $this->guardian(null, [
+            'full_name' => 'Mrs. Okoro',
+            'phone' => '08039998877',
+            'email' => 'okoro.parent@school.test',
+        ]);
+        $this->linkGuardian($guardian, $child, [
+            'relationship' => GuardianRelationship::Mother,
+            'is_primary' => true,
+            'can_login' => true,
+        ]);
+
+        $this->post('/login', [
+            'email' => 'okoro.parent@school.test',
+            'password' => '08039998877',
+            'portal' => 'parent',
+        ])->assertRedirect(route('parent.home'));
+
+        $this->assertAuthenticated();
+        $this->assertTrue(auth()->user()->hasRole(RoleSlug::Parent));
+    }
+
+    public function test_student_can_sign_in_with_admission_number_and_parent_phone(): void
+    {
+        $child = $this->student($this->userWithRole(RoleSlug::Student), [
+            'admission_number' => 'SRS/2025/0999',
+            'surname' => 'Ibe',
+            'first_name' => 'Chinedu',
+            'passphrase_set_at' => null,
+        ]);
+        $guardian = $this->guardian(null, [
+            'full_name' => 'Mr. Ibe',
+            'phone' => '08031234567',
+            'email' => 'ibe.parent@school.test',
+        ]);
+        $this->linkGuardian($guardian, $child, [
+            'relationship' => GuardianRelationship::Father,
+            'is_primary' => true,
+            'can_login' => true,
+        ]);
+
+        $this->post('/login', [
+            'admission_number' => 'SRS/2025/0999',
+            'password' => '08031234567',
+            'portal' => 'student',
+        ])->assertRedirect(route('student.home'));
+
+        $this->assertAuthenticatedAs($child->user);
     }
 
     /**

@@ -27,7 +27,7 @@
         <p class="staff-kicker">Supreme Reagan Schools · Parents</p>
         <h1>The family desk.</h1>
         <div class="staff-rule"></div>
-        <p class="staff-lede">For parents and guardians. Sign in with your child’s name or admission number. The key is the phone number registered with the school.</p>
+        <p class="staff-lede">For parents and guardians. Sign in with the email and phone number recorded when your child was registered.</p>
         <div class="staff-meta">
           <div>
             <span>Seat</span>
@@ -49,7 +49,7 @@
         </div>
         <h1>Welcome back.</h1>
         <div class="staff-rule"></div>
-        <p class="staff-note">Use your child’s name or admission number. The password is the phone number registered with the school.</p>
+        <p class="staff-note">Use your registered email as the username and your registered phone number as the password.</p>
         <p class="staff-alert" data-auth-alert hidden></p>
 
         <form class="staff-form" data-auth-form action="/login" method="post">
@@ -57,29 +57,29 @@
           <input type="hidden" name="portal" value="parent">
 
           <label class="staff-field">
-            <span>Child’s name or admission number</span>
+            <span>Email</span>
             <div class="staff-input">
-              <input id="admission-number" name="admission_number" type="text" autocomplete="username" placeholder="e.g. Chiamaka Okafor or SRS/2025/0142">
+              <input id="email" name="email" type="email" autocomplete="username" placeholder="Email used at registration" required>
             </div>
           </label>
 
           <label class="staff-field">
-            <span>Parent’s phone number</span>
+            <span>Phone number</span>
             <div class="staff-input">
-              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Registered parent phone" required>
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Phone used at registration" required>
               <button type="button" data-toggle-pass aria-controls="password" aria-label="Show password" aria-pressed="false">Show</button>
             </div>
           </label>
 
           <details class="staff-details">
-            <summary>Sign in with an office email instead</summary>
+            <summary>Or sign in with the child’s admission number</summary>
             <label class="staff-field">
-              <span>Email</span>
+              <span>Child’s name or admission number</span>
               <div class="staff-input">
-                <input id="email" name="email" type="email" autocomplete="username" placeholder="Your email">
+                <input id="admission-number" name="admission_number" type="text" autocomplete="username" placeholder="e.g. Chiamaka Okafor or SRS/2025/0142">
               </div>
             </label>
-            <p class="staff-note">If you use email, the field above is your passphrase.</p>
+            <p class="staff-note">If you use admission number, leave the email blank and still use the registered phone as the password.</p>
             <a href="/parent/forgot-password">Forgot password?</a>
           </details>
 

@@ -50,8 +50,15 @@
       remember: form.remember && form.remember.checked
     };
 
-    if (form.email) payload.email = form.email.value;
-    if (form.admission_number) payload.admission_number = form.admission_number.value;
+    if (form.email && form.email.value) payload.email = form.email.value;
+    if (form.admission_number && form.admission_number.value) {
+      payload.admission_number = form.admission_number.value;
+    }
+
+    // Parent email login must not send an empty admission number ahead of the email.
+    if (payload.portal === "parent" && payload.email && !payload.admission_number) {
+      delete payload.admission_number;
+    }
 
     if (submit) submit.disabled = true;
 

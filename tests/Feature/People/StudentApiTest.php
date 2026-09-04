@@ -9,6 +9,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\RoleSlug;
 use App\Enums\StudentStatus;
 use App\Enums\UserStatus;
+use App\Mail\SchoolCircularMail;
 use App\Models\Invoice;
 use App\Models\StudentProfile;
 use Database\Seeders\RoleSeeder;
@@ -16,6 +17,7 @@ use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\CreatesAcademicContext;
 use Tests\TestCase;
@@ -84,6 +86,8 @@ class StudentApiTest extends TestCase
 
     public function test_admin_can_register_a_pupil_with_a_primary_guardian(): void
     {
+        Mail::fake();
+
         $admin = $this->admin();
         $offering = $this->offering();
 
@@ -127,6 +131,14 @@ class StudentApiTest extends TestCase
         ]);
         $this->assertTrue(Hash::check('parent-pass', $student->guardians()->firstOrFail()->user->getAuthPassword()));
 
+        Mail::assertSent(SchoolCircularMail::class, function (SchoolCircularMail $mail) {
+            return $mail->hasTo('nwosu.parent@school.test')
+                && str_contains($mail->subjectLine, 'SRS/2025/0301')
+                && str_contains($mail->bodyHtml, '08031112233')
+                && str_contains($mail->bodyHtml, '/parent/login')
+                && str_contains($mail->bodyHtml, '/student/login');
+        });
+
         $this->post('/logout');
 
         $this->post('/login', [
@@ -134,6 +146,25 @@ class StudentApiTest extends TestCase
             'password' => '08031112233',
             'portal' => 'student',
         ])->assertRedirect(route('student.home'));
+    }
+
+    public function test_registration_email_is_skipped_when_guardian_has_no_mailbox(): void
+    {
+        Mail::fake();
+
+        $this->registerPupil([
+            'admission_number' => 'SRS/2025/0302',
+            'surname' => 'Eze',
+            'first_name' => 'Kosi',
+            'gender' => Gender::Male->value,
+            'guardian' => [
+                'full_name' => 'Mr. Eze',
+                'relationship' => 'father',
+                'phone' => '08035556677',
+            ],
+        ])->assertCreated();
+
+        Mail::assertNothingSent();
     }
 
     public function test_admin_can_view_a_registered_pupil_record(): void

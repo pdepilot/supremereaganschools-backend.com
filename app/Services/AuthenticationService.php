@@ -42,12 +42,14 @@ class AuthenticationService
         $user = match (true) {
             $portal === AuthPortal::Student => $this->studentUserForLogin((string) $admissionNumber, $password),
             $portal === AuthPortal::Parent && $household => $this->parentUserForLogin((string) $admissionNumber, $password),
+            $portal === AuthPortal::Parent => $this->parentUserForEmailLogin((string) $email, $password),
             default => User::query()->whereRaw('LOWER(email) = ?', [strtolower((string) $email)])->first(),
         };
 
-        $passwordOk = $household
-            ? $user !== null
-            : ($user && Hash::check($password, $user->getAuthPassword()));
+        $passwordOk = match (true) {
+            $household, $portal === AuthPortal::Parent => $user !== null,
+            default => $user && Hash::check($password, $user->getAuthPassword()),
+        };
 
         if (! $passwordOk) {
             RateLimiter::hit($throttleKey);
@@ -149,6 +151,29 @@ class AuthenticationService
         }
 
         return $this->ensureGuardianUser($matched->first());
+    }
+
+    private function parentUserForEmailLogin(string $email, string $password): ?User
+    {
+        $mailbox = strtolower(trim($email));
+        if ($mailbox === '') {
+            return null;
+        }
+
+        $guardian = GuardianProfile::query()
+            ->whereRaw('LOWER(email) = ?', [$mailbox])
+            ->first();
+
+        if ($guardian && $this->guardianPhoneMatches($guardian, $password)) {
+            return $this->ensureGuardianUser($guardian);
+        }
+
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$mailbox])->first();
+        if ($user && Hash::check($password, $user->getAuthPassword())) {
+            return $user;
+        }
+
+        return null;
     }
 
     private function ensureGuardianUser(GuardianProfile $guardian): User
