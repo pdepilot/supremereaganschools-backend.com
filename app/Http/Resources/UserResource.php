@@ -22,8 +22,6 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'status' => $this->status?->value,
             'roles' => $this->roleSlugs()->values()->all(),
-            'permissions' => $this->permissionSlugs()->values()->all(),
-            'is_super_admin' => $this->hasRole(\App\Enums\RoleSlug::SuperAdmin),
         ];
     }
 }

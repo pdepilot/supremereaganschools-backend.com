@@ -2544,36 +2544,4 @@ body.desk-alert-open {
   color: #555;
 }
 
-.permission-grid {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 0.55rem;
-}
-
-.permission-group {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.permission-chip {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.55rem;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid rgba(28, 48, 78, 0.14);
-  background: rgba(255, 255, 255, 0.55);
-  font-size: 0.84rem;
-  line-height: 1.35;
-  cursor: pointer;
-}
-
-.permission-chip input {
-  margin-top: 0.15rem;
-}
-
-.ghost-btn.danger {
-  color: #8a2f2f;
-  border-color: rgba(138, 47, 47, 0.28);
-}
-
 

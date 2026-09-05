@@ -14,7 +14,6 @@ Route::middleware('web')->group(function () {
 
 require __DIR__.'/v1/academic.php';
 require __DIR__.'/v1/people.php';
-require __DIR__.'/v1/admins.php';
 require __DIR__.'/v1/attendance.php';
 require __DIR__.'/v1/fees.php';
 require __DIR__.'/v1/assessments.php';

@@ -18,9 +18,6 @@ class LocalAdminSeeder extends Seeder
     {
         return User::query()->where('email', self::email())->first()
             ?? User::query()
-                ->whereHas('roles', fn ($query) => $query->where('slug', RoleSlug::SuperAdmin->value))
-                ->first()
-            ?? User::query()
                 ->whereHas('roles', fn ($query) => $query->where('slug', RoleSlug::SchoolAdmin->value))
                 ->first();
     }
@@ -34,7 +31,7 @@ class LocalAdminSeeder extends Seeder
 
         if ($user === null) {
             $user = User::query()->create([
-                'name' => 'Super Administrator',
+                'name' => 'School Administrator',
                 'email' => $email,
                 'password' => $password,
                 'status' => UserStatus::Active,
@@ -48,7 +45,6 @@ class LocalAdminSeeder extends Seeder
             ])->save();
         }
 
-        $user->assignRole(RoleSlug::SuperAdmin);
         $user->assignRole(RoleSlug::SchoolAdmin);
     }
 }

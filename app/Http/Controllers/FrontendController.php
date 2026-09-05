@@ -33,13 +33,7 @@ class FrontendController extends Controller
             return redirect('/portal/grades');
         }
 
-        $file = 'admin/'.$this->fileName($page);
-
-        if (! is_file(resource_path('frontend/'.$file))) {
-            return redirect('/portal/dashboard');
-        }
-
-        return $this->frontend->response($file, area: 'admin');
+        return $this->frontend->response('admin/'.$this->fileName($page), area: 'admin');
     }
 
     public function staffPage(string $page = 'staff'): Response|RedirectResponse

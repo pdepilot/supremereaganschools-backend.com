@@ -55,13 +55,8 @@ class AuthenticatedSessionController extends Controller
         $redirect = $this->pathAfterAuthentication($request->portal(), $request);
 
         if ($request->expectsJson()) {
-            $relations = ['roles'];
-            if (\App\Models\User::permissionsTablesReady()) {
-                $relations[] = 'permissions';
-            }
-
             return ApiResponse::success('Signed in successfully.', [
-                'user' => (new UserResource($user->load($relations)))->resolve(),
+                'user' => (new UserResource($user->load('roles')))->resolve(),
                 'redirect' => $redirect,
             ]);
         }

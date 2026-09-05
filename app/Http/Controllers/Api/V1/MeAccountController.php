@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\UpdateAccountRequest;
 use App\Http\Requests\Account\UpdatePasswordRequest;
 use App\Http\Resources\UserResource;
-use App\Models\User;
 use App\Services\AccountService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -20,19 +19,8 @@ class MeAccountController extends Controller
     {
         return ApiResponse::success(
             'Account retrieved.',
-            (new UserResource($this->withAccountRelations($request->user())))->resolve(),
+            (new UserResource($request->user()->load('roles')))->resolve(),
         );
-    }
-
-    private function withAccountRelations(User $user): User
-    {
-        $relations = ['roles'];
-
-        if (User::permissionsTablesReady()) {
-            $relations[] = 'permissions';
-        }
-
-        return $user->load($relations);
     }
 
     public function update(UpdateAccountRequest $request): JsonResponse

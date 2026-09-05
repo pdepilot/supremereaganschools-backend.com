@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('permission_user');
+        Schema::dropIfExists('permissions');
+    }
+
+    public function down(): void
+    {
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -26,11 +32,5 @@ return new class extends Migration
 
             $table->unique(['permission_id', 'user_id']);
         });
-    }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('permission_user');
-        Schema::dropIfExists('permissions');
     }
 };
