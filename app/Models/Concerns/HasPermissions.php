@@ -8,6 +8,7 @@ use App\Models\Permission;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @mixin Model
@@ -16,9 +17,17 @@ use Illuminate\Support\Collection;
  */
 trait HasPermissions
 {
+    private static ?bool $permissionsTablesReady = null;
+
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class)->withTimestamps();
+    }
+
+    public static function permissionsTablesReady(): bool
+    {
+        return self::$permissionsTablesReady ??= Schema::hasTable('permissions')
+            && Schema::hasTable('permission_user');
     }
 
     /**
@@ -26,6 +35,10 @@ trait HasPermissions
      */
     public function syncPermissions(array $permissions): void
     {
+        if (! self::permissionsTablesReady()) {
+            return;
+        }
+
         $ids = collect($permissions)
             ->map(fn ($permission) => $this->resolvePermissionId($permission))
             ->filter()
@@ -66,6 +79,13 @@ trait HasPermissions
     {
         if ($this->hasRole(RoleSlug::SuperAdmin)) {
             return collect(PermissionSlug::cases())->map(fn (PermissionSlug $slug) => $slug->value);
+        }
+
+        // Before the permissions migration has run on a host, keep the full school desk open.
+        if (! self::permissionsTablesReady()) {
+            return $this->hasRole(RoleSlug::SchoolAdmin)
+                ? collect(PermissionSlug::assignable())->map(fn (PermissionSlug $slug) => $slug->value)
+                : collect();
         }
 
         $assigned = $this->permissions->map(
