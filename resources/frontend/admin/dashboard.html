@@ -10,32 +10,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260904d">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260905p">
 </head>
 <body data-page="dashboard">
   <div class="vault">
     <aside class="rail" aria-label="School command navigation">
       <div class="rail-mark">REAGAN</div>
       <nav class="rail-nav">
-                <a class="rail-btn active" aria-current="page" href="dashboard.html"><span>Desk</span></a>
+        <a class="rail-btn active" aria-current="page" href="dashboard.html"><span>Desk</span></a>
         <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
         <a class="rail-btn" href="primary.html"><span>Primary</span></a>
         <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
         </div>
-                <a class="rail-btn" href="students.html"><span>Pupils</span></a>
-                <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
-                <a class="rail-btn" href="classes.html"><span>Classes</span></a>
-                <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
-                <a class="rail-btn" href="timetable.html"><span>Times</span></a>
-                <a class="rail-btn" href="fees.html"><span>Fees</span></a>
-                <a class="rail-btn" href="grades.html"><span>Marks</span></a>
-                <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
-                <a class="rail-btn" href="news.html"><span>News</span></a>
-                <a class="rail-btn" href="email.html"><span>Email</span></a>
-                <a class="rail-btn" href="contact.html"><span>Contact</span></a>
-                <a class="rail-btn" href="messages.html"><span>Mail</span></a>
-                <a class="rail-btn" href="reports.html"><span>Reports</span></a>
-                <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
       </nav>
       <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -57,15 +57,15 @@
           <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Desk open</div>
         </div>
         <div class="metric-rail">
-          <article class="metric"><span class="label">Pupils</span><span class="value" data-metric="pupils">—</span><span class="delta" data-metric-delta="pupils"></span></article>
-          <article class="metric"><span class="label">Staff</span><span class="value" data-metric="staff">—</span><span class="delta" data-metric-delta="staff"></span></article>
-          <article class="metric"><span class="label">Fees</span><span class="value" data-metric="fees">—</span><span class="delta" data-metric-delta="fees"></span></article>
-          <article class="metric"><span class="label">Forms</span><span class="value" data-metric="forms">—</span><span class="delta" data-metric-delta="forms"></span></article>
-          <article class="metric"><span class="label">Attendance</span><span class="value" data-metric="attendance">—</span></article>
+          <article class="metric" data-requires="pupils"><span class="label">Pupils</span><span class="value" data-metric="pupils">—</span><span class="delta" data-metric-delta="pupils"></span></article>
+          <article class="metric" data-requires="staff"><span class="label">Staff</span><span class="value" data-metric="staff">—</span><span class="delta" data-metric-delta="staff"></span></article>
+          <article class="metric" data-requires="fees"><span class="label">Fees</span><span class="value" data-metric="fees">—</span><span class="delta" data-metric-delta="fees"></span></article>
+          <article class="metric" data-requires="forms"><span class="label">Forms</span><span class="value" data-metric="forms">—</span><span class="delta" data-metric-delta="forms"></span></article>
+          <article class="metric" data-requires="attendance"><span class="label">Attendance</span><span class="value" data-metric="attendance">—</span></article>
         </div>
       </header>
       <main class="workspace">
-        <div class="ribbon" aria-label="Live school activity">
+        <div class="ribbon" aria-label="Live school activity" data-requires="tickets">
           <div class="ribbon-label">Pulse</div>
           <div class="ticker">
             <p class="ticker-track" data-ticker></p>
@@ -73,7 +73,7 @@
         </div>
         <div class="split">
           <div class="split-stack">
-            <div class="surface" data-stamp="Tickets">
+            <div class="surface" data-stamp="Tickets" data-requires="tickets">
               <div class="panel-title">
                 <div>
                   <h2>School tickets</h2>
@@ -82,7 +82,7 @@
               </div>
               <div class="tickets" data-ticket-list><p>Connecting to the ledger…</p></div>
             </div>
-            <div class="surface" data-stamp="Chute">
+            <div class="surface" data-stamp="Chute" data-requires="inbox">
               <div class="panel-title">
                 <div>
                   <h2>Inbound chute</h2>
@@ -91,7 +91,7 @@
               </div>
               <div class="chute" data-inbox-list><p>Opening the chute…</p></div>
             </div>
-            <div class="surface" data-stamp="Roll">
+            <div class="surface" data-stamp="Roll" data-requires="lookup">
               <div class="panel-title">
                 <div>
                   <h2>Pupil lookup</h2>
@@ -124,20 +124,20 @@
             </div>
           </div>
           <div class="surface" data-stamp="House">
-            <div class="panel-title">
+            <div class="panel-title" data-requires="house">
               <div>
                 <h2>The house</h2>
                 <p data-house-copy>Connecting to the seal…</p>
               </div>
             </div>
-            <div class="status-row">
-              <div class="status-item"><span>Session</span><strong data-house="session">—</strong></div>
-              <div class="status-item"><span>Term</span><strong data-house="term">—</strong></div>
-              <div class="status-item"><span>Levels</span><strong data-house="levels">—</strong></div>
-              <div class="status-item"><span>Outstanding</span><strong data-house="outstanding">—</strong></div>
+            <div class="status-row" data-requires="house">
+              <div class="status-item" data-requires="forms"><span>Session</span><strong data-house="session">—</strong></div>
+              <div class="status-item" data-requires="forms"><span>Term</span><strong data-house="term">—</strong></div>
+              <div class="status-item" data-requires="forms"><span>Levels</span><strong data-house="levels">—</strong></div>
+              <div class="status-item" data-requires="fees"><span>Outstanding</span><strong data-house="outstanding">—</strong></div>
             </div>
             <div class="matrix">
-              <a class="cell" data-wing-cell="nursery" href="nursery.html">
+              <a class="cell" data-wing-cell="nursery" data-requires="wings" href="nursery.html">
                 <div>
                   <div class="tag">Nursery</div>
                   <h3>Early years</h3>
@@ -145,7 +145,7 @@
                 </div>
                 <div class="go">Open wing</div>
               </a>
-              <a class="cell" data-wing-cell="primary" href="primary.html">
+              <a class="cell" data-wing-cell="primary" data-requires="wings" href="primary.html">
                 <div>
                   <div class="tag">Primary</div>
                   <h3>The junior house</h3>
@@ -153,7 +153,7 @@
                 </div>
                 <div class="go">Open wing</div>
               </a>
-              <a class="cell" data-wing-cell="secondary" href="secondary.html">
+              <a class="cell" data-wing-cell="secondary" data-requires="wings" href="secondary.html">
                 <div>
                   <div class="tag">Secondary</div>
                   <h3>The senior house</h3>
@@ -161,7 +161,7 @@
                 </div>
                 <div class="go">Open wing</div>
               </a>
-              <a class="cell" href="news.html">
+              <a class="cell" data-requires="news" href="news.html">
                 <div>
                   <div class="tag">Journal</div>
                   <h3>Publish an article</h3>

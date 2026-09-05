@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\SchoolSetting;
 use App\Services\PortalDashboardService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +14,7 @@ class PortalDashboardController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', SchoolSetting::class);
+        abort_unless($request->user()?->canAccessDeskPage('dashboard'), 403);
 
         return ApiResponse::success(
             'Command desk retrieved.',

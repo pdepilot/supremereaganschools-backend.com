@@ -90,7 +90,25 @@ trait HasPermissions
 
     public function canAccessDeskPage(string $page): bool
     {
-        if ($this->hasRole(RoleSlug::SuperAdmin) || $this->hasPermission(PermissionSlug::DeskAdminister)) {
+        $page = str_replace('-', '_', $page);
+
+        if ($page === 'account' || $page === 'home') {
+            return true;
+        }
+
+        if ($page === 'sessions') {
+            $page = 'academic_sessions';
+        }
+
+        if ($this->hasRole(RoleSlug::SuperAdmin)) {
+            return true;
+        }
+
+        if ($page === 'admins') {
+            return $this->hasPermission(PermissionSlug::AdminsView);
+        }
+
+        if ($this->hasPermission(PermissionSlug::DeskAdminister)) {
             return true;
         }
 

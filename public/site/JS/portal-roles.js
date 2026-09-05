@@ -151,16 +151,28 @@
     setMetric("permissions", String(permissionCount));
     if (copy) copy.textContent = roles.length + " roles on the command desk";
 
+    const canCreate = !!(window.srsHasPermission && window.srsHasPermission("roles.create"));
+    const canEdit = !!(window.srsHasPermission && window.srsHasPermission("roles.edit"));
+    const canDelete = !!(window.srsHasPermission && window.srsHasPermission("roles.delete"));
+    if (submit) submit.hidden = !canCreate && !editingId;
+    if (form && !canCreate && !canEdit) {
+      Array.prototype.slice.call(form.querySelectorAll("input, button")).forEach(function (node) {
+        if (node === cancelEdit) return;
+        node.disabled = true;
+      });
+    }
+
     if (!roles.length) {
       table.innerHTML = '<tr><td colspan="6">No roles yet.</td></tr>';
       return;
     }
 
     table.innerHTML = roles.map(function (role) {
-      const actions = [
-        '<button type="button" class="ghost-btn" data-edit-role="' + role.id + '">Edit</button>'
-      ];
-      if (!role.is_system_role && !role.is_super_admin) {
+      const actions = [];
+      if (canEdit) {
+        actions.push('<button type="button" class="ghost-btn" data-edit-role="' + role.id + '">Edit</button>');
+      }
+      if (canDelete && !role.is_system_role && !role.is_super_admin) {
         actions.push('<button type="button" class="ghost-btn danger" data-remove-role="' + role.id + '">Remove</button>');
       }
       return "<tr>"
@@ -169,7 +181,7 @@
         + "<td>" + escapeHtml(role.users_count != null ? role.users_count : "—") + "</td>"
         + "<td>" + escapeHtml(role.permissions_count != null ? role.permissions_count : ((role.permissions || []).length)) + "</td>"
         + "<td>" + (role.is_system_role ? "System" : "Custom") + "</td>"
-        + '<td class="actions">' + actions.join(" ") + "</td>"
+        + '<td class="actions">' + (actions.join(" ") || "—") + "</td>"
         + "</tr>";
     }).join("");
   };

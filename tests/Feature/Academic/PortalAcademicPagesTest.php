@@ -36,7 +36,7 @@ class PortalAcademicPagesTest extends TestCase
         $this->actingAs($admin)
             ->get('/portal/academic-sessions')
             ->assertOk()
-            ->assertSee('data-page="sessions"', false)
+            ->assertSee('data-page="academic_sessions"', false)
             ->assertSee('data-session-form', false)
             ->assertSee('id="add-session"', false)
             ->assertSee('Add a session', false)

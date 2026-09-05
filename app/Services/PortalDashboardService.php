@@ -7,6 +7,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\EnrollmentStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\PermissionSlug;
 use App\Enums\StaffStatus;
 use App\Enums\StudentStatus;
 use App\Models\Announcement;
@@ -29,6 +30,7 @@ class PortalDashboardService
     public function __construct(
         private readonly InboxService $inbox,
         private readonly LevelDeskService $levelDesks,
+        private readonly PeopleAccessService $access,
     ) {}
 
     /**
@@ -36,6 +38,28 @@ class PortalDashboardService
      */
     public function snapshot(User $user): array
     {
+        $canPupils = $this->access->allows($user, PermissionSlug::StudentsView);
+        $canStaff = $this->access->allows($user, PermissionSlug::StaffView);
+        $canFees = $this->access->allows(
+            $user,
+            PermissionSlug::FeesView,
+            PermissionSlug::FeesManage,
+            PermissionSlug::PaymentsView,
+            PermissionSlug::PaymentsManage,
+        );
+        $canForms = $this->access->allows($user, PermissionSlug::AcademicsView, PermissionSlug::AcademicsManage);
+        $canAttendance = $this->access->allows($user, PermissionSlug::AttendanceView, PermissionSlug::AttendanceManage);
+        $canNotices = $this->access->allows($user, PermissionSlug::NoticesView, PermissionSlug::NoticesManage);
+        $canInbox = $this->access->allows(
+            $user,
+            PermissionSlug::ContactView,
+            PermissionSlug::ContactManage,
+            PermissionSlug::AdmissionsView,
+            PermissionSlug::AdmissionsManage,
+        );
+        $canWings = $canPupils || $canForms;
+        $canNews = $this->access->allows($user, PermissionSlug::NewsView, PermissionSlug::NewsManage);
+
         $settings = SchoolSetting::query()->with(['currentAcademicSession', 'currentTerm'])->first();
         $sessionId = $settings?->current_academic_session_id;
         $sessionName = $settings?->currentAcademicSession?->name;
@@ -43,69 +67,104 @@ class PortalDashboardService
         $campus = Campus::query()->where('is_active', true)->orderBy('id')->value('name');
         $levels = Level::query()->where('is_active', true)->orderBy('sort_order')->get();
 
-        $pupils = StudentProfile::query()->where('status', StudentStatus::Active)->count();
-        $staff = StaffProfile::query()->where('status', StaffStatus::Active)->count();
+        $pupils = $canPupils
+            ? StudentProfile::query()->where('status', StudentStatus::Active)->count()
+            : null;
+        $staff = $canStaff
+            ? StaffProfile::query()->where('status', StaffStatus::Active)->count()
+            : null;
 
-        $forms = ClassSectionOffering::query()
-            ->where('is_active', true)
-            ->when($sessionId, fn ($query) => $query->where('academic_session_id', $sessionId))
-            ->count();
+        $forms = $canForms
+            ? ClassSectionOffering::query()
+                ->where('is_active', true)
+                ->when($sessionId, fn ($query) => $query->where('academic_session_id', $sessionId))
+                ->count()
+            : null;
 
-        $collectedKobo = (int) Payment::query()
-            ->where('status', PaymentStatus::Posted)
-            ->when($sessionId, fn ($query) => $query->whereHas(
-                'invoice',
-                fn ($invoice) => $invoice->where('academic_session_id', $sessionId),
-            ))
-            ->sum('amount_kobo');
+        $collected = ['count' => null, 'prefix' => '', 'suffix' => '', 'label' => null];
+        $outstanding = ['label' => null];
+        $collectionShare = null;
 
-        $invoicedKobo = (int) Invoice::query()
-            ->where('status', '!=', InvoiceStatus::Void->value)
-            ->when($sessionId, fn ($query) => $query->where('academic_session_id', $sessionId))
-            ->sum('total_kobo');
+        if ($canFees) {
+            $collectedKobo = (int) Payment::query()
+                ->where('status', PaymentStatus::Posted)
+                ->when($sessionId, fn ($query) => $query->whereHas(
+                    'invoice',
+                    fn ($invoice) => $invoice->where('academic_session_id', $sessionId),
+                ))
+                ->sum('amount_kobo');
 
-        $outstandingKobo = (int) Invoice::query()
-            ->whereIn('status', [InvoiceStatus::Unpaid->value, InvoiceStatus::Partial->value])
-            ->when($sessionId, fn ($query) => $query->where('academic_session_id', $sessionId))
-            ->selectRaw('COALESCE(SUM(total_kobo - paid_kobo), 0) as remaining')
-            ->value('remaining');
+            $invoicedKobo = (int) Invoice::query()
+                ->where('status', '!=', InvoiceStatus::Void->value)
+                ->when($sessionId, fn ($query) => $query->where('academic_session_id', $sessionId))
+                ->sum('total_kobo');
 
-        $collectionShare = $invoicedKobo > 0 ? (int) round(($collectedKobo / $invoicedKobo) * 100) : null;
-        $collected = Money::compactNaira($collectedKobo);
-        $outstanding = Money::compactNaira($outstandingKobo);
-        $attendance = $this->attendancePulse();
-        $tickets = $this->tickets();
+            $outstandingKobo = (int) Invoice::query()
+                ->whereIn('status', [InvoiceStatus::Unpaid->value, InvoiceStatus::Partial->value])
+                ->when($sessionId, fn ($query) => $query->where('academic_session_id', $sessionId))
+                ->selectRaw('COALESCE(SUM(total_kobo - paid_kobo), 0) as remaining')
+                ->value('remaining');
+
+            $collectionShare = $invoicedKobo > 0 ? (int) round(($collectedKobo / $invoicedKobo) * 100) : null;
+            $collected = Money::compactNaira($collectedKobo);
+            $outstanding = Money::compactNaira($outstandingKobo);
+        }
+
+        $attendance = $canAttendance
+            ? $this->attendancePulse()
+            : ['percent' => null, 'delta' => null];
 
         return [
             'name' => trim($user->name) !== '' ? trim($user->name) : 'Administrator',
             'school' => $settings?->name ?: (string) config('app.name'),
+            'visibility' => [
+                'pupils' => $canPupils,
+                'staff' => $canStaff,
+                'fees' => $canFees,
+                'forms' => $canForms,
+                'attendance' => $canAttendance,
+                'tickets' => $canPupils || $canFees || $canNotices || $canStaff || $canAttendance,
+                'inbox' => $canInbox,
+                'lookup' => $canPupils,
+                'house' => $canForms || $canFees,
+                'wings' => $canWings,
+                'news' => $canNews,
+            ],
             'metrics' => [
                 'attendance_percent' => $attendance['percent'],
                 'attendance_delta' => $attendance['delta'],
                 'pupils' => $pupils,
-                'pupils_delta' => 'Active on roll',
+                'pupils_delta' => $canPupils ? 'Active on roll' : null,
                 'staff' => $staff,
-                'staff_delta' => $staff === 1 ? '1 active record' : $staff.' active records',
+                'staff_delta' => $canStaff
+                    ? ($staff === 1 ? '1 active record' : $staff.' active records')
+                    : null,
                 'fees_count' => $collected['count'],
                 'fees_prefix' => $collected['prefix'],
                 'fees_suffix' => $collected['suffix'],
                 'fees_label' => $collected['label'],
-                'fees_delta' => $collectionShare === null
-                    ? 'Posted collections'
-                    : $collectionShare.'% of the ledger',
+                'fees_delta' => ! $canFees
+                    ? null
+                    : ($collectionShare === null
+                        ? 'Posted collections'
+                        : $collectionShare.'% of the ledger'),
                 'forms' => $forms,
-                'forms_delta' => $levels->pluck('name')->filter()->implode(' · ') ?: 'No levels sealed',
+                'forms_delta' => $canForms
+                    ? ($levels->pluck('name')->filter()->implode(' · ') ?: 'No levels sealed')
+                    : null,
             ],
             'house' => [
-                'copy' => collect([$sessionName, $termName, $campus])->filter()->implode(' · ') ?: 'No session sealed yet',
-                'session' => $sessionName ? $this->shortSession($sessionName) : '—',
-                'term' => $termName ?: '—',
-                'levels' => $this->numberWord($levels->count()),
-                'outstanding' => $outstanding['label'],
+                'copy' => ($canForms || $canFees)
+                    ? (collect([$sessionName, $termName, $campus])->filter()->implode(' · ') ?: 'No session sealed yet')
+                    : null,
+                'session' => $canForms ? ($sessionName ? $this->shortSession($sessionName) : '—') : null,
+                'term' => $canForms ? ($termName ?: '—') : null,
+                'levels' => $canForms ? $this->numberWord($levels->count()) : null,
+                'outstanding' => $canFees ? $outstanding['label'] : null,
             ],
-            'tickets' => $tickets,
-            'inbox' => $this->inboxItems(),
-            'wings' => $this->levelDesks->all(),
+            'tickets' => $this->tickets($canPupils, $canFees, $canNotices, $canStaff, $canAttendance),
+            'inbox' => $canInbox ? $this->inboxItems() : [],
+            'wings' => $canWings ? $this->levelDesks->all() : [],
         ];
     }
 
@@ -134,20 +193,37 @@ class PortalDashboardService
     /**
      * @return list<array<string, mixed>>
      */
-    private function tickets(): array
-    {
-        $items = collect()
-            ->concat($this->pupilTickets())
-            ->concat($this->paymentTickets())
-            ->concat($this->noticeTickets())
-            ->concat($this->staffTickets())
-            ->concat($this->rollTickets())
+    private function tickets(
+        bool $canPupils,
+        bool $canFees,
+        bool $canNotices,
+        bool $canStaff,
+        bool $canAttendance,
+    ): array {
+        $items = collect();
+
+        if ($canPupils) {
+            $items = $items->concat($this->pupilTickets());
+        }
+        if ($canFees) {
+            $items = $items->concat($this->paymentTickets());
+        }
+        if ($canNotices) {
+            $items = $items->concat($this->noticeTickets());
+        }
+        if ($canStaff) {
+            $items = $items->concat($this->staffTickets());
+        }
+        if ($canAttendance) {
+            $items = $items->concat($this->rollTickets());
+        }
+
+        return $items
             ->sortByDesc('at')
             ->take(5)
             ->values()
-            ->map(fn (array $item) => collect($item)->except('at')->all());
-
-        return $items->all();
+            ->map(fn (array $item) => collect($item)->except('at')->all())
+            ->all();
     }
 
     /**

@@ -158,9 +158,16 @@
       document.title = "Command Desk | " + data.school;
     }
 
+    const visibility = data.visibility || {};
+    document.querySelectorAll("[data-requires]").forEach(function (node) {
+      const key = node.getAttribute("data-requires");
+      if (!key) return;
+      node.hidden = visibility[key] === false;
+    });
+
     const metrics = data.metrics || {};
     const attendance = document.querySelector('[data-metric="attendance"]');
-    if (attendance) {
+    if (attendance && visibility.attendance !== false) {
       if (metrics.attendance_percent == null) {
         attendance.textContent = "—";
       } else {
@@ -171,32 +178,47 @@
       }
     }
 
-    animateValue(document.querySelector('[data-metric="pupils"]'), metrics.pupils, "", "");
-    animateValue(document.querySelector('[data-metric="staff"]'), metrics.staff, "", "");
-    animateValue(
-      document.querySelector('[data-metric="fees"]'),
-      metrics.fees_count,
-      metrics.fees_prefix || "",
-      metrics.fees_suffix || ""
-    );
-    animateValue(document.querySelector('[data-metric="forms"]'), metrics.forms, "", "");
-
-    setText('[data-metric-delta="pupils"]', metrics.pupils_delta);
-    setText('[data-metric-delta="staff"]', metrics.staff_delta);
-    setText('[data-metric-delta="fees"]', metrics.fees_delta);
-    setText('[data-metric-delta="forms"]', metrics.forms_delta);
+    if (visibility.pupils !== false) {
+      animateValue(document.querySelector('[data-metric="pupils"]'), metrics.pupils, "", "");
+      setText('[data-metric-delta="pupils"]', metrics.pupils_delta);
+    }
+    if (visibility.staff !== false) {
+      animateValue(document.querySelector('[data-metric="staff"]'), metrics.staff, "", "");
+      setText('[data-metric-delta="staff"]', metrics.staff_delta);
+    }
+    if (visibility.fees !== false) {
+      animateValue(
+        document.querySelector('[data-metric="fees"]'),
+        metrics.fees_count,
+        metrics.fees_prefix || "",
+        metrics.fees_suffix || ""
+      );
+      setText('[data-metric-delta="fees"]', metrics.fees_delta);
+    }
+    if (visibility.forms !== false) {
+      animateValue(document.querySelector('[data-metric="forms"]'), metrics.forms, "", "");
+      setText('[data-metric-delta="forms"]', metrics.forms_delta);
+    }
 
     const house = data.house || {};
-    setText("[data-house-copy]", house.copy);
-    setText('[data-house="session"]', house.session);
-    setText('[data-house="term"]', house.term);
-    setText('[data-house="levels"]', house.levels);
-    setText('[data-house="outstanding"]', house.outstanding);
+    if (visibility.house !== false) {
+      setText("[data-house-copy]", house.copy);
+      setText('[data-house="session"]', house.session);
+      setText('[data-house="term"]', house.term);
+      setText('[data-house="levels"]', house.levels);
+      setText('[data-house="outstanding"]', house.outstanding);
+    }
 
-    renderTickets(data.tickets);
-    renderTicker(data.tickets);
-    renderInbox(data.inbox);
-    renderWings(data.wings);
+    if (visibility.tickets !== false) {
+      renderTickets(data.tickets);
+      renderTicker(data.tickets);
+    }
+    if (visibility.inbox !== false) {
+      renderInbox(data.inbox);
+    }
+    if (visibility.wings !== false) {
+      renderWings(data.wings);
+    }
   };
 
   const renderWings = function (wings) {
@@ -305,8 +327,6 @@
     });
   };
 
-  wireLookup();
-
   request("/api/v1/portal-dashboard").then(function (result) {
     if (!result || !result.ok || !result.body || !result.body.data) {
       setText("[data-ticket-list]", "The command desk could not read the school ledger.");
@@ -314,6 +334,10 @@
       return;
     }
     paint(result.body.data);
+    if (result.body.data.visibility && result.body.data.visibility.lookup === false) {
+      return;
+    }
+    wireLookup();
   }).catch(function () {
     setText("[data-ticket-list]", "The command desk could not read the school ledger.");
     setText("[data-inbox-list]", "The inbound chute could not be opened.");

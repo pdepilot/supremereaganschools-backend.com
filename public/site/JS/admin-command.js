@@ -17,6 +17,7 @@
     teachers: ["staff.view", "staff.create", "staff.edit", "staff.delete"],
     classes: ["academics.view", "academics.manage"],
     academic_sessions: ["academics.view", "academics.manage"],
+    sessions: ["academics.view", "academics.manage"],
     nursery: ["students.view", "academics.view"],
     primary: ["students.view", "academics.view"],
     secondary: ["students.view", "academics.view"],
@@ -38,26 +39,49 @@
 
   const hrefPermission = {
     "dashboard.html": pagePermission.dashboard,
+    dashboard: pagePermission.dashboard,
     "students.html": pagePermission.students,
+    students: pagePermission.students,
     "teachers.html": pagePermission.teachers,
+    teachers: pagePermission.teachers,
     "classes.html": pagePermission.classes,
+    classes: pagePermission.classes,
     "academic_sessions.html": pagePermission.academic_sessions,
+    academic_sessions: pagePermission.academic_sessions,
+    "academic-sessions": pagePermission.academic_sessions,
+    "academic-sessions.html": pagePermission.academic_sessions,
     "nursery.html": pagePermission.nursery,
+    nursery: pagePermission.nursery,
     "primary.html": pagePermission.primary,
+    primary: pagePermission.primary,
     "secondary.html": pagePermission.secondary,
+    secondary: pagePermission.secondary,
     "timetable.html": pagePermission.timetable,
+    timetable: pagePermission.timetable,
     "fees.html": pagePermission.fees,
+    fees: pagePermission.fees,
     "grades.html": pagePermission.grades,
+    grades: pagePermission.grades,
     "announcements.html": pagePermission.announcements,
+    announcements: pagePermission.announcements,
     "news.html": pagePermission.news,
+    news: pagePermission.news,
     "email.html": pagePermission.email,
+    email: pagePermission.email,
     "contact.html": pagePermission.contact,
+    contact: pagePermission.contact,
     "messages.html": pagePermission.messages,
+    messages: pagePermission.messages,
     "reports.html": pagePermission.reports,
+    reports: pagePermission.reports,
     "settings.html": pagePermission.settings,
+    settings: pagePermission.settings,
     "roles.html": pagePermission.roles,
+    roles: pagePermission.roles,
     "admins.html": pagePermission.admins,
-    "account.html": pagePermission.account
+    admins: pagePermission.admins,
+    "account.html": pagePermission.account,
+    account: pagePermission.account
   };
 
   document.querySelectorAll("[data-logout]").forEach(function (link) {
@@ -103,6 +127,10 @@
     greeting.textContent = "Good " + part + ", " + name + ".";
   };
 
+  const isSuper = function (me) {
+    return !!(me && (me.is_super_admin || ((me.roles || []).indexOf("super_admin") !== -1)));
+  };
+
   const hasAny = function (owned, needed) {
     if (!needed || !needed.length) return true;
     if (!owned || !owned.length) return false;
@@ -116,11 +144,25 @@
     return needed.some(function (slug) { return owned.indexOf(slug) !== -1; });
   };
 
+  const hrefKey = function (href) {
+    const raw = (href || "").split("/").pop() || "";
+    return raw.replace(/\.html$/i, "");
+  };
+
+  const requiredForHref = function (href) {
+    const key = hrefKey(href);
+    return hrefPermission[key]
+      || hrefPermission[key + ".html"]
+      || hrefPermission[key.replace(/-/g, "_")]
+      || hrefPermission[key.replace(/_/g, "-")]
+      || null;
+  };
+
   const ensureRolesRail = function (me) {
     const nav = document.querySelector(".rail-nav");
     if (!nav) return;
     const permissions = (me && me.permissions) || [];
-    const canSee = !!(me && (me.is_super_admin || hasAny(permissions, pagePermission.roles)));
+    const canSee = !!(me && (isSuper(me) || hasAny(permissions, pagePermission.roles)));
     let link = nav.querySelector('a[href="roles.html"], a[href="/portal/roles"]');
     if (!canSee) {
       if (link) link.remove();
@@ -147,7 +189,7 @@
     const nav = document.querySelector(".rail-nav");
     if (!nav) return;
     const permissions = (me && me.permissions) || [];
-    const canSee = !!(me && (me.is_super_admin || hasExact(permissions, pagePermission.admins)));
+    const canSee = !!(me && (isSuper(me) || hasExact(permissions, pagePermission.admins)));
     let link = nav.querySelector('a[href="admins.html"], a[href="/portal/admins"]');
     if (!canSee) {
       if (link) link.remove();
@@ -189,6 +231,14 @@
     }
   };
 
+  const hideEmptyWingGroup = function () {
+    const wings = document.querySelector(".rail-wings");
+    if (!wings) return;
+    const visible = Array.prototype.slice.call(wings.querySelectorAll("a.rail-btn"))
+      .some(function (link) { return !link.hidden; });
+    wings.hidden = !visible;
+  };
+
   const applyDeskAccess = function (me) {
     if (!me) return;
     window.srsMe = me;
@@ -196,13 +246,14 @@
     ensureAdminsRail(me);
     ensureAccountRail();
 
-    if (me.is_super_admin || ((me.roles || []).indexOf("super_admin") !== -1)) {
+    if (isSuper(me)) {
+      hideEmptyWingGroup();
       return;
     }
 
     const owned = me.permissions || [];
     const page = document.body.getAttribute("data-page") || "";
-    const needed = pagePermission[page];
+    const needed = pagePermission[page] || pagePermission[page.replace(/-/g, "_")];
 
     if (page === "admins") {
       if (needed && !hasExact(owned, needed)) {
@@ -215,17 +266,28 @@
     }
 
     document.querySelectorAll(".rail-nav a.rail-btn").forEach(function (link) {
-      const href = (link.getAttribute("href") || "").split("/").pop();
-      const required = hrefPermission[href] || hrefPermission[href + ".html"];
+      const required = requiredForHref(link.getAttribute("href") || "");
       if (!required || !required.length) return;
-      const check = href === "admins" || href === "admins.html" ? hasExact : hasAny;
+      const key = hrefKey(link.getAttribute("href") || "");
+      const check = key === "admins" ? hasExact : hasAny;
       if (!check(owned, required)) link.hidden = true;
     });
 
-    const wings = document.querySelector(".rail-wings");
-    if (wings && !hasAny(owned, pagePermission.nursery)) {
-      wings.hidden = true;
-    }
+    hideEmptyWingGroup();
+  };
+
+  window.srsHasPermission = function (slug) {
+    const me = window.srsMe;
+    if (!me) return false;
+    if (isSuper(me)) return true;
+    const owned = me.permissions || [];
+    if (owned.indexOf("desk.administer") !== -1 && String(slug).indexOf("admins.") !== 0) return true;
+    return owned.indexOf(slug) !== -1;
+  };
+
+  window.srsHasAnyPermission = function (slugs) {
+    if (!slugs || !slugs.length) return true;
+    return slugs.some(function (slug) { return window.srsHasPermission(slug); });
   };
 
   fetch("/api/v1/me", {
