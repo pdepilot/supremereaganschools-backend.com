@@ -119,11 +119,13 @@
     if (!link) {
       link = document.createElement("a");
       link.className = "rail-btn";
-      link.href = "roles.html";
+      link.href = "/portal/roles";
       link.innerHTML = "<span>Roles</span>";
       const setup = nav.querySelector('a[href="settings.html"], a[href="/portal/settings"]');
       if (setup) nav.insertBefore(link, setup);
       else nav.appendChild(link);
+    } else if (link.getAttribute("href") === "roles.html") {
+      link.href = "/portal/roles";
     }
     if (document.body.getAttribute("data-page") === "roles") {
       link.classList.add("active");
@@ -151,7 +153,7 @@
 
     document.querySelectorAll(".rail-nav a.rail-btn").forEach(function (link) {
       const href = (link.getAttribute("href") || "").split("/").pop();
-      const required = hrefPermission[href];
+      const required = hrefPermission[href] || hrefPermission[href + ".html"];
       if (!required) return;
       if (!hasAny(owned, required)) link.hidden = true;
     });

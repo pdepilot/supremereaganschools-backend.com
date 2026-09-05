@@ -92,6 +92,8 @@ Route::get('/student/home', [AuthenticatedSessionController::class, 'studentHome
 
 Route::middleware(['auth', 'role:'.RoleSlug::portalMiddleware()])->group(function () {
     Route::get('/portal', fn () => redirect('/portal/dashboard'));
+    Route::get('/portal/{page}.html', fn (string $page) => redirect('/portal/'.$page, 301))
+        ->where('page', '[A-Za-z0-9_\-]+');
     Route::get('/portal/{page}', [FrontendController::class, 'portalPage'])
         ->where('page', '[A-Za-z0-9_\-]+')
         ->name('portal.page');

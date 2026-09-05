@@ -133,7 +133,28 @@ class RbacApiTest extends TestCase
             ->get('/portal/roles')
             ->assertOk()
             ->assertSee('data-page="roles"', false)
-            ->assertSee('portal-roles.js', false);
+            ->assertSee('portal-roles.js', false)
+            ->assertSee('href="/portal/roles"', false)
+            ->assertDontSee('href="roles.html"', false);
+    }
+
+    public function test_legacy_roles_html_url_redirects_to_portal_roles(): void
+    {
+        $admin = $this->userWithRole(RoleSlug::SchoolAdmin);
+
+        $this->actingAs($admin)
+            ->get('/portal/roles.html')
+            ->assertRedirect('/portal/roles');
+    }
+
+    public function test_super_admin_can_open_roles_portal_page(): void
+    {
+        $super = $this->userWithRole(RoleSlug::SuperAdmin);
+
+        $this->actingAs($super)
+            ->get('/portal/roles')
+            ->assertOk()
+            ->assertSee('data-page="roles"', false);
     }
 
     public function test_principal_logs_into_portal_not_staff(): void

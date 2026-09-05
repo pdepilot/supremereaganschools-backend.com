@@ -40,4 +40,15 @@ HTML, 'public');
             $html,
         );
     }
+
+    public function test_rewrites_admin_roles_html_to_portal_route(): void
+    {
+        $html = (new FrontendLinker)->rewrite(
+            '<a class="rail-btn" href="roles.html"><span>Roles</span></a>',
+            'admin',
+        );
+
+        $this->assertStringContainsString('href="/portal/roles"', $html);
+        $this->assertStringNotContainsString('href="roles.html"', $html);
+    }
 }
