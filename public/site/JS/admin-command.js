@@ -31,7 +31,9 @@
     messages: ["messages.view", "messages.manage"],
     reports: ["reports.view", "reports.export"],
     settings: ["settings.view", "settings.edit"],
-    roles: ["roles.view", "roles.create", "roles.edit", "roles.delete", "permissions.view"]
+    roles: ["roles.view", "roles.create", "roles.edit", "roles.delete", "permissions.view"],
+    admins: ["admins.view", "admins.create", "admins.edit", "admins.suspend", "admins.delete"],
+    account: []
   };
 
   const hrefPermission = {
@@ -53,7 +55,9 @@
     "messages.html": pagePermission.messages,
     "reports.html": pagePermission.reports,
     "settings.html": pagePermission.settings,
-    "roles.html": pagePermission.roles
+    "roles.html": pagePermission.roles,
+    "admins.html": pagePermission.admins,
+    "account.html": pagePermission.account
   };
 
   document.querySelectorAll("[data-logout]").forEach(function (link) {
@@ -106,6 +110,12 @@
     return needed.some(function (slug) { return owned.indexOf(slug) !== -1; });
   };
 
+  const hasExact = function (owned, needed) {
+    if (!needed || !needed.length) return true;
+    if (!owned || !owned.length) return false;
+    return needed.some(function (slug) { return owned.indexOf(slug) !== -1; });
+  };
+
   const ensureRolesRail = function (me) {
     const nav = document.querySelector(".rail-nav");
     if (!nav) return;
@@ -133,10 +143,58 @@
     }
   };
 
+  const ensureAdminsRail = function (me) {
+    const nav = document.querySelector(".rail-nav");
+    if (!nav) return;
+    const permissions = (me && me.permissions) || [];
+    const canSee = !!(me && (me.is_super_admin || hasExact(permissions, pagePermission.admins)));
+    let link = nav.querySelector('a[href="admins.html"], a[href="/portal/admins"]');
+    if (!canSee) {
+      if (link) link.remove();
+      return;
+    }
+    if (!link) {
+      link = document.createElement("a");
+      link.className = "rail-btn";
+      link.href = "/portal/admins";
+      link.innerHTML = "<span>Admins</span>";
+      const setup = nav.querySelector('a[href="settings.html"], a[href="/portal/settings"]');
+      if (setup) nav.insertBefore(link, setup);
+      else nav.appendChild(link);
+    } else if (link.getAttribute("href") === "admins.html") {
+      link.href = "/portal/admins";
+    }
+    if (document.body.getAttribute("data-page") === "admins") {
+      link.classList.add("active");
+      link.setAttribute("aria-current", "page");
+    }
+  };
+
+  const ensureAccountRail = function () {
+    const nav = document.querySelector(".rail-nav");
+    if (!nav) return;
+    let link = nav.querySelector('a[href="account.html"], a[href="/portal/account"]');
+    if (!link) {
+      link = document.createElement("a");
+      link.className = "rail-btn";
+      link.href = "/portal/account";
+      link.innerHTML = "<span>Profile</span>";
+      nav.appendChild(link);
+    } else if (link.getAttribute("href") === "account.html") {
+      link.href = "/portal/account";
+    }
+    if (document.body.getAttribute("data-page") === "account") {
+      link.classList.add("active");
+      link.setAttribute("aria-current", "page");
+    }
+  };
+
   const applyDeskAccess = function (me) {
     if (!me) return;
     window.srsMe = me;
     ensureRolesRail(me);
+    ensureAdminsRail(me);
+    ensureAccountRail();
 
     if (me.is_super_admin || ((me.roles || []).indexOf("super_admin") !== -1)) {
       return;
@@ -146,7 +204,12 @@
     const page = document.body.getAttribute("data-page") || "";
     const needed = pagePermission[page];
 
-    if (needed && !hasAny(owned, needed)) {
+    if (page === "admins") {
+      if (needed && !hasExact(owned, needed)) {
+        window.location.replace("/portal/dashboard");
+        return;
+      }
+    } else if (needed && needed.length && !hasAny(owned, needed)) {
       window.location.replace("/portal/dashboard");
       return;
     }
@@ -154,8 +217,9 @@
     document.querySelectorAll(".rail-nav a.rail-btn").forEach(function (link) {
       const href = (link.getAttribute("href") || "").split("/").pop();
       const required = hrefPermission[href] || hrefPermission[href + ".html"];
-      if (!required) return;
-      if (!hasAny(owned, required)) link.hidden = true;
+      if (!required || !required.length) return;
+      const check = href === "admins" || href === "admins.html" ? hasExact : hasAny;
+      if (!check(owned, required)) link.hidden = true;
     });
 
     const wings = document.querySelector(".rail-wings");

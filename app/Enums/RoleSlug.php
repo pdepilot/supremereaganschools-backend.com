@@ -50,6 +50,19 @@ enum RoleSlug: string
     }
 
     /**
+     * Roles that may be appointed through Admin Users (excludes parent/student).
+     *
+     * @return list<self>
+     */
+    public static function appointableDeskRoles(): array
+    {
+        return [
+            ...self::portalRoles(),
+            ...self::staffDeskRoles(),
+        ];
+    }
+
+    /**
      * Comma-separated middleware argument for portal routes.
      */
     public static function portalMiddleware(): string
@@ -71,5 +84,13 @@ enum RoleSlug: string
             self::SuperAdmin, self::Parent, self::Student => true,
             default => false,
         };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function appointableDeskRoleValues(): array
+    {
+        return array_map(fn (self $role) => $role->value, self::appointableDeskRoles());
     }
 }

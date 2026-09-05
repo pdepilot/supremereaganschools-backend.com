@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PermissionSlug;
+use App\Enums\RoleSlug;
+use App\Models\User;
 use App\Services\News\HomepageJournalService;
 use App\Support\FrontendPage;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +34,19 @@ class FrontendController extends Controller
 
         if (in_array($slug, ['grade', 'marks'], true)) {
             return redirect('/portal/grades');
+        }
+
+        if ($slug === 'admins') {
+            /** @var User|null $user */
+            $user = request()->user();
+            abort_unless(
+                $user instanceof User
+                    && (
+                        $user->hasRole(RoleSlug::SuperAdmin)
+                        || $user->hasPermission(PermissionSlug::AdminsView)
+                    ),
+                403,
+            );
         }
 
         return $this->frontend->response('admin/'.$this->fileName($page), area: 'admin');

@@ -38,7 +38,7 @@ class RolePermissionSeeder extends Seeder
     {
         $all = array_map(
             fn (PermissionSlug $permission) => $permission->value,
-            PermissionSlug::cases(),
+            PermissionSlug::assignableToDeskRoles(),
         );
 
         $academicCore = [

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>My Profile | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260905a">
+</head>
+<body data-page="account">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+        <a class="rail-btn active" aria-current="page" href="account.html"><span>Profile</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Command · Your desk key</p>
+            <h1 class="head-title">My profile</h1>
+            <p class="head-copy">Update your login details and change your password securely.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Desk open</div>
+        </div>
+      </header>
+      <main class="workspace">
+        <div class="split">
+          <div class="surface" data-stamp="Name">
+            <div class="panel-title">
+              <div>
+                <h2>Account details</h2>
+                <p>Name and email used for portal login</p>
+              </div>
+            </div>
+            <form data-account-form>
+              <p data-account-notice></p>
+              <div class="field">
+                <label for="accountName">Full name</label>
+                <input id="accountName" name="name" autocomplete="name" required>
+              </div>
+              <div class="field">
+                <label for="accountEmail">Email</label>
+                <input id="accountEmail" name="email" type="email" autocomplete="email" required>
+              </div>
+              <div class="form-actions">
+                <button class="solid-btn" type="submit" data-account-submit>Save profile</button>
+              </div>
+            </form>
+          </div>
+          <div class="surface" data-stamp="Lock">
+            <div class="panel-title">
+              <div>
+                <h2>Change password</h2>
+                <p>Enter your current password before sealing a new one</p>
+              </div>
+            </div>
+            <form data-password-form>
+              <p data-password-notice></p>
+              <div class="field">
+                <label for="currentPassword">Current password</label>
+                <input id="currentPassword" name="current_password" type="password" autocomplete="current-password" required>
+              </div>
+              <div class="field">
+                <label for="newPassword">New password</label>
+                <input id="newPassword" name="password" type="password" autocomplete="new-password" required>
+              </div>
+              <div class="field">
+                <label for="newPasswordConfirm">Confirm new password</label>
+                <input id="newPasswordConfirm" name="password_confirmation" type="password" autocomplete="new-password" required>
+              </div>
+              <div class="form-actions">
+                <button class="solid-btn" type="submit" data-password-submit>Update password</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-account.js"></script>
+</body>
+</html>

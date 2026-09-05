@@ -24,6 +24,7 @@ use App\Models\StudentProfile;
 use App\Models\SubjectTeacherAssignment;
 use App\Models\User;
 use App\Policies\AcademicStructurePolicy;
+use App\Policies\AdminUserPolicy;
 use App\Policies\ClassTeacherAssignmentPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\GuardianProfilePolicy;
@@ -137,5 +138,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PostCategory::class, PostCategoryPolicy::class);
         Gate::policy(PostTag::class, PostTagPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
+        Gate::policy(User::class, AdminUserPolicy::class);
     }
 }

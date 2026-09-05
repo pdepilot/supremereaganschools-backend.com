@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin Users | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260905a">
+</head>
+<body data-page="admins">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn active" aria-current="page" href="admins.html"><span>Admins</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Command · Keys to the desk</p>
+            <h1 class="head-title">Admin users</h1>
+            <p class="head-copy">Appoint desk officers, assign roles, suspend access, and keep the house keys safe.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Desk open</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Admins</span><span class="value" data-metric="admins">—</span></article>
+          <article class="metric"><span class="label">Active</span><span class="value" data-metric="active">—</span></article>
+          <article class="metric"><span class="label">Suspended</span><span class="value" data-metric="suspended">—</span></article>
+          <article class="metric"><span class="label">Super</span><span class="value" data-metric="super">—</span></article>
+        </div>
+      </header>
+      <main class="workspace">
+        <div class="split" data-admins-root>
+          <div class="surface" data-stamp="Roll">
+            <div class="panel-title">
+              <div>
+                <h2>Directory</h2>
+                <p data-admins-copy>Connecting to the desk…</p>
+              </div>
+            </div>
+            <p data-admins-notice></p>
+            <div class="toolbar">
+              <input data-admins-search type="search" placeholder="Search name or email">
+              <select data-admins-role>
+                <option value="">All roles</option>
+              </select>
+              <select data-admins-status>
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div class="ledger-wrap">
+              <table class="ledger">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody data-admins-table>
+                  <tr><td colspan="6">Connecting…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="surface" data-stamp="Appoint" id="appoint-admin">
+            <div class="panel-title">
+              <div>
+                <h2 data-admins-form-title>Add admin user</h2>
+                <p data-admins-form-copy>Create a desk account and assign one appointable role</p>
+              </div>
+            </div>
+            <form data-admins-form>
+              <p data-admins-form-notice></p>
+              <div class="field-row">
+                <div class="field">
+                  <label for="adminFirstName">First name</label>
+                  <input id="adminFirstName" name="first_name" autocomplete="given-name" required>
+                </div>
+                <div class="field">
+                  <label for="adminLastName">Last name</label>
+                  <input id="adminLastName" name="last_name" autocomplete="family-name" required>
+                </div>
+              </div>
+              <div class="field">
+                <label for="adminEmail">Email</label>
+                <input id="adminEmail" name="email" type="email" autocomplete="email" required>
+              </div>
+              <div class="field">
+                <label for="adminRole">Role</label>
+                <select id="adminRole" name="role" required data-admins-role-select>
+                  <option value="">Select a role</option>
+                </select>
+              </div>
+              <div class="field-row" data-admins-password-row>
+                <div class="field">
+                  <label for="adminPassword">Password</label>
+                  <input id="adminPassword" name="password" type="password" autocomplete="new-password">
+                  <p class="field-hint" data-admins-password-hint>Required for new accounts. Leave blank when editing to keep the present password.</p>
+                </div>
+                <div class="field">
+                  <label for="adminPasswordConfirm">Confirm password</label>
+                  <input id="adminPasswordConfirm" name="password_confirmation" type="password" autocomplete="new-password">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="solid-btn" type="submit" data-admins-submit>Create admin</button>
+                <button class="ghost-btn" type="button" data-cancel-admin-edit hidden>Cancel</button>
+                <button class="ghost-btn" type="button" data-admins-reset-password hidden>Reset password</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-admins.js"></script>
+</body>
+</html>

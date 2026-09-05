@@ -34,7 +34,7 @@ trait HasPermissions
 
         if (! self::permissionTablesReady()) {
             return $this->hasRole(RoleSlug::SchoolAdmin)
-                ? collect(PermissionSlug::cases())->map(fn (PermissionSlug $slug) => $slug->value)
+                ? collect(PermissionSlug::assignableToDeskRoles())->map(fn (PermissionSlug $slug) => $slug->value)
                 : collect();
         }
 
@@ -49,7 +49,7 @@ trait HasPermissions
             ->values();
 
         if ($assigned->isEmpty() && $this->hasRole(RoleSlug::SchoolAdmin)) {
-            return collect(PermissionSlug::cases())->map(fn (PermissionSlug $slug) => $slug->value);
+            return collect(PermissionSlug::assignableToDeskRoles())->map(fn (PermissionSlug $slug) => $slug->value);
         }
 
         return $assigned;

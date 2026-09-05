@@ -70,6 +70,12 @@ enum PermissionSlug: string
 
     case PermissionsView = 'permissions.view';
 
+    case AdminsView = 'admins.view';
+    case AdminsCreate = 'admins.create';
+    case AdminsEdit = 'admins.edit';
+    case AdminsSuspend = 'admins.suspend';
+    case AdminsDelete = 'admins.delete';
+
     public function label(): string
     {
         return match ($this) {
@@ -120,6 +126,11 @@ enum PermissionSlug: string
             self::RolesEdit => 'Edit roles',
             self::RolesDelete => 'Delete roles',
             self::PermissionsView => 'View permissions',
+            self::AdminsView => 'View admin users',
+            self::AdminsCreate => 'Create admin users',
+            self::AdminsEdit => 'Edit admin users',
+            self::AdminsSuspend => 'Suspend admin users',
+            self::AdminsDelete => 'Delete admin users',
         };
     }
 
@@ -143,6 +154,23 @@ enum PermissionSlug: string
             self::SettingsView, self::SettingsEdit => 'Settings',
             self::RolesView, self::RolesCreate, self::RolesEdit, self::RolesDelete,
             self::PermissionsView => 'Security',
+            self::AdminsView, self::AdminsCreate, self::AdminsEdit, self::AdminsSuspend,
+            self::AdminsDelete => 'Admin users',
+        };
+    }
+
+    /**
+     * Permissions reserved for Super Administrator unless explicitly assigned.
+     */
+    public function isSuperAdminOnly(): bool
+    {
+        return match ($this) {
+            self::AdminsView,
+            self::AdminsCreate,
+            self::AdminsEdit,
+            self::AdminsSuspend,
+            self::AdminsDelete => true,
+            default => false,
         };
     }
 
@@ -169,6 +197,8 @@ enum PermissionSlug: string
             self::SettingsView, self::SettingsEdit => ['settings'],
             self::RolesView, self::RolesCreate, self::RolesEdit, self::RolesDelete,
             self::PermissionsView => ['roles'],
+            self::AdminsView, self::AdminsCreate, self::AdminsEdit, self::AdminsSuspend,
+            self::AdminsDelete => ['admins'],
             default => [],
         };
     }
@@ -179,5 +209,18 @@ enum PermissionSlug: string
     public static function allCases(): array
     {
         return self::cases();
+    }
+
+    /**
+     * Permissions that ordinary desk roles may receive by default.
+     *
+     * @return list<self>
+     */
+    public static function assignableToDeskRoles(): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            fn (self $permission) => ! $permission->isSuperAdminOnly(),
+        ));
     }
 }

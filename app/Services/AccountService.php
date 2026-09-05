@@ -15,6 +15,11 @@ class AccountService
     {
         $user->update($attributes);
 
+        app(RbacService::class)->audit($user, 'account.updated', $user, [
+            'email' => $user->email,
+            'name' => $user->name,
+        ]);
+
         return $user->fresh('roles');
     }
 
@@ -40,6 +45,8 @@ class AccountService
         $session->put([
             'password_hash_'.config('auth.defaults.guard', 'web') => $user->fresh()?->getAuthPassword(),
         ]);
+
+        app(RbacService::class)->audit($user, 'account.password_changed', $user);
 
         return $user->fresh('roles');
     }

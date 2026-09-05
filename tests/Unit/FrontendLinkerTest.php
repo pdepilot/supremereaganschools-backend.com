@@ -51,4 +51,15 @@ HTML, 'public');
         $this->assertStringContainsString('href="/portal/roles"', $html);
         $this->assertStringNotContainsString('href="roles.html"', $html);
     }
+
+    public function test_rewrites_admins_and_account_html_to_portal_routes(): void
+    {
+        $html = (new FrontendLinker)->rewrite(
+            '<a href="admins.html">Admins</a><a href="account.html">Profile</a>',
+            'admin',
+        );
+
+        $this->assertStringContainsString('href="/portal/admins"', $html);
+        $this->assertStringContainsString('href="/portal/account"', $html);
+    }
 }
