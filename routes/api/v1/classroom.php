@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Api\V1\ClassroomController;
 use App\Http\Controllers\Api\V1\ParentDeskController;
 use App\Http\Controllers\Api\V1\StaffDeskController;
@@ -15,7 +16,7 @@ Route::middleware(['web', 'auth', 'role:parent'])->group(function () {
     Route::get('parent-desk', [ParentDeskController::class, 'show']);
 });
 
-Route::middleware(['web', 'auth', 'role:teacher,staff,principal,vice_principal,accountant'])->group(function () {
+Route::middleware(['web', 'auth', 'role:'.RoleSlug::staffDeskMiddleware()])->group(function () {
     Route::get('staff-desk', [StaffDeskController::class, 'show']);
     Route::get('staff-reports', [StaffReportController::class, 'index']);
     Route::get('staff-reports/export', [StaffReportController::class, 'export']);

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\EnrollmentStatus;
+use App\Enums\PermissionSlug;
 use App\Enums\RoleSlug;
 use App\Enums\UserStatus;
 use App\Models\Assignment;
@@ -18,7 +19,23 @@ class PeopleAccessService
     public function administers(User $user): bool
     {
         return $user->status === UserStatus::Active
-            && $user->hasAnyRole(RoleSlug::SuperAdmin, RoleSlug::SchoolAdmin);
+            && (
+                $user->hasRole(RoleSlug::SuperAdmin)
+                || $user->hasPermission(PermissionSlug::DeskAdminister)
+            );
+    }
+
+    public function allows(User $user, PermissionSlug|string ...$permissions): bool
+    {
+        if ($user->status !== UserStatus::Active) {
+            return false;
+        }
+
+        if ($user->hasRole(RoleSlug::SuperAdmin) || $user->hasPermission(PermissionSlug::DeskAdminister)) {
+            return true;
+        }
+
+        return $user->hasAnyPermission(...$permissions);
     }
 
     public function isTeacher(User $user): bool
@@ -27,8 +44,6 @@ class PeopleAccessService
             && $user->hasAnyRole(
                 RoleSlug::Teacher,
                 RoleSlug::Staff,
-                RoleSlug::Principal,
-                RoleSlug::VicePrincipal,
             );
     }
 
@@ -103,7 +118,7 @@ class PeopleAccessService
 
     public function canViewStudent(User $user, StudentProfile $student): bool
     {
-        if ($this->administers($user)) {
+        if ($this->allows($user, PermissionSlug::StudentsView)) {
             return true;
         }
 

@@ -56,7 +56,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($request->expectsJson()) {
             return ApiResponse::success('Signed in successfully.', [
-                'user' => (new UserResource($user->load('roles')))->resolve(),
+                'user' => (new UserResource($user->load('roles.permissions')))->resolve(),
                 'redirect' => $redirect,
             ]);
         }
@@ -97,7 +97,7 @@ class AuthenticatedSessionController extends Controller
 
     public function home(Request $request, AuthPortal $portal): JsonResponse|Response
     {
-        $user = $request->user()->load('roles');
+        $user = $request->user()->load('roles.permissions');
 
         if ($request->expectsJson()) {
             return ApiResponse::success('Authenticated.', [

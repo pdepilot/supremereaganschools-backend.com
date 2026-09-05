@@ -59,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return route('login');
             }
 
-            if ($user->hasAnyRole(RoleSlug::SuperAdmin, RoleSlug::SchoolAdmin)) {
+            if ($user->hasAnyRole(...AuthPortal::Portal->allowedRoles())) {
                 return route('portal.home');
             }
 

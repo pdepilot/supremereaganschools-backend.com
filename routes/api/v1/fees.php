@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Api\V1\FeeStructureController;
 use App\Http\Controllers\Api\V1\FeeTypeController;
 use App\Http\Controllers\Api\V1\InvoiceController;
@@ -19,7 +20,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('students/{student_profile}/fees/summary', [InvoiceController::class, 'studentSummary']);
     Route::get('students/{student_profile}/fees', [InvoiceController::class, 'forStudent']);
 
-    Route::middleware('role:super_admin,school_admin')->group(function () {
+    Route::middleware('role:'.RoleSlug::portalMiddleware())->group(function () {
         Route::get('fee-types', [FeeTypeController::class, 'index']);
         Route::post('fee-types', [FeeTypeController::class, 'store']);
         Route::get('fee-types/{fee_type}', [FeeTypeController::class, 'show']);

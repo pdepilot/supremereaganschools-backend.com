@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AuthPortal;
 use App\Enums\UserStatus;
+use App\Models\Concerns\HasPermissions;
 use App\Models\Concerns\HasRoles;
 use App\Notifications\ResetDeskPassword;
 use Database\Factories\UserFactory;
@@ -20,7 +21,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable;
+    use HasFactory, HasPermissions, HasRoles, Notifiable;
 
     public ?AuthPortal $passwordResetPortal = null;
 

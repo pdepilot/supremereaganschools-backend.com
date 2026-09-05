@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PermissionSlug;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Services\AnnouncementService;
@@ -16,7 +17,7 @@ class AnnouncementPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->access->administers($user)
+        return $this->access->allows($user, PermissionSlug::NoticesView, PermissionSlug::NoticesManage)
             || $this->access->isTeacher($user)
             || $this->access->isParent($user)
             || $this->access->isStudent($user);
@@ -29,12 +30,13 @@ class AnnouncementPolicy
 
     public function create(User $user): bool
     {
-        return $this->access->administers($user) || $this->access->isTeacher($user);
+        return $this->access->allows($user, PermissionSlug::NoticesManage)
+            || $this->access->isTeacher($user);
     }
 
     public function update(User $user, Announcement $announcement): bool
     {
-        return $this->access->administers($user)
+        return $this->access->allows($user, PermissionSlug::NoticesManage)
             || ((int) $announcement->created_by === (int) $user->id && $this->access->isTeacher($user));
     }
 

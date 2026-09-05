@@ -30,9 +30,9 @@ trait HasRoles
 
     public function hasRole(RoleSlug|Role|string $role): bool
     {
-        $slug = $this->resolveRoleSlug($role);
+        $slug = $this->resolveRoleSlugValue($role);
 
-        return $this->roleSlugs()->contains($slug->value);
+        return $this->roleSlugs()->contains($slug);
     }
 
     public function hasAnyRole(RoleSlug|Role|string ...$roles): bool
@@ -62,23 +62,23 @@ trait HasRoles
             return (int) $role->id;
         }
 
-        $slug = $this->resolveRoleSlug($role);
+        $slug = $this->resolveRoleSlugValue($role);
 
-        return (int) Role::query()->where('slug', $slug->value)->firstOrFail()->id;
+        return (int) Role::query()->where('slug', $slug)->firstOrFail()->id;
     }
 
-    private function resolveRoleSlug(RoleSlug|Role|string $role): RoleSlug
+    private function resolveRoleSlugValue(RoleSlug|Role|string $role): string
     {
         if ($role instanceof RoleSlug) {
-            return $role;
+            return $role->value;
         }
 
         if ($role instanceof Role) {
             return $role->slug instanceof RoleSlug
-                ? $role->slug
-                : RoleSlug::from((string) $role->slug);
+                ? $role->slug->value
+                : (string) $role->slug;
         }
 
-        return RoleSlug::from($role);
+        return (string) $role;
     }
 }

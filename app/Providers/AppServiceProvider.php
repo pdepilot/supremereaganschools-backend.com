@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Enums\RoleSlug;
 use App\Models\AcademicSession;
 use App\Models\Campus;
 use App\Models\ClassSection;
 use App\Models\ClassSectionOffering;
 use App\Models\Department;
 use App\Models\Level;
+use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
 use App\Models\Subject;
@@ -20,11 +22,13 @@ use App\Models\GuardianStudent;
 use App\Models\StaffProfile;
 use App\Models\StudentProfile;
 use App\Models\SubjectTeacherAssignment;
+use App\Models\User;
 use App\Policies\AcademicStructurePolicy;
 use App\Policies\ClassTeacherAssignmentPolicy;
 use App\Policies\EnrollmentPolicy;
 use App\Policies\GuardianProfilePolicy;
 use App\Policies\GuardianStudentPolicy;
+use App\Policies\RolePolicy;
 use App\Policies\StaffProfilePolicy;
 use App\Policies\StudentProfilePolicy;
 use App\Policies\SubjectTeacherAssignmentPolicy;
@@ -80,6 +84,14 @@ class AppServiceProvider extends ServiceProvider
     {
         JsonResource::withoutWrapping();
 
+        Gate::before(function ($user, string $ability) {
+            if ($user instanceof User && $user->hasRole(RoleSlug::SuperAdmin)) {
+                return true;
+            }
+
+            return null;
+        });
+
         $policy = AcademicStructurePolicy::class;
 
         foreach ([
@@ -124,5 +136,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(PostCategory::class, PostCategoryPolicy::class);
         Gate::policy(PostTag::class, PostTagPolicy::class);
+        Gate::policy(Role::class, RolePolicy::class);
     }
 }

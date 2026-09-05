@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\FrontendController;
@@ -70,7 +71,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::get('/portal/home', [AuthenticatedSessionController::class, 'portalHome'])
-    ->middleware(['auth', 'role:super_admin,school_admin'])
+    ->middleware(['auth', 'role:'.RoleSlug::portalMiddleware()])
     ->name('portal.home');
 
 Route::get('/admin/home', function () {
@@ -78,7 +79,7 @@ Route::get('/admin/home', function () {
 });
 
 Route::get('/staff/home', [AuthenticatedSessionController::class, 'staffHome'])
-    ->middleware(['auth', 'role:teacher,staff,principal,vice_principal,accountant'])
+    ->middleware(['auth', 'role:'.RoleSlug::staffDeskMiddleware()])
     ->name('staff.home');
 
 Route::get('/parent/home', [AuthenticatedSessionController::class, 'parentHome'])
@@ -89,14 +90,14 @@ Route::get('/student/home', [AuthenticatedSessionController::class, 'studentHome
     ->middleware(['auth', 'role:student'])
     ->name('student.home');
 
-Route::middleware(['auth', 'role:super_admin,school_admin'])->group(function () {
+Route::middleware(['auth', 'role:'.RoleSlug::portalMiddleware()])->group(function () {
     Route::get('/portal', fn () => redirect('/portal/dashboard'));
     Route::get('/portal/{page}', [FrontendController::class, 'portalPage'])
         ->where('page', '[A-Za-z0-9_\-]+')
         ->name('portal.page');
 });
 
-Route::middleware(['auth', 'role:teacher,staff,principal,vice_principal,accountant'])->group(function () {
+Route::middleware(['auth', 'role:'.RoleSlug::staffDeskMiddleware()])->group(function () {
     Route::get('/staff', [FrontendController::class, 'staffPage'])->name('staff.desk');
     Route::get('/staff/{page}', [FrontendController::class, 'staffPage'])
         ->where('page', '[A-Za-z0-9_\-]+')

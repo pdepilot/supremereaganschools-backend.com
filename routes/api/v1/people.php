@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Api\V1\ClassTeacherAssignmentController;
 use App\Http\Controllers\Api\V1\EnrollmentController;
 use App\Http\Controllers\Api\V1\GuardianController;
@@ -29,7 +30,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('class-teacher-assignments', [ClassTeacherAssignmentController::class, 'index']);
     Route::get('subject-teacher-assignments', [SubjectTeacherAssignmentController::class, 'index']);
 
-    Route::middleware('role:super_admin,school_admin')->group(function () {
+    Route::middleware('role:'.RoleSlug::portalMiddleware())->group(function () {
         Route::post('staff', [StaffController::class, 'store']);
         Route::put('staff/{staff_profile}', [StaffController::class, 'update']);
         Route::post('staff/{staff_profile}/suspend', [StaffController::class, 'suspend']);

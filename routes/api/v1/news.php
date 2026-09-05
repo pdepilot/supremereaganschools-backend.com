@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Api\V1\News\PostCategoryController;
 use App\Http\Controllers\Api\V1\News\PostController;
 use App\Http\Controllers\Api\V1\News\PostTagController;
@@ -14,7 +15,7 @@ Route::middleware(['web', 'throttle:40,1'])->prefix('news')->name('news.public.'
     Route::get('/{slug}', [PublicNewsController::class, 'show'])->name('show');
 });
 
-Route::middleware(['web', 'auth', 'role:super_admin,school_admin'])->group(function () {
+Route::middleware(['web', 'auth', 'role:'.RoleSlug::portalMiddleware()])->group(function () {
     Route::get('posts', [PostController::class, 'index'])->name('news.posts.index');
     Route::post('posts', [PostController::class, 'store'])->name('news.posts.store');
     Route::get('posts/{post}', [PostController::class, 'show'])->name('news.posts.show');

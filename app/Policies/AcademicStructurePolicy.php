@@ -2,40 +2,36 @@
 
 namespace App\Policies;
 
-use App\Enums\RoleSlug;
-use App\Enums\UserStatus;
+use App\Enums\PermissionSlug;
 use App\Models\User;
+use App\Services\PeopleAccessService;
 
 class AcademicStructurePolicy
 {
+    public function __construct(private readonly PeopleAccessService $access) {}
+
     public function viewAny(User $user): bool
     {
-        return $this->administers($user);
+        return $this->access->allows($user, PermissionSlug::AcademicsView, PermissionSlug::AcademicsManage);
     }
 
     public function view(User $user, mixed $model = null): bool
     {
-        return $this->administers($user);
+        return $this->viewAny($user);
     }
 
     public function create(User $user): bool
     {
-        return $this->administers($user);
+        return $this->access->allows($user, PermissionSlug::AcademicsManage);
     }
 
     public function update(User $user, mixed $model = null): bool
     {
-        return $this->administers($user);
+        return $this->access->allows($user, PermissionSlug::AcademicsManage);
     }
 
     public function delete(User $user, mixed $model = null): bool
     {
-        return $this->administers($user);
-    }
-
-    private function administers(User $user): bool
-    {
-        return $user->status === UserStatus::Active
-            && $user->hasAnyRole(RoleSlug::SuperAdmin, RoleSlug::SchoolAdmin);
+        return $this->access->allows($user, PermissionSlug::AcademicsManage);
     }
 }

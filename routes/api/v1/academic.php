@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Api\V1\AcademicSessionController;
 use App\Http\Controllers\Api\V1\CampusController;
 use App\Http\Controllers\Api\V1\ClassSectionController;
@@ -16,7 +17,7 @@ use App\Http\Controllers\Api\V1\SubjectOfferingController;
 use App\Http\Controllers\Api\V1\TermController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['web', 'auth', 'role:super_admin,school_admin'])->group(function () {
+Route::middleware(['web', 'auth', 'role:'.RoleSlug::portalMiddleware()])->group(function () {
     Route::get('portal-dashboard', [PortalDashboardController::class, 'show']);
     Route::get('portal-reports', [PortalReportController::class, 'show']);
     Route::get('portal-reports/catalogue', [PortalReportController::class, 'catalogue']);

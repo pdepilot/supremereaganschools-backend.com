@@ -16,6 +16,7 @@ class RoleSeeder extends Seeder
                 [
                     'name' => $role['name'],
                     'description' => $role['description'],
+                    'is_system_role' => $role['slug']->isSystemRole(),
                 ],
             );
         }
@@ -29,13 +30,16 @@ class RoleSeeder extends Seeder
         return [
             ['name' => 'Super Admin', 'slug' => RoleSlug::SuperAdmin, 'description' => 'Full school authority.'],
             ['name' => 'School Admin', 'slug' => RoleSlug::SchoolAdmin, 'description' => 'School operations desk.'],
+            ['name' => 'Principal', 'slug' => RoleSlug::Principal, 'description' => 'Head of school command desk.'],
+            ['name' => 'Vice Principal', 'slug' => RoleSlug::VicePrincipal, 'description' => 'Deputy head academic desk.'],
+            ['name' => 'Examination Officer', 'slug' => RoleSlug::ExaminationOfficer, 'description' => 'Exams and marks desk.'],
+            ['name' => 'Admissions Officer', 'slug' => RoleSlug::AdmissionsOfficer, 'description' => 'Admissions and enrolment desk.'],
+            ['name' => 'Content Manager', 'slug' => RoleSlug::ContentManager, 'description' => 'Website and notices desk.'],
             ['name' => 'Teacher', 'slug' => RoleSlug::Teacher, 'description' => 'Teaching staff portal.'],
+            ['name' => 'Accountant', 'slug' => RoleSlug::Accountant, 'description' => 'Fees and payments desk.'],
+            ['name' => 'Staff', 'slug' => RoleSlug::Staff, 'description' => 'Non-teaching staff desk.'],
             ['name' => 'Parent', 'slug' => RoleSlug::Parent, 'description' => 'Parent / guardian portal.'],
             ['name' => 'Student', 'slug' => RoleSlug::Student, 'description' => 'Student portal.'],
-            ['name' => 'Principal', 'slug' => RoleSlug::Principal, 'description' => 'Seeded for later use.'],
-            ['name' => 'Vice Principal', 'slug' => RoleSlug::VicePrincipal, 'description' => 'Seeded for later use.'],
-            ['name' => 'Accountant', 'slug' => RoleSlug::Accountant, 'description' => 'Seeded for later use.'],
-            ['name' => 'Staff', 'slug' => RoleSlug::Staff, 'description' => 'Non-teaching staff. Seeded for later use.'],
         ];
     }
 }

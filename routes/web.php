@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\News\AuthorPageController;
 use App\Http\Controllers\News\CookieConsentController;
@@ -26,7 +27,7 @@ Route::get('/storage/news/{path}', [NewsImageController::class, 'show'])
 
 Route::get('/news', [NewsPageController::class, 'index'])->name('news.index');
 Route::get('/news/preview/{post}', [NewsPageController::class, 'preview'])
-    ->middleware(['auth', 'role:super_admin,school_admin'])
+    ->middleware(['auth', 'role:'.RoleSlug::portalMiddleware()])
     ->name('news.preview');
 Route::get('/news/authors/{user}', [AuthorPageController::class, 'show'])
     ->whereNumber('user')

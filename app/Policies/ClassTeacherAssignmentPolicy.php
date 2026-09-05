@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PermissionSlug;
 use App\Models\ClassTeacherAssignment;
 use App\Models\User;
 use App\Services\PeopleAccessService;
@@ -12,12 +13,13 @@ class ClassTeacherAssignmentPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->access->administers($user) || $this->access->isTeacher($user);
+        return $this->access->allows($user, PermissionSlug::StaffView, PermissionSlug::AcademicsView)
+            || $this->access->isTeacher($user);
     }
 
     public function view(User $user, ClassTeacherAssignment $assignment): bool
     {
-        if ($this->access->administers($user)) {
+        if ($this->access->allows($user, PermissionSlug::StaffView, PermissionSlug::AcademicsView)) {
             return true;
         }
 
@@ -27,16 +29,16 @@ class ClassTeacherAssignmentPolicy
 
     public function create(User $user): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::StaffEdit, PermissionSlug::AcademicsManage);
     }
 
     public function update(User $user, ClassTeacherAssignment $assignment): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::StaffEdit, PermissionSlug::AcademicsManage);
     }
 
     public function delete(User $user, ClassTeacherAssignment $assignment): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::StaffEdit, PermissionSlug::AcademicsManage);
     }
 }

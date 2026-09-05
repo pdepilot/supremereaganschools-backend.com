@@ -18,14 +18,8 @@ enum AuthPortal: string
     public function allowedRoles(): array
     {
         return match ($this) {
-            self::Portal => [RoleSlug::SuperAdmin, RoleSlug::SchoolAdmin],
-            self::Staff => [
-                RoleSlug::Teacher,
-                RoleSlug::Staff,
-                RoleSlug::Principal,
-                RoleSlug::VicePrincipal,
-                RoleSlug::Accountant,
-            ],
+            self::Portal => RoleSlug::portalRoles(),
+            self::Staff => RoleSlug::staffDeskRoles(),
             self::Parent => [RoleSlug::Parent],
             self::Student => [RoleSlug::Student],
         };

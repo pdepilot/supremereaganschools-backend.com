@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PermissionSlug;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Services\PeopleAccessService;
@@ -12,14 +13,14 @@ class InvoicePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->access->administers($user)
+        return $this->access->allows($user, PermissionSlug::FeesView, PermissionSlug::PaymentsView)
             || $this->access->isParent($user)
             || $this->access->isStudent($user);
     }
 
     public function view(User $user, Invoice $invoice): bool
     {
-        if ($this->access->administers($user)) {
+        if ($this->access->allows($user, PermissionSlug::FeesView, PermissionSlug::PaymentsView)) {
             return true;
         }
 
@@ -35,16 +36,16 @@ class InvoicePolicy
 
     public function create(User $user): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::FeesManage);
     }
 
     public function update(User $user, Invoice $invoice): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::FeesManage);
     }
 
     public function delete(User $user, Invoice $invoice): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::FeesManage);
     }
 }

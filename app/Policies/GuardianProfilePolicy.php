@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PermissionSlug;
 use App\Models\GuardianProfile;
 use App\Models\User;
 use App\Services\PeopleAccessService;
@@ -12,12 +13,12 @@ class GuardianProfilePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::GuardiansView);
     }
 
     public function view(User $user, GuardianProfile $guardian): bool
     {
-        if ($this->access->administers($user)) {
+        if ($this->access->allows($user, PermissionSlug::GuardiansView)) {
             return true;
         }
 
@@ -26,16 +27,16 @@ class GuardianProfilePolicy
 
     public function create(User $user): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::GuardiansCreate);
     }
 
     public function update(User $user, GuardianProfile $guardian): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::GuardiansEdit);
     }
 
     public function delete(User $user, GuardianProfile $guardian): bool
     {
-        return $this->access->administers($user);
+        return $this->access->allows($user, PermissionSlug::GuardiansDelete);
     }
 }
