@@ -1,0 +1,396 @@
+/* Upcoming Events — Supreme Reagan Schools */
+
+.events-page {
+  --events-ink: #0d1b2a;
+  --events-navy: #243a8f;
+  --events-deep: #1a2d73;
+  --events-paper: #f7f4ee;
+  --events-line: rgba(36, 58, 143, 0.16);
+}
+
+.events-hero {
+  position: relative;
+  min-height: min(92vh, 820px);
+  display: grid;
+  align-items: end;
+  overflow: hidden;
+  color: #fff;
+  isolation: isolate;
+}
+
+.events-hero-media,
+.events-hero-shade {
+  position: absolute;
+  inset: 0;
+}
+
+.events-hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.04);
+  animation: eventsKenBurns 18s ease-in-out infinite alternate;
+}
+
+.events-hero-shade {
+  background:
+    linear-gradient(180deg, rgba(13, 27, 42, 0.18) 0%, rgba(13, 27, 42, 0.42) 42%, rgba(13, 27, 42, 0.88) 100%),
+    linear-gradient(90deg, rgba(26, 45, 115, 0.35), transparent 55%);
+}
+
+.events-hero-copy {
+  position: relative;
+  z-index: 1;
+  width: min(920px, calc(100% - 2.5rem));
+  margin: 0 auto 4.5rem;
+  padding-top: 8rem;
+}
+
+.events-brand {
+  margin: 0 0 0.85rem;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(1.55rem, 4vw, 2.55rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.events-hero h1 {
+  margin: 0 0 0.85rem;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(2.2rem, 6vw, 4.4rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  max-width: 12ch;
+}
+
+.events-lead {
+  margin: 0 0 1.6rem;
+  max-width: 34ch;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.events-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.events-hero-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+}
+
+.events-hero-actions a:first-child {
+  background: #fff;
+  border-color: #fff;
+  color: var(--events-navy);
+}
+
+.events-hero-actions a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+  color: #fff;
+}
+
+.events-hero-actions a:first-child:hover {
+  background: transparent;
+  color: #fff;
+}
+
+.events-featured {
+  background:
+    radial-gradient(circle at 12% 20%, rgba(36, 58, 143, 0.08), transparent 42%),
+    linear-gradient(180deg, #fff 0%, var(--events-paper) 100%);
+  padding: clamp(3.5rem, 8vw, 6rem) 0;
+}
+
+.events-featured-inner {
+  width: min(1120px, calc(100% - 2.5rem));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: center;
+}
+
+.events-featured-copy .section-label {
+  display: inline-block;
+  margin-bottom: 0.85rem;
+}
+
+.events-date-line {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--events-navy);
+}
+
+.events-featured-copy h2 {
+  margin: 0 0 0.9rem;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(1.85rem, 4vw, 2.85rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--events-ink);
+  max-width: 14ch;
+}
+
+.events-featured-copy p {
+  margin: 0 0 1.25rem;
+  max-width: 38ch;
+  color: rgba(13, 27, 42, 0.72);
+  line-height: 1.65;
+}
+
+.events-text-link {
+  color: var(--events-navy);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(36, 58, 143, 0.35);
+  padding-bottom: 0.15rem;
+}
+
+.events-text-link:hover {
+  border-bottom-color: var(--events-navy);
+}
+
+.events-featured-media {
+  margin: 0;
+  overflow: hidden;
+  min-height: 360px;
+  box-shadow: 0 28px 60px rgba(13, 27, 42, 0.14);
+}
+
+.events-featured-media img {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  object-fit: cover;
+  display: block;
+  transition: transform 1.1s ease;
+}
+
+.events-featured-media:hover img {
+  transform: scale(1.04);
+}
+
+.events-roll {
+  background: #fff;
+  padding: clamp(3.5rem, 8vw, 6rem) 0;
+}
+
+.events-roll-inner {
+  width: min(900px, calc(100% - 2.5rem));
+  margin: 0 auto;
+}
+
+.events-timeline {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--events-line);
+}
+
+.events-timeline li {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 1.55rem 0;
+  border-bottom: 1px solid var(--events-line);
+  opacity: 0;
+  transform: translateY(18px);
+  animation: eventsRise 0.8s ease forwards;
+}
+
+.events-timeline li:nth-child(1) { animation-delay: 0.05s; }
+.events-timeline li:nth-child(2) { animation-delay: 0.12s; }
+.events-timeline li:nth-child(3) { animation-delay: 0.19s; }
+.events-timeline li:nth-child(4) { animation-delay: 0.26s; }
+.events-timeline li:nth-child(5) { animation-delay: 0.33s; }
+.events-timeline li:nth-child(6) { animation-delay: 0.4s; }
+
+.events-timeline time {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  color: var(--events-navy);
+}
+
+.events-timeline time span {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.events-timeline time small {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.events-tag {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(36, 58, 143, 0.72);
+}
+
+.events-timeline h3 {
+  margin: 0 0 0.45rem;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--events-ink);
+}
+
+.events-timeline p {
+  margin: 0 0 0.55rem;
+  color: rgba(13, 27, 42, 0.72);
+  line-height: 1.6;
+}
+
+.events-timeline div > span:last-child {
+  font-size: 0.82rem;
+  color: rgba(13, 27, 42, 0.55);
+}
+
+.events-gallery {
+  background: var(--events-ink);
+  padding: 0;
+  overflow: hidden;
+}
+
+.events-gallery-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.events-gallery figure {
+  margin: 0;
+  position: relative;
+  min-height: 280px;
+  overflow: hidden;
+}
+
+.events-gallery img {
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.92);
+  transition: transform 1s ease, filter 0.5s ease;
+}
+
+.events-gallery figure:hover img {
+  transform: scale(1.06);
+  filter: saturate(1.05);
+}
+
+.events-gallery figcaption {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  margin: 0;
+  color: #fff;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.events-empty {
+  margin: 1.5rem 0 0;
+  text-align: center;
+  color: rgba(13, 27, 42, 0.6);
+}
+
+
+.events-close h2 {
+  margin: 0.75rem auto 1.5rem;
+  max-width: 18ch;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--events-ink);
+}
+
+@keyframes eventsKenBurns {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to { transform: scale(1.1) translate3d(-1.5%, -1%, 0); }
+}
+
+@keyframes eventsRise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .events-featured-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .events-featured-media,
+  .events-featured-media img {
+    min-height: 280px;
+  }
+
+  .events-gallery-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .events-gallery figure,
+  .events-gallery img {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 640px) {
+  .events-hero-copy {
+    margin-bottom: 3rem;
+  }
+
+  .events-timeline li {
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .events-timeline time span {
+    font-size: 1.55rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .events-hero-media img,
+  .events-featured-media img,
+  .events-gallery img,
+  .events-timeline li {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}

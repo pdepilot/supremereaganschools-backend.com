@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Events | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260904d">
+  <style>
+    .ticket .row-actions { display:flex; flex-wrap:wrap; gap:.4rem; }
+    .ticket .row-actions .ghost-btn { font:inherit; }
+    .ticket-photo, [data-event-image-preview] img {
+      width: 74px; height: 74px; object-fit: cover; background: #ece8dc; display: block;
+    }
+    .ticket-photo.is-empty { display:grid; place-items:center; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:#7a7488; }
+    [data-event-image-preview] { margin: 0 0 .75rem; }
+    [data-event-image-preview] img { width: min(100%, 280px); height: auto; max-height: 180px; }
+    .events-desk-pager { margin-top: 1rem; display:grid; gap:.55rem; }
+    .events-desk-count { margin:0; font-size:.82rem; color:#5c5670; }
+    .events-desk-pages { display:flex; flex-wrap:wrap; gap:.35rem; }
+    .events-desk-pages .ghost-btn.is-current { background:#243A8F; color:#fff; border-color:#243A8F; }
+  </style>
+</head>
+<body data-page="events">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-mark">REAGAN</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings"><a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+        <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+        <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn active" href="events.html" aria-current="page"><span>Events</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Publishing · The house calendar</p>
+            <h1 class="head-title">Upcoming events</h1>
+            <p class="head-copy">Publish gatherings for families. Save a draft, attach a cover image, feature one on the roll, or remove a date.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Calendar</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Total</span><span class="value" data-metric="total">—</span></article>
+          <article class="metric"><span class="label">Published</span><span class="value" data-metric="published">—</span></article>
+          <article class="metric"><span class="label">Drafts</span><span class="value" data-metric="drafts">—</span></article>
+          <article class="metric"><span class="label">Upcoming</span><span class="value" data-metric="upcoming">—</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <div class="split">
+          <div class="surface" data-stamp="Roll">
+            <div class="panel-title">
+              <div>
+                <h2>The calendar desk</h2>
+                <p data-events-copy>Connecting…</p>
+              </div>
+              <button class="ghost-btn" type="button" data-new-event>+ New event</button>
+            </div>
+            <p data-events-notice></p>
+            <div class="toolbar">
+              <input id="eventSearch" type="search" placeholder="Search title, place, or tag">
+              <select id="eventStatusFilter">
+                <option value="">All statuses</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+            <div class="tickets" data-events-board><p>Loading events…</p></div>
+            <div class="events-desk-pager" data-events-pager></div>
+          </div>
+
+          <div class="surface" data-stamp="Compose" id="compose-event">
+            <div class="panel-title">
+              <div>
+                <h2 data-event-form-title>Compose an event</h2>
+                <p>Date, place, and a short note for the public calendar.</p>
+              </div>
+            </div>
+            <form data-event-form>
+              <input type="hidden" id="eventId" value="">
+              <p data-event-form-notice></p>
+              <div class="field">
+                <label for="eventTitle">Title</label>
+                <input id="eventTitle" name="title" required maxlength="180">
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="eventCategory">Tag</label>
+                  <input id="eventCategory" list="eventCategoryList" placeholder="Admissions, Sport…">
+                  <datalist id="eventCategoryList">
+                    <option value="Admissions"></option>
+                    <option value="Sport"></option>
+                    <option value="Culture"></option>
+                    <option value="Careers"></option>
+                    <option value="Community"></option>
+                    <option value="Ceremony"></option>
+                  </datalist>
+                </div>
+                <div class="field">
+                  <label for="eventStatus">Status</label>
+                  <select id="eventStatus">
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="eventStartsAt">Starts</label>
+                  <input id="eventStartsAt" type="datetime-local" required>
+                </div>
+                <div class="field">
+                  <label for="eventEndsAt">Ends (optional)</label>
+                  <input id="eventEndsAt" type="datetime-local">
+                </div>
+              </div>
+              <div class="field">
+                <label for="eventLocation">Location</label>
+                <input id="eventLocation" maxlength="180" placeholder="Main campus · Owerri">
+              </div>
+              <div class="field">
+                <label for="eventSummary">Short summary</label>
+                <textarea id="eventSummary" rows="3" required maxlength="500"></textarea>
+              </div>
+              <div class="field">
+                <label for="eventBody">Longer note (optional)</label>
+                <textarea id="eventBody" rows="4" maxlength="5000"></textarea>
+              </div>
+              <div class="field">
+                <label for="eventCover">Cover image</label>
+                <input id="eventCover" type="file" accept="image/jpeg,image/png,image/webp">
+              </div>
+              <div class="field" data-event-image-preview hidden>
+                <img alt="Cover preview">
+              </div>
+              <div class="field">
+                <label for="eventCoverAlt">Image alt text</label>
+                <input id="eventCoverAlt" maxlength="180">
+              </div>
+              <label><input type="checkbox" id="eventFeatured"> Feature on the public events page</label>
+              <div class="form-actions">
+                <button class="ghost-btn" type="button" data-reset-event>Clear</button>
+                <button class="solid-btn" type="submit">Save event</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="desk-alert" data-desk-alert hidden>
+    <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true">
+      <p class="eyebrow">Command desk</p>
+      <h2 data-desk-alert-title>Seal this action?</h2>
+      <p data-desk-alert-copy></p>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-desk-alert-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-desk-alert-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-events.js?v=20260906e"></script>
+</body>
+</html>

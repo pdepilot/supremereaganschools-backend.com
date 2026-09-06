@@ -48,6 +48,9 @@ enum PermissionSlug: string
     case NewsView = 'news.view';
     case NewsManage = 'news.manage';
 
+    case EventsView = 'events.view';
+    case EventsManage = 'events.manage';
+
     case EmailView = 'email.view';
     case EmailManage = 'email.manage';
 
@@ -111,6 +114,8 @@ enum PermissionSlug: string
             self::NoticesManage => 'Manage notices',
             self::NewsView => 'View news',
             self::NewsManage => 'Manage news',
+            self::EventsView => 'View events',
+            self::EventsManage => 'Manage events',
             self::EmailView => 'View email centre',
             self::EmailManage => 'Manage email centre',
             self::ContactView => 'View contact desk',
@@ -148,6 +153,7 @@ enum PermissionSlug: string
             self::FeesView, self::FeesManage, self::PaymentsView, self::PaymentsManage => 'Finance',
             self::AdmissionsView, self::AdmissionsManage => 'Admissions',
             self::NoticesView, self::NoticesManage, self::NewsView, self::NewsManage,
+            self::EventsView, self::EventsManage,
             self::EmailView, self::EmailManage, self::ContactView, self::ContactManage,
             self::MessagesView, self::MessagesManage => 'Content',
             self::ReportsView, self::ReportsExport => 'Reports',
@@ -190,6 +196,7 @@ enum PermissionSlug: string
             self::AdmissionsView, self::AdmissionsManage => ['contact'],
             self::NoticesView, self::NoticesManage => ['announcements'],
             self::NewsView, self::NewsManage => ['news'],
+            self::EventsView, self::EventsManage => ['events'],
             self::EmailView, self::EmailManage => ['email'],
             self::ContactView, self::ContactManage => ['contact'],
             self::MessagesView, self::MessagesManage => ['messages'],

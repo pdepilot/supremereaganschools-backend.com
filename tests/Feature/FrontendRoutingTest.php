@@ -33,7 +33,7 @@ class FrontendRoutingTest extends TestCase
             ->assertSee('href="/privacy"', false)
             ->assertSee('href="/terms"', false)
             ->assertSee('href="/site/CSS/index.css', false)
-            ->assertSee('href="/site/CSS/about.css"', false)
+            ->assertSee('href="/site/CSS/about.css', false)
             ->assertSee('classic-menu-wing', false)
             ->assertSee('classic-menu-house-trigger', false)
             ->assertSee('classic-menu-panel', false)
@@ -75,6 +75,14 @@ class FrontendRoutingTest extends TestCase
             ->assertSee('href="/alumni"', false)
             ->assertDontSee('href="./pta.html"', false)
             ->assertDontSee('href="/pta"', false);
+
+        $this->get('/events')
+            ->assertOk()
+            ->assertSee('The house calendar', false)
+            ->assertSee('Upcoming events', false)
+            ->assertSee('href="/events"', false)
+            ->assertSee('href="/site/CSS/events.css', false)
+            ->assertDontSee('href="./events.html"', false);
     }
 
     public function test_home_hero_images_are_rewritten_to_site_assets(): void

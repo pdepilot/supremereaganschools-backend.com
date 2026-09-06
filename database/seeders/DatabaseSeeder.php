@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             ClassroomSeeder::class,
             EmailTemplateSeeder::class,
             NewsInsightsSeeder::class,
+            EventSeeder::class,
         ]);
     }
 }

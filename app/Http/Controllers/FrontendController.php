@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\EventsPageService;
 use App\Services\News\HomepageJournalService;
 use App\Support\FrontendPage;
 use Illuminate\Http\RedirectResponse;
@@ -15,15 +16,27 @@ class FrontendController extends Controller
     public function home(): Response
     {
         $journal = app(HomepageJournalService::class)->html();
+        $events = app(EventsPageService::class)->homeHtml();
 
         return $this->frontend->response('public/index.html', [
             '<!--HOME_JOURNAL-->' => $journal,
+            '<!--HOME_EVENTS-->' => $events,
         ], 'public');
     }
 
     public function publicPage(string $page): Response
     {
-        return $this->frontend->response('public/'.$page.'.html', area: 'public');
+        $replacements = [];
+
+        if ($page === 'events') {
+            $fragments = app(EventsPageService::class)->pageFragments();
+            $replacements = [
+                '<!--EVENTS_FEATURED-->' => $fragments['featured'],
+                '<!--EVENTS_TIMELINE-->' => $fragments['timeline'],
+            ];
+        }
+
+        return $this->frontend->response('public/'.$page.'.html', $replacements, 'public');
     }
 
     public function portalPage(string $page = 'dashboard'): Response|RedirectResponse
@@ -149,6 +162,7 @@ class FrontendController extends Controller
             $path === 'branches.html' => '/branches',
             $path === 'pta.html' => '/pta',
             $path === 'alumni.html' => '/alumni',
+            $path === 'events.html' => '/events',
             $path === 'news.html' => '/news',
             $path === 'resources.html' => '/resources',
             $path === 'privacy.html' => '/privacy',

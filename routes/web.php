@@ -62,7 +62,7 @@ Route::get('/ads.txt', [DiscoveryController::class, 'adsTxt'])->name('ads-txt');
 Route::get('/robots.txt', [DiscoveryController::class, 'robots'])->name('robots');
 
 Route::get('/{page}', [FrontendController::class, 'publicPage'])
-    ->whereIn('page', ['about', 'admissions', 'contact', 'nursery', 'primary', 'secondary', 'branches', 'pta', 'alumni'])
+    ->whereIn('page', ['about', 'admissions', 'contact', 'nursery', 'primary', 'secondary', 'branches', 'pta', 'alumni', 'events'])
     ->name('site.page');
 
 Route::get('/site/{path}', [FrontendController::class, 'legacy'])

@@ -115,6 +115,7 @@ class SitemapService
             '/primary' => ['changefreq' => 'monthly', 'priority' => '0.6'],
             '/secondary' => ['changefreq' => 'monthly', 'priority' => '0.6'],
             '/branches' => ['changefreq' => 'monthly', 'priority' => '0.5'],
+            '/events' => ['changefreq' => 'weekly', 'priority' => '0.7'],
             '/alumni' => ['changefreq' => 'monthly', 'priority' => '0.4'],
             '/news' => ['changefreq' => 'daily', 'priority' => '0.8'],
             '/privacy' => ['changefreq' => 'yearly', 'priority' => '0.3'],
