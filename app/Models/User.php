@@ -84,6 +84,11 @@ class User extends Authenticatable
         return $this->hasMany(Post::class, 'author_id');
     }
 
+    public function loginActivities(): HasMany
+    {
+        return $this->hasMany(LoginActivity::class)->latest('logged_in_at');
+    }
+
     public function authorProfile(): HasOne
     {
         return $this->hasOne(AuthorProfile::class);

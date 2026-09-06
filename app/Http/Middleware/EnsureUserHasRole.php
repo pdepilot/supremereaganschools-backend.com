@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Enums\AuthPortal;
 use App\Enums\RoleSlug;
 use App\Enums\UserStatus;
-use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +24,14 @@ class EnsureUserHasRole
             return $this->reject($request);
         }
 
+        if ($roles === ['portal'] || (count($roles) === 1 && ($roles[0] ?? null) === 'portal')) {
+            if (AuthPortal::Portal->admits($user)) {
+                return $next($request);
+            }
+
+            return $this->reject($request, $user);
+        }
+
         $allowed = array_map(
             fn (string $role) => RoleSlug::from($role),
             $roles
@@ -37,7 +44,7 @@ class EnsureUserHasRole
         return $this->reject($request, $user);
     }
 
-    private function reject(Request $request, ?User $user = null): Response
+    private function reject(Request $request, ?\App\Models\User $user = null): Response
     {
         if ($request->expectsJson() || $request->is('api/*')) {
             abort(403);

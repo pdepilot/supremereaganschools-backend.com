@@ -39,6 +39,10 @@
     greeting.textContent = hour < 12 ? "Good morning." : hour < 16 ? "Good afternoon." : "Good evening.";
   }
 
+  if (new URLSearchParams(window.location.search).get("idle") === "1") {
+    showError("You were signed out after 15 minutes of inactivity. Please sign in again.");
+  }
+
   if (clock) {
     const tick = function () {
       clock.textContent = new Date().toLocaleTimeString("en-GB", {

@@ -46,6 +46,8 @@ class PortalDashboardApiTest extends TestCase
             ->assertSee('data-metric="pupils"', false)
             ->assertSee('data-ticket-list', false)
             ->assertSee('data-inbox-list', false)
+            ->assertSee('data-growth-charts', false)
+            ->assertSee('data-requires="analytics"', false)
             ->assertSee('data-pupil-lookup', false)
             ->assertSee('data-wing-cell="nursery"', false)
             ->assertSee('portal-dashboard.js', false)
@@ -74,7 +76,11 @@ class PortalDashboardApiTest extends TestCase
             ->assertJsonPath('data.metrics.forms', 0)
             ->assertJsonPath('data.metrics.fees_count', 0)
             ->assertJsonPath('data.metrics.fees_label', '₦0')
-            ->assertJsonPath('data.metrics.fees_delta', 'Posted collections')
+            ->assertJsonPath('data.metrics.pupils_delta', 'No admissions this month')
+            ->assertJsonPath('data.metrics.staff_delta', 'No appointments this month')
+            ->assertJsonPath('data.metrics.fees_delta', 'No collections this month')
+            ->assertJsonPath('data.visibility.analytics', true)
+            ->assertJsonPath('data.growth.months', 6)
             ->assertJsonPath('data.metrics.attendance_percent', null)
             ->assertJsonPath('data.metrics.attendance_delta', 'No roll marked yet')
             ->assertJsonPath('data.house.copy', 'No session sealed yet')
@@ -88,6 +94,11 @@ class PortalDashboardApiTest extends TestCase
             ->assertJsonPath('data.wings.0.metrics.pupils', 0)
             ->assertJsonPath('data.wings.1.slug', 'primary')
             ->assertJsonPath('data.wings.2.slug', 'secondary');
+
+        $series = collect($this->actingAs($admin)->getJson('/api/v1/portal-dashboard')->json('data.growth.series'));
+        $this->assertTrue($series->contains(fn (array $row) => ($row['key'] ?? '') === 'pupils'));
+        $this->assertTrue($series->contains(fn (array $row) => ($row['key'] ?? '') === 'fees'));
+        $this->assertTrue($series->contains(fn (array $row) => ($row['key'] ?? '') === 'staff'));
     }
 
     public function test_command_desk_reads_pupils_staff_fees_and_inbox_from_the_ledger(): void
@@ -109,6 +120,7 @@ class PortalDashboardApiTest extends TestCase
             'admission_number' => 'ADM-214',
             'surname' => 'Okafor',
             'first_name' => 'Chiamaka',
+            'admitted_on' => now('Africa/Lagos')->toDateString(),
         ]);
         $this->student($this->userWithRole(RoleSlug::Student), [
             'admission_number' => 'SRS/2025/0999',
@@ -120,9 +132,11 @@ class PortalDashboardApiTest extends TestCase
         $this->staff($teacher, [
             'staff_number' => 'STAFF-19',
             'job_title' => 'Master',
+            'employed_on' => now('Africa/Lagos')->toDateString(),
         ]);
         $this->staff($this->userWithRole(RoleSlug::Teacher), [
             'status' => StaffStatus::Inactive,
+            'employed_on' => now('Africa/Lagos')->subMonths(8)->toDateString(),
         ]);
 
         $invoice = Invoice::query()->create([
@@ -180,16 +194,26 @@ class PortalDashboardApiTest extends TestCase
             ->assertJsonPath('data.name', 'Ada Ibeaja')
             ->assertJsonPath('data.school', 'Supreme Reagan Schools')
             ->assertJsonPath('data.metrics.pupils', 1)
-            ->assertJsonPath('data.metrics.pupils_delta', 'Active on roll')
+            ->assertJsonPath('data.metrics.pupils_delta', '1 admitted this month')
             ->assertJsonPath('data.metrics.staff', 1)
+            ->assertJsonPath('data.metrics.staff_delta', '1 appointed this month')
             ->assertJsonPath('data.metrics.forms', 1)
             ->assertJsonPath('data.metrics.fees_label', '₦185k')
-            ->assertJsonPath('data.metrics.fees_delta', '90% of the ledger')
+            ->assertJsonPath('data.metrics.fees_delta', '₦185k this month')
             ->assertJsonPath('data.metrics.attendance_percent', 100)
+            ->assertJsonPath('data.visibility.analytics', true)
             ->assertJsonPath('data.house.session', '25/26')
             ->assertJsonPath('data.house.term', 'First Term')
             ->assertJsonPath('data.house.levels', 'Three')
             ->assertJsonPath('data.house.outstanding', '₦20k');
+
+        $growth = collect($response->json('data.growth.series'));
+        $feesSeries = $growth->firstWhere('key', 'fees');
+        $this->assertNotNull($feesSeries);
+        $this->assertSame(18500000, (int) collect($feesSeries['points'] ?? [])->sum('value'));
+        $pupilsSeries = $growth->firstWhere('key', 'pupils');
+        $this->assertSame(1, (int) collect($pupilsSeries['points'] ?? [])->sum('value'));
+        $this->assertNotEmpty($response->json('data.growth.insights'));
 
         $tickets = collect($response->json('data.tickets'));
         $this->assertNotEmpty($tickets);

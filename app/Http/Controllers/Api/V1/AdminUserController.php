@@ -7,6 +7,7 @@ use App\Http\Requests\Admins\ResetAdminPasswordRequest;
 use App\Http\Requests\Admins\StoreAdminUserRequest;
 use App\Http\Requests\Admins\UpdateAdminUserRequest;
 use App\Http\Resources\AdminUserResource;
+use App\Http\Resources\PermissionResource;
 use App\Http\Resources\RoleResource;
 use App\Models\User;
 use App\Services\AdminUserService;
@@ -38,6 +39,22 @@ class AdminUserController extends Controller
         );
     }
 
+    public function permissions(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        $grouped = $this->admins->appointablePermissions()
+            ->groupBy('module')
+            ->map(fn ($items, $module) => [
+                'module' => $module,
+                'permissions' => PermissionResource::collection($items)->resolve(),
+            ])
+            ->values()
+            ->all();
+
+        return ApiResponse::success('Appointable permissions retrieved.', $grouped);
+    }
+
     public function store(StoreAdminUserRequest $request): JsonResponse
     {
         $admin = $this->admins->create($request->validated(), $request->user());
@@ -56,7 +73,7 @@ class AdminUserController extends Controller
 
         return ApiResponse::success(
             'Admin user retrieved.',
-            (new AdminUserResource($admin->load($this->admins->defaultRelations())))->resolve(),
+            $this->admins->dossier($admin),
         );
     }
 
@@ -116,6 +133,6 @@ class AdminUserController extends Controller
         $this->authorize('delete', $admin);
         $this->admins->delete($admin, $request->user());
 
-        return ApiResponse::success('Admin user removed.');
+        return ApiResponse::success('Admin user removed from the desk.');
     }
 }

@@ -416,9 +416,148 @@ a {
   line-height: 1;
 }
 
+.desk-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.desk-tabs .ghost-btn.is-active {
+  border-color: var(--navy);
+  color: var(--navy);
+  background: rgba(36, 58, 143, 0.06);
+}
+
+.tickets .ticket {
+  cursor: pointer;
+}
+
+.tickets .ticket.is-active {
+  border-color: var(--navy);
+  background: rgba(36, 58, 143, 0.05);
+}
+
 .metric .delta {
   font-size: 0.68rem;
   color: var(--gold-soft);
+}
+
+.growth-insights {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.growth-insights:empty {
+  display: none;
+}
+
+.growth-insight {
+  display: flex;
+  align-items: start;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.35);
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.growth-insight::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.35rem;
+  flex: 0 0 auto;
+  background: var(--navy);
+}
+
+.growth-insight.is-warn::before {
+  background: #a65a3a;
+}
+
+.growth-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.growth-card {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.28);
+  padding: 0.9rem 0.85rem 0.75rem;
+}
+
+.growth-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.growth-card h3 {
+  margin: 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.growth-card .growth-change {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.growth-card .growth-change.is-up {
+  color: #2f6b4f;
+}
+
+.growth-card .growth-change.is-down {
+  color: #a65a3a;
+}
+
+.growth-card .growth-total {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.growth-bars {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.35rem;
+  min-height: 110px;
+}
+
+.growth-bar {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  gap: 0.35rem;
+  min-height: 110px;
+}
+
+.growth-bar i {
+  display: block;
+  width: 100%;
+  max-width: 1.35rem;
+  min-height: 4px;
+  align-self: end;
+  background: linear-gradient(180deg, var(--navy), #4a63b8);
+  border-radius: 2px 2px 0 0;
+}
+
+.growth-bar small {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 /* ===== WORKSPACE ===== */
@@ -1253,6 +1392,18 @@ button.cell.is-active {
   display: block;
 }
 
+.photo-frame video {
+  position: relative;
+  z-index: 1;
+  background: #111;
+  transform: scaleX(-1);
+}
+
+.photo-frame.is-live .photo-placeholder,
+.photo-frame.is-live img {
+  display: none !important;
+}
+
 .photo-placeholder {
   position: absolute;
   inset: 0;
@@ -1283,8 +1434,14 @@ button.cell.is-active {
   position: absolute;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .mark.has-photo {
@@ -1906,8 +2063,53 @@ body.desk-alert-open {
   font-size: 0.82rem;
 }
 
-[data-pupil-view-notice]:empty {
+[data-pupil-view-notice]:empty,
+[data-admin-view-notice]:empty {
   display: none;
+}
+
+.admin-view-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-view-log li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.admin-view-log strong {
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.admin-view-log span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.admin-view-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
+}
+
+.admin-view-chips span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.4);
+  font-size: 0.78rem;
+  color: var(--ink);
 }
 
 .pupil-print-sheet {

@@ -286,6 +286,8 @@
       dob.max = cap.getFullYear() + "-" + String(cap.getMonth() + 1).padStart(2, "0") + "-" + String(cap.getDate()).padStart(2, "0");
     };
 
+    const photoFrame = camera && camera.closest(".photo-frame");
+
     const stopCamera = function () {
       if (cameraStream) {
         cameraStream.getTracks().forEach(function (track) { track.stop(); });
@@ -293,13 +295,35 @@
       }
       if (camera) {
         camera.hidden = true;
+        camera.removeAttribute("autoplay");
         camera.srcObject = null;
       }
+      if (photoFrame) photoFrame.classList.remove("is-live");
       if (openCameraBtn) openCameraBtn.hidden = false;
       if (pickPhotoBtn) pickPhotoBtn.hidden = false;
       if (snapPhotoBtn) snapPhotoBtn.hidden = true;
       if (cancelCameraBtn) cancelCameraBtn.hidden = true;
       syncPhotoActions();
+    };
+
+    const startCameraPreview = function (stream) {
+      cameraStream = stream;
+      camera.setAttribute("playsinline", "");
+      camera.setAttribute("webkit-playsinline", "");
+      camera.muted = true;
+      camera.autoplay = true;
+      camera.srcObject = stream;
+      camera.hidden = false;
+      if (photoFrame) photoFrame.classList.add("is-live");
+      if (photoPreview) photoPreview.hidden = true;
+      if (photoEmpty) photoEmpty.hidden = true;
+      openCameraBtn.hidden = true;
+      if (pickPhotoBtn) pickPhotoBtn.hidden = true;
+      if (snapPhotoBtn) snapPhotoBtn.hidden = false;
+      if (cancelCameraBtn) cancelCameraBtn.hidden = false;
+      syncPhotoActions();
+      const play = camera.play();
+      return play && typeof play.then === "function" ? play : Promise.resolve();
     };
 
     const showPhotoPreview = function (src) {
@@ -314,6 +338,7 @@
       }
       if (photoEmpty) photoEmpty.hidden = !!src;
       if (camera) camera.hidden = true;
+      if (photoFrame) photoFrame.classList.remove("is-live");
       syncPhotoActions();
     };
 
@@ -879,41 +904,44 @@
 
     if (openCameraBtn && camera) {
       openCameraBtn.addEventListener("click", function () {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          if (notice) notice.textContent = "This browser cannot open a camera. Upload an image instead.";
-          if (photoInput) photoInput.click();
+        if (!window.isSecureContext) {
+          if (notice) notice.textContent = "Camera needs a secure (HTTPS) page. Use Upload image, or open the portal over HTTPS.";
           return;
         }
-        if (notice) notice.textContent = "";
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(function (stream) {
-          cameraStream = stream;
-          camera.srcObject = stream;
-          camera.hidden = false;
-          if (photoPreview) photoPreview.hidden = true;
-          if (photoEmpty) photoEmpty.hidden = true;
-          openCameraBtn.hidden = true;
-          if (pickPhotoBtn) pickPhotoBtn.hidden = true;
-          if (snapPhotoBtn) snapPhotoBtn.hidden = false;
-          if (cancelCameraBtn) cancelCameraBtn.hidden = false;
-          syncPhotoActions();
-          return camera.play();
-        }).catch(function () {
-          return navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
-            cameraStream = stream;
-            camera.srcObject = stream;
-            camera.hidden = false;
-            if (photoPreview) photoPreview.hidden = true;
-            if (photoEmpty) photoEmpty.hidden = true;
-            openCameraBtn.hidden = true;
-            if (pickPhotoBtn) pickPhotoBtn.hidden = true;
-            if (snapPhotoBtn) snapPhotoBtn.hidden = false;
-            if (cancelCameraBtn) cancelCameraBtn.hidden = false;
-            syncPhotoActions();
-            return camera.play();
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+          if (notice) notice.textContent = "This browser cannot open a camera. Use Upload image instead.";
+          return;
+        }
+        if (notice) notice.textContent = "Opening camera…";
+        stopCamera();
+        const attempts = [
+          { video: { facingMode: "user" }, audio: false },
+          { video: { facingMode: { ideal: "user" } }, audio: false },
+          { video: true, audio: false }
+        ];
+        const tryOpen = function (index) {
+          if (index >= attempts.length) {
+            if (notice) notice.textContent = "The camera could not be opened. Allow camera permission for this site, or use Upload image.";
+            return Promise.resolve();
+          }
+          return navigator.mediaDevices.getUserMedia(attempts[index]).then(function (stream) {
+            if (notice) notice.textContent = "";
+            return startCameraPreview(stream).catch(function () {
+              stream.getTracks().forEach(function (track) { track.stop(); });
+              return tryOpen(index + 1);
+            });
+          }).catch(function () {
+            return tryOpen(index + 1);
           });
-        }).catch(function () {
-          if (notice) notice.textContent = "The camera could not be opened. Upload an image instead.";
-          if (photoInput) photoInput.click();
+        };
+        tryOpen(0).catch(function (error) {
+          stopCamera();
+          const denied = error && (error.name === "NotAllowedError" || error.name === "PermissionDeniedError");
+          if (notice) {
+            notice.textContent = denied
+              ? "Camera permission was blocked. Allow the camera for this site, then try again."
+              : "The camera could not be opened. Use Upload image instead.";
+          }
         });
       });
     }

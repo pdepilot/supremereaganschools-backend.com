@@ -3,6 +3,7 @@
 namespace App\Enums;
 
 use App\Models\User;
+use App\Enums\PermissionSlug;
 use Illuminate\Http\Request;
 
 enum AuthPortal: string
@@ -82,7 +83,25 @@ enum AuthPortal: string
 
     public function admits(?User $user): bool
     {
-        return $user !== null && $user->hasAnyRole(...$this->allowedRoles());
+        if ($user === null) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(...$this->allowedRoles())) {
+            return true;
+        }
+
+        if ($this !== self::Portal) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(RoleSlug::Parent, RoleSlug::Student, RoleSlug::Teacher, RoleSlug::Staff)) {
+            return false;
+        }
+
+        return $user->roles()->where('slug', 'like', 'desk_u_%')->exists()
+            || $user->hasPermission(PermissionSlug::DeskView)
+            || $user->hasPermission(PermissionSlug::DeskAdminister);
     }
 
     public static function forUser(?User $user): ?self

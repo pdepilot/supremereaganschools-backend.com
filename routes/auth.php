@@ -71,7 +71,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::get('/portal/home', [AuthenticatedSessionController::class, 'portalHome'])
-    ->middleware(['auth', 'role:'.RoleSlug::portalMiddleware()])
+    ->middleware(['auth', 'role:portal'])
     ->name('portal.home');
 
 Route::get('/admin/home', function () {
@@ -90,7 +90,7 @@ Route::get('/student/home', [AuthenticatedSessionController::class, 'studentHome
     ->middleware(['auth', 'role:student'])
     ->name('student.home');
 
-Route::middleware(['auth', 'role:'.RoleSlug::portalMiddleware()])->group(function () {
+Route::middleware(['auth', 'role:portal'])->group(function () {
     Route::get('/portal', fn () => redirect('/portal/dashboard'));
     Route::get('/portal/{page}.html', fn (string $page) => redirect('/portal/'.$page, 301))
         ->where('page', '[A-Za-z0-9_\-]+');

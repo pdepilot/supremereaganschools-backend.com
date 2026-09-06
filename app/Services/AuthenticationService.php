@@ -6,6 +6,7 @@ use App\Enums\AuthPortal;
 use App\Enums\RoleSlug;
 use App\Enums\UserStatus;
 use App\Models\GuardianProfile;
+use App\Models\LoginActivity;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Support\Phone;
@@ -59,7 +60,7 @@ class AuthenticationService
             ]);
         }
 
-        if ($user->status !== UserStatus::Active || ! $user->hasAnyRole(...$portal->allowedRoles())) {
+        if ($user->status !== UserStatus::Active || ! $portal->admits($user)) {
             RateLimiter::hit($throttleKey);
 
             throw ValidationException::withMessages([
@@ -71,7 +72,24 @@ class AuthenticationService
         request()->session()->regenerate();
         RateLimiter::clear($throttleKey);
 
+        $this->recordLogin($user, $portal);
+
         return $user;
+    }
+
+    private function recordLogin(User $user, AuthPortal $portal): void
+    {
+        try {
+            LoginActivity::query()->create([
+                'user_id' => $user->id,
+                'portal' => $portal->value,
+                'ip_address' => request()->ip(),
+                'user_agent' => Str::limit((string) request()->userAgent(), 512, ''),
+                'logged_in_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     private function studentUserForLogin(string $identifier, string $password): ?User

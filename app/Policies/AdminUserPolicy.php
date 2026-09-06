@@ -27,7 +27,7 @@ class AdminUserPolicy
             return false;
         }
 
-        return $admin->hasAnyRole(...RoleSlug::appointableDeskRoles());
+        return $this->admins->isManagedDeskUser($admin);
     }
 
     public function create(User $user): bool
@@ -45,7 +45,7 @@ class AdminUserPolicy
             return false;
         }
 
-        return $admin->hasAnyRole(...RoleSlug::appointableDeskRoles());
+        return $this->admins->isManagedDeskUser($admin);
     }
 
     public function suspend(User $user, User $admin): bool
@@ -62,7 +62,7 @@ class AdminUserPolicy
             return false;
         }
 
-        return $admin->hasAnyRole(...RoleSlug::appointableDeskRoles())
+        return $this->admins->isManagedDeskUser($admin)
             && $admin->status === UserStatus::Active;
     }
 
@@ -76,7 +76,7 @@ class AdminUserPolicy
             return false;
         }
 
-        return $admin->hasAnyRole(...RoleSlug::appointableDeskRoles())
+        return $this->admins->isManagedDeskUser($admin)
             && $admin->status === UserStatus::Suspended;
     }
 
@@ -94,7 +94,7 @@ class AdminUserPolicy
             return false;
         }
 
-        return $admin->hasAnyRole(...RoleSlug::appointableDeskRoles());
+        return $this->admins->isManagedDeskUser($admin);
     }
 
     public function resetPassword(User $user, User $admin): bool

@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Enums\PermissionSlug;
 use App\Enums\RoleSlug;
 use App\Enums\UserStatus;
+use App\Http\Resources\AdminUserResource;
+use App\Models\LoginActivity;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,7 +36,15 @@ class AdminUserService
     public function list(array $filters = []): Collection
     {
         $query = User::query()
-            ->whereHas('roles', fn (Builder $roles) => $roles->whereIn('slug', RoleSlug::appointableDeskRoleValues()))
+            ->where(function (Builder $outer) {
+                $outer->whereHas(
+                    'roles',
+                    fn (Builder $roles) => $roles->whereIn('slug', RoleSlug::appointableDeskRoleValues())
+                )->orWhereHas(
+                    'roles',
+                    fn (Builder $roles) => $roles->where('slug', 'like', 'desk_u_%')
+                );
+            })
             ->with($this->defaultRelations())
             ->orderBy('name');
 
@@ -42,7 +53,16 @@ class AdminUserService
         }
 
         if (! empty($filters['role'])) {
-            $query->whereHas('roles', fn (Builder $roles) => $roles->where('slug', $filters['role']));
+            $role = (string) $filters['role'];
+            $query->where(function (Builder $outer) use ($role) {
+                $outer->whereHas('roles', fn (Builder $roles) => $roles->where('slug', $role))
+                    ->orWhereHas(
+                        'roles',
+                        fn (Builder $roles) => $roles
+                            ->where('slug', 'like', 'desk_u_%')
+                            ->where('description', 'like', 'template:'.$role.'%')
+                    );
+            });
         }
 
         if (! empty($filters['search'])) {
@@ -63,6 +83,27 @@ class AdminUserService
     {
         return Role::query()
             ->whereIn('slug', RoleSlug::appointableDeskRoleValues())
+            ->with('permissions')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Permission catalogue for the Admin Users appoint form.
+     *
+     * @return Collection<int, Permission>
+     */
+    public function appointablePermissions(): Collection
+    {
+        return Permission::query()
+            ->whereNotIn('slug', array_map(
+                fn (PermissionSlug $slug) => $slug->value,
+                array_values(array_filter(
+                    PermissionSlug::cases(),
+                    fn (PermissionSlug $slug) => $slug->isSuperAdminOnly()
+                ))
+            ))
+            ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
     }
@@ -84,10 +125,16 @@ class AdminUserService
                 'email_verified_at' => now(),
             ]);
 
-            $this->rbac->assignUserRoles($user, [$roleSlug], $actor);
+            $permissions = array_key_exists('permissions', $attributes) && is_array($attributes['permissions'])
+                ? array_values($attributes['permissions'])
+                : null;
+
+            $this->applyDeskAccess($user, $roleSlug, $permissions, $actor);
+
             $this->rbac->audit($actor, 'admin.created', $user, [
                 'role' => $roleSlug,
                 'email' => $user->email,
+                'permissions' => $permissions,
             ]);
 
             return $user->fresh($this->defaultRelations());
@@ -102,6 +149,7 @@ class AdminUserService
         $this->assertManagedDeskUser($admin);
         $this->assertCanActOn($actor, $admin);
 
+        $admin->loadMissing('roles');
         $previousRoles = $admin->roleSlugs()->values()->all();
 
         return DB::transaction(function () use ($admin, $attributes, $actor, $previousRoles) {
@@ -116,11 +164,18 @@ class AdminUserService
                 $admin->fill($login)->save();
             }
 
-            if (! empty($attributes['role'])) {
-                $roleSlug = (string) $attributes['role'];
-                $this->assertAppointableRole($roleSlug, $actor);
-                $this->assertRoleChangeAllowed($admin, $roleSlug, $actor);
-                $this->rbac->assignUserRoles($admin, [$roleSlug], $actor);
+            $roleSlug = ! empty($attributes['role']) ? (string) $attributes['role'] : $this->templateRoleSlug($admin);
+            $permissions = array_key_exists('permissions', $attributes) && is_array($attributes['permissions'])
+                ? array_values($attributes['permissions'])
+                : null;
+
+            if (! empty($attributes['role']) || $permissions !== null) {
+                if (! empty($attributes['role'])) {
+                    $this->assertAppointableRole($roleSlug, $actor);
+                    $this->assertRoleChangeAllowed($admin, $roleSlug, $actor);
+                }
+
+                $this->applyDeskAccess($admin, $roleSlug, $permissions, $actor);
             }
 
             if (array_key_exists('status', $attributes) && $attributes['status'] !== null) {
@@ -133,6 +188,7 @@ class AdminUserService
                 'email' => $fresh->email,
                 'previous_roles' => $previousRoles,
                 'roles' => $fresh->roleSlugs()->values()->all(),
+                'permissions' => $permissions,
                 'status' => $fresh->status?->value,
             ]);
 
@@ -207,23 +263,128 @@ class AdminUserService
 
             $this->invalidateSessions($admin);
             $admin->roles()->detach();
+            $this->discardPersonalDeskRole($admin);
             $admin->update(['status' => UserStatus::Inactive]);
 
-            $hasPeopleProfile = $admin->staffProfile()->exists()
-                || $admin->studentProfile()->exists()
-                || $admin->guardianProfile()->exists();
+            if (! $this->canHardDelete($admin)) {
+                return;
+            }
 
-            if (! $hasPeopleProfile) {
+            try {
                 $admin->delete();
+            } catch (\Throwable) {
+                // Keep the deactivated row when historical records still reference it.
             }
         });
     }
 
+    /**
+     * Hard-delete only when no restricted historical rows still point at the user.
+     */
+    private function canHardDelete(User $admin): bool
+    {
+        if ($admin->staffProfile()->exists()
+            || $admin->studentProfile()->exists()
+            || $admin->guardianProfile()->exists()
+            || $admin->authorProfile()->exists()
+            || $admin->posts()->exists()
+            || $admin->recordedPayments()->exists()
+            || $admin->markedAttendance()->exists()
+            || $admin->enteredScores()->exists()
+            || $admin->uploadedDocuments()->exists()
+            || $admin->assignedEnquiries()->exists()) {
+            return false;
+        }
+
+        return ! DB::table('announcements')->where('created_by', $admin->id)->exists()
+            && ! DB::table('conversations')->where('created_by', $admin->id)->exists()
+            && ! DB::table('conversation_participants')->where('user_id', $admin->id)->exists()
+            && ! DB::table('messages')->where('sender_id', $admin->id)->exists()
+            && ! (Schema::hasTable('outbound_mails') && DB::table('outbound_mails')->where('sent_by', $admin->id)->exists());
+    }
+
     public function assertManagedDeskUser(User $admin): void
     {
-        if (! $admin->hasAnyRole(...RoleSlug::appointableDeskRoles())) {
+        if (! $this->isManagedDeskUser($admin)) {
             abort(404);
         }
+    }
+
+    public function isManagedDeskUser(User $admin): bool
+    {
+        if ($admin->hasAnyRole(...RoleSlug::appointableDeskRoles())) {
+            return true;
+        }
+
+        return $admin->roles()->where('slug', 'like', 'desk_u_%')->exists();
+    }
+
+    /**
+     * Full dossier for the Admin Users view sheet.
+     *
+     * @return array<string, mixed>
+     */
+    public function dossier(User $admin): array
+    {
+        $admin->loadMissing($this->defaultRelations());
+
+        $base = (new AdminUserResource($admin))->resolve();
+        $permissions = $admin->permissionSlugs()->values()->all();
+
+        $permissionDetails = collect($permissions)->map(function (string $slug) {
+            $case = PermissionSlug::tryFrom($slug);
+
+            return [
+                'slug' => $slug,
+                'name' => $case?->label() ?? $slug,
+                'module' => $case?->module() ?? 'Other',
+            ];
+        })->groupBy('module')->map(fn ($items, $module) => [
+            'module' => $module,
+            'permissions' => $items->values()->all(),
+        ])->values()->all();
+
+        $roleRows = $admin->roles->map(function (Role $role) {
+            $slug = (string) ($role->slug instanceof RoleSlug ? $role->slug->value : $role->slug);
+            $isPersonal = str_starts_with($slug, 'desk_u_');
+
+            return [
+                'slug' => $slug,
+                'name' => $isPersonal ? 'Custom desk access' : $role->name,
+                'is_personal' => $isPersonal,
+                'is_system_role' => (bool) $role->is_system_role,
+                'permissions_count' => $role->permissions->count(),
+            ];
+        })->values()->all();
+
+        $logins = LoginActivity::query()
+            ->where('user_id', $admin->id)
+            ->orderByDesc('logged_in_at')
+            ->limit(25)
+            ->get();
+
+        $totalLogins = LoginActivity::query()->where('user_id', $admin->id)->count();
+        $lastLogin = $logins->first();
+
+        return array_merge($base, [
+            'role_details' => $roleRows,
+            'permission_groups' => $permissionDetails,
+            'permissions_count' => count($permissions),
+            'login_summary' => [
+                'total_logins' => $totalLogins,
+                'last_login_at' => $lastLogin?->logged_in_at?->toIso8601String(),
+                'last_portal' => $lastLogin?->portal instanceof \App\Enums\AuthPortal
+                    ? $lastLogin->portal->value
+                    : ($lastLogin?->portal ? (string) $lastLogin->portal : null),
+                'recent' => $logins->map(fn (LoginActivity $row) => [
+                    'logged_in_at' => $row->logged_in_at?->toIso8601String(),
+                    'portal' => $row->portal instanceof \App\Enums\AuthPortal
+                        ? $row->portal->value
+                        : (string) $row->portal,
+                    'ip_address' => $row->ip_address,
+                ])->values()->all(),
+            ],
+        ]);
     }
 
     public function canManage(User $actor): bool
@@ -248,6 +409,129 @@ class AdminUserService
         }
 
         return $actor->hasRole(RoleSlug::SuperAdmin) || $actor->hasPermission($permission);
+    }
+
+    public function personalDeskRoleSlug(User $user): string
+    {
+        return 'desk_u_'.$user->id;
+    }
+
+    public function templateRoleSlug(User $admin): string
+    {
+        $personal = $admin->roles->first(
+            fn (Role $role) => str_starts_with((string) $role->slug, 'desk_u_')
+        );
+
+        if ($personal !== null && is_string($personal->description)
+            && preg_match('/(?:^|\b)template:([a-z0-9_]+)/', $personal->description, $matches) === 1) {
+            return $matches[1];
+        }
+
+        $primary = $admin->roles->first(
+            fn (Role $role) => ! str_starts_with((string) $role->slug, 'desk_u_')
+        );
+
+        return $primary !== null
+            ? (string) ($primary->slug instanceof RoleSlug ? $primary->slug->value : $primary->slug)
+            : '';
+    }
+
+    /**
+     * @param  list<string>|null  $permissions
+     */
+    private function applyDeskAccess(User $user, string $roleSlug, ?array $permissions, User $actor): void
+    {
+        if ($roleSlug === RoleSlug::SuperAdmin->value) {
+            $this->discardPersonalDeskRole($user);
+            $this->rbac->assignUserRoles($user, [RoleSlug::SuperAdmin->value], $actor);
+
+            return;
+        }
+
+        if ($permissions === null) {
+            $this->discardPersonalDeskRole($user);
+            $this->rbac->assignUserRoles($user, [$roleSlug], $actor);
+
+            return;
+        }
+
+        $normalized = $this->normalizeDeskPermissions($permissions);
+        $slug = $this->personalDeskRoleSlug($user);
+        $templateName = Role::query()->where('slug', $roleSlug)->value('name') ?: $roleSlug;
+
+        $role = Role::query()->updateOrCreate(
+            ['slug' => $slug],
+            [
+                'name' => $templateName.' · '.$user->name,
+                'description' => 'template:'.$roleSlug,
+                'is_system_role' => false,
+            ]
+        );
+
+        $role->syncPermissions($normalized);
+        $this->rbac->assignUserRoles($user, [$slug], $actor);
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     * @return list<string>
+     */
+    private function normalizeDeskPermissions(array $permissions): array
+    {
+        $slugs = collect($permissions)
+            ->map(fn ($permission) => (string) $permission)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($slugs->isEmpty()) {
+            throw ValidationException::withMessages([
+                'permissions' => 'Select at least one desk permission.',
+            ]);
+        }
+
+        if (! $slugs->contains(PermissionSlug::DeskView->value)
+            && ! $slugs->contains(PermissionSlug::DeskAdminister->value)) {
+            throw ValidationException::withMessages([
+                'permissions' => 'Desk access requires the dashboard permission (desk.view).',
+            ]);
+        }
+
+        $forbidden = $slugs->filter(function (string $slug) {
+            $case = PermissionSlug::tryFrom($slug);
+
+            return $case !== null && $case->isSuperAdminOnly();
+        });
+
+        if ($forbidden->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'permissions' => 'Admin-user permissions can only be held by a super administrator.',
+            ]);
+        }
+
+        $known = Permission::query()->whereIn('slug', $slugs->all())->pluck('slug')->map(fn ($slug) => (string) $slug);
+
+        if ($known->count() !== $slugs->count()) {
+            throw ValidationException::withMessages([
+                'permissions' => 'One or more permissions could not be found.',
+            ]);
+        }
+
+        return $slugs->all();
+    }
+
+    private function discardPersonalDeskRole(User $user): void
+    {
+        $slug = $this->personalDeskRoleSlug($user);
+        $role = Role::query()->where('slug', $slug)->first();
+
+        if ($role === null) {
+            return;
+        }
+
+        $role->permissions()->detach();
+        $role->users()->detach();
+        $role->delete();
     }
 
     private function applyStatus(User $admin, UserStatus $status, User $actor): void

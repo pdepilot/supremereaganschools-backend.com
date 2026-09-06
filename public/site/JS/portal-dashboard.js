@@ -151,6 +151,59 @@
     }).join("");
   };
 
+  const renderGrowth = function (growth) {
+    const copy = document.querySelector("[data-growth-copy]");
+    const insights = document.querySelector("[data-growth-insights]");
+    const charts = document.querySelector("[data-growth-charts]");
+    if (!charts) return;
+
+    if (copy && growth && growth.copy) {
+      copy.textContent = growth.copy;
+    }
+
+    if (insights) {
+      const rows = (growth && growth.insights) || [];
+      insights.innerHTML = rows.map(function (item) {
+        const tone = item.tone === "warn" ? " is-warn" : "";
+        return '<p class="growth-insight' + tone + '">' + escapeHtml(item.text || "") + "</p>";
+      }).join("");
+    }
+
+    const series = (growth && growth.series) || [];
+    if (!series.length) {
+      charts.innerHTML = "<p>No growth series are available for this desk yet.</p>";
+      return;
+    }
+
+    charts.innerHTML = series.map(function (card) {
+      const points = card.points || [];
+      const max = Math.max.apply(null, points.map(function (point) {
+        return Number(point.value) || 0;
+      }).concat([1]));
+      const change = Number(card.change_percent);
+      const changeClass = !Number.isFinite(change) || change === 0
+        ? ""
+        : (change > 0 ? " is-up" : " is-down");
+      const bars = points.map(function (point) {
+        const value = Number(point.value) || 0;
+        const height = Math.max(4, Math.round((value / max) * 100));
+        const title = point.display || formatCount(value);
+        return '<div class="growth-bar" title="' + escapeHtml(String(title)) + '">'
+          + "<i style=\"height:" + height + "%\"></i>"
+          + "<small>" + escapeHtml(point.label || "") + "</small>"
+          + "</div>";
+      }).join("");
+
+      return '<article class="growth-card">'
+        + "<header><h3>" + escapeHtml(card.title || "Series") + "</h3>"
+        + '<span class="growth-change' + changeClass + '">' + escapeHtml(card.change_label || "—") + "</span>"
+        + "</header>"
+        + '<p class="growth-total">6-month total · ' + escapeHtml(card.total_label || "0") + "</p>"
+        + '<div class="growth-bars">' + bars + "</div>"
+        + "</article>";
+    }).join("");
+  };
+
   const paint = function (data) {
     if (!data) return;
     applyGreeting(data.name);
@@ -198,6 +251,10 @@
     if (visibility.forms !== false) {
       animateValue(document.querySelector('[data-metric="forms"]'), metrics.forms, "", "");
       setText('[data-metric-delta="forms"]', metrics.forms_delta);
+    }
+
+    if (visibility.analytics !== false) {
+      renderGrowth(data.growth);
     }
 
     const house = data.house || {};

@@ -40,6 +40,10 @@ class UpdateAdminUserRequest extends FormRequest
             $payload['role'] = trim($this->role);
         }
 
+        if ($this->has('permissions') && ! is_array($this->permissions)) {
+            $payload['permissions'] = [];
+        }
+
         if ($payload !== []) {
             $this->merge($payload);
         }
@@ -52,6 +56,7 @@ class UpdateAdminUserRequest extends FormRequest
     {
         /** @var User $admin */
         $admin = $this->route('admin');
+        $isSuper = $this->input('role') === RoleSlug::SuperAdmin->value;
 
         return [
             'first_name' => ['sometimes', 'required', 'string', 'max:120'],
@@ -66,6 +71,8 @@ class UpdateAdminUserRequest extends FormRequest
             ],
             'role' => ['sometimes', 'required', 'string', Rule::in(RoleSlug::appointableDeskRoleValues())],
             'status' => ['sometimes', 'required', Rule::enum(UserStatus::class)],
+            'permissions' => [$isSuper ? 'sometimes' : 'nullable', 'array'],
+            'permissions.*' => ['string', 'distinct', Rule::exists('permissions', 'slug')],
         ];
     }
 }

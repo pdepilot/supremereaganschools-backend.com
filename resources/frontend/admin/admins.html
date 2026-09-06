@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260905a">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260906b">
 </head>
 <body data-page="admins">
   <div class="vault">
@@ -109,7 +109,7 @@
             <div class="panel-title">
               <div>
                 <h2 data-admins-form-title>Add admin user</h2>
-                <p data-admins-form-copy>Create a desk account and assign one appointable role</p>
+                <p data-admins-form-copy>Create a desk account, pick a role template, and tick the modules they may open</p>
               </div>
             </div>
             <form data-admins-form>
@@ -129,10 +129,16 @@
                 <input id="adminEmail" name="email" type="email" autocomplete="email" required>
               </div>
               <div class="field">
-                <label for="adminRole">Role</label>
+                <label for="adminRole">Role template</label>
                 <select id="adminRole" name="role" required data-admins-role-select>
                   <option value="">Select a role</option>
                 </select>
+                <p class="field-hint">Choosing a role fills the permission list. Adjust the ticks before sealing.</p>
+              </div>
+              <div class="field" data-admins-permissions-field>
+                <label>Desk permissions</label>
+                <div class="permission-grid" data-admins-permissions></div>
+                <p class="field-hint" data-admins-permissions-hint>Only ticked modules appear in this admin’s sidebar.</p>
               </div>
               <div class="field-row" data-admins-password-row>
                 <div class="field">
@@ -156,6 +162,18 @@
       </main>
     </div>
   </div>
+  <div class="desk-alert desk-sheet" data-admin-view hidden>
+    <div class="desk-alert-backdrop" data-admin-view-dismiss></div>
+    <div class="desk-sheet-card" role="dialog" aria-modal="true" aria-labelledby="adminViewTitle">
+      <div data-admin-view-head></div>
+      <div data-admin-view-body></div>
+      <p data-admin-view-notice></p>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-admin-view-dismiss>Close</button>
+        <button type="button" class="solid-btn" data-revise-admin-from-view hidden>Edit</button>
+      </div>
+    </div>
+  </div>
   <div class="desk-alert" data-desk-alert hidden>
     <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
     <div class="desk-alert-card" role="dialog" aria-modal="true">
@@ -169,6 +187,6 @@
     </div>
   </div>
   <script src="../JS/admin-command.js"></script>
-  <script src="../JS/portal-admins.js"></script>
+  <script src="../JS/portal-admins.js?v=20260906b"></script>
 </body>
 </html>

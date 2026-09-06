@@ -1,10 +1,9 @@
 <?php
 
-use App\Enums\RoleSlug;
 use App\Http\Controllers\Api\V1\RbacController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['web', 'auth', 'role:'.RoleSlug::portalMiddleware()])->group(function () {
+Route::middleware(['web', 'auth', 'role:portal'])->group(function () {
     Route::get('roles', [RbacController::class, 'roles']);
     Route::post('roles', [RbacController::class, 'storeRole']);
     Route::get('permissions', [RbacController::class, 'permissions']);

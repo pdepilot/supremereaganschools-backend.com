@@ -1,12 +1,12 @@
 <?php
 
-use App\Enums\RoleSlug;
 use App\Http\Controllers\Api\V1\AdminUserController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['web', 'auth', 'role:'.RoleSlug::portalMiddleware()])->group(function () {
+Route::middleware(['web', 'auth', 'role:portal'])->group(function () {
     Route::get('admins', [AdminUserController::class, 'index']);
     Route::get('admins/roles', [AdminUserController::class, 'roles']);
+    Route::get('admins/permissions', [AdminUserController::class, 'permissions']);
     Route::post('admins', [AdminUserController::class, 'store']);
     Route::get('admins/{admin}', [AdminUserController::class, 'show'])->whereNumber('admin');
     Route::put('admins/{admin}', [AdminUserController::class, 'update'])->whereNumber('admin');

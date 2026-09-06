@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Support\FrontendLinker;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class FrontendLinkerTest extends TestCase
 {
@@ -61,5 +61,27 @@ HTML, 'public');
 
         $this->assertStringContainsString('href="/portal/admins"', $html);
         $this->assertStringContainsString('href="/portal/account"', $html);
+    }
+
+    public function test_injects_idle_session_script_on_admin_desk_pages(): void
+    {
+        $html = (new FrontendLinker)->rewrite(<<<'HTML'
+<body data-page="dashboard">
+  <a data-logout href="#">Log out</a>
+  <script src="../JS/admin-command.js"></script>
+</body>
+HTML, 'admin');
+
+        $this->assertStringContainsString('src="/site/JS/portal-session.js"', $html);
+        $this->assertStringContainsString('src="/site/JS/admin-command.js"', $html);
+        $this->assertLessThan(
+            strpos($html, 'admin-command.js'),
+            strpos($html, 'portal-session.js'),
+        );
+    }
+
+    public function test_session_lifetime_defaults_to_fifteen_minutes(): void
+    {
+        $this->assertSame(15, (int) config('session.lifetime'));
     }
 }

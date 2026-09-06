@@ -39,6 +39,10 @@ class StoreAdminUserRequest extends FormRequest
             $payload['role'] = trim($this->role);
         }
 
+        if ($this->has('permissions') && ! is_array($this->permissions)) {
+            $payload['permissions'] = [];
+        }
+
         if ($payload !== []) {
             $this->merge($payload);
         }
@@ -49,12 +53,16 @@ class StoreAdminUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isSuper = $this->input('role') === RoleSlug::SuperAdmin->value;
+
         return [
             'first_name' => ['required', 'string', 'max:120'],
             'last_name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'string', Rule::in(RoleSlug::appointableDeskRoleValues())],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'permissions' => [$isSuper ? 'sometimes' : 'nullable', 'array'],
+            'permissions.*' => ['string', 'distinct', Rule::exists('permissions', 'slug')],
         ];
     }
 }

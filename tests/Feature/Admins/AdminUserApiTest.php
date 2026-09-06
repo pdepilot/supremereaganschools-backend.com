@@ -121,6 +121,63 @@ class AdminUserApiTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $target->id]);
     }
 
+    public function test_delete_deactivates_admin_when_historical_records_block_hard_delete(): void
+    {
+        $super = $this->userWithRole(RoleSlug::SuperAdmin);
+        $target = $this->userWithRole(RoleSlug::Accountant, [
+            'email' => 'ledger@school.test',
+            'password' => 'password',
+        ]);
+
+        $session = $this->academicSession();
+        $term = $this->termFor($session);
+        $campus = $this->campus();
+        $offering = $this->offering(null, $session, $campus);
+        $student = $this->student($this->userWithRole(RoleSlug::Student, ['email' => 'pupil.delete@school.test']));
+        $enrollment = $this->enroll($student, $offering);
+
+        $invoice = \App\Models\Invoice::query()->create([
+            'number' => 'INV/DEL/0001',
+            'student_profile_id' => $student->id,
+            'enrollment_id' => $enrollment->id,
+            'academic_session_id' => $session->id,
+            'term_id' => $term->id,
+            'status' => \App\Enums\InvoiceStatus::Paid,
+            'total_kobo' => 100000,
+            'paid_kobo' => 100000,
+        ]);
+
+        \App\Models\Payment::query()->create([
+            'reference' => 'PAY-DEL-1',
+            'student_profile_id' => $student->id,
+            'invoice_id' => $invoice->id,
+            'amount_kobo' => 100000,
+            'channel' => \App\Enums\FeeChannel::Cash,
+            'paid_at' => now(),
+            'status' => \App\Enums\PaymentStatus::Posted,
+            'recorded_by' => $target->id,
+        ]);
+
+        $this->actingAs($super)
+            ->deleteJson('/api/v1/admins/'.$target->id)
+            ->assertOk();
+
+        $target->refresh();
+        $this->assertSame(UserStatus::Inactive, $target->status);
+        $this->assertFalse($target->roles()->exists());
+
+        $this->actingAs($super)
+            ->getJson('/api/v1/admins')
+            ->assertOk()
+            ->assertJsonMissing(['email' => 'ledger@school.test']);
+
+        $this->postJson('/login', [
+            'email' => 'ledger@school.test',
+            'password' => 'password',
+            'portal' => 'portal',
+        ])->assertUnprocessable();
+    }
+
     public function test_super_admin_cannot_delete_or_suspend_self(): void
     {
         $super = $this->userWithRole(RoleSlug::SuperAdmin);
@@ -257,6 +314,155 @@ class AdminUserApiTest extends TestCase
             'password' => 'freshPass99',
             'portal' => 'portal',
         ])->assertOk();
+    }
+
+    public function test_super_admin_can_create_admin_with_custom_permissions(): void
+    {
+        $super = $this->userWithRole(RoleSlug::SuperAdmin);
+
+        $create = $this->actingAs($super)->postJson('/api/v1/admins', [
+            'first_name' => 'Limited',
+            'last_name' => 'Desk',
+            'email' => 'limited.desk@school.test',
+            'role' => RoleSlug::ContentManager->value,
+            'permissions' => [
+                PermissionSlug::DeskView->value,
+                PermissionSlug::NewsView->value,
+                PermissionSlug::NewsManage->value,
+            ],
+            'password' => 'securePass1',
+            'password_confirmation' => 'securePass1',
+        ]);
+
+        $create->assertCreated()
+            ->assertJsonPath('data.email', 'limited.desk@school.test')
+            ->assertJsonPath('data.role', RoleSlug::ContentManager->value)
+            ->assertJsonPath('data.has_custom_permissions', true);
+
+        $admin = User::query()->where('email', 'limited.desk@school.test')->firstOrFail();
+        $this->assertFalse($admin->hasRole(RoleSlug::ContentManager));
+        $this->assertTrue($admin->roles()->where('slug', 'desk_u_'.$admin->id)->exists());
+        $this->assertTrue($admin->hasPermission(PermissionSlug::DeskView));
+        $this->assertTrue($admin->hasPermission(PermissionSlug::NewsManage));
+        $this->assertFalse($admin->hasPermission(PermissionSlug::FeesView));
+        $this->assertTrue($admin->canAccessDeskPage('news'));
+        $this->assertFalse($admin->canAccessDeskPage('fees'));
+        $this->assertFalse($admin->canAccessDeskPage('admins'));
+
+        $this->postJson('/login', [
+            'email' => 'limited.desk@school.test',
+            'password' => 'securePass1',
+            'portal' => 'portal',
+        ])->assertOk()->assertJsonPath('data.redirect', '/portal/home');
+
+        $this->actingAs($admin)
+            ->get('/portal/news')
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->get('/portal/fees')
+            ->assertForbidden();
+    }
+
+    public function test_super_admin_can_update_admin_permissions(): void
+    {
+        $super = $this->userWithRole(RoleSlug::SuperAdmin);
+        $target = $this->userWithRole(RoleSlug::Accountant, [
+            'email' => 'books.custom@school.test',
+        ]);
+
+        $this->actingAs($super)->putJson('/api/v1/admins/'.$target->id, [
+            'role' => RoleSlug::Accountant->value,
+            'permissions' => [
+                PermissionSlug::DeskView->value,
+                PermissionSlug::FeesView->value,
+            ],
+        ])->assertOk()
+            ->assertJsonPath('data.has_custom_permissions', true);
+
+        $target->refresh()->load('roles.permissions');
+        $this->assertTrue($target->hasPermission(PermissionSlug::FeesView));
+        $this->assertFalse($target->hasPermission(PermissionSlug::PaymentsManage));
+        $this->assertTrue($target->canAccessDeskPage('fees'));
+        $this->assertFalse($target->canAccessDeskPage('news'));
+    }
+
+    public function test_create_rejects_admin_permissions_and_requires_desk_view(): void
+    {
+        $super = $this->userWithRole(RoleSlug::SuperAdmin);
+
+        $this->actingAs($super)->postJson('/api/v1/admins', [
+            'first_name' => 'No',
+            'last_name' => 'Desk',
+            'email' => 'nodesk@school.test',
+            'role' => RoleSlug::Accountant->value,
+            'permissions' => [PermissionSlug::FeesView->value],
+            'password' => 'securePass1',
+            'password_confirmation' => 'securePass1',
+        ])->assertUnprocessable();
+
+        $this->actingAs($super)->postJson('/api/v1/admins', [
+            'first_name' => 'Bad',
+            'last_name' => 'Grant',
+            'email' => 'badgrant@school.test',
+            'role' => RoleSlug::Accountant->value,
+            'permissions' => [
+                PermissionSlug::DeskView->value,
+                PermissionSlug::AdminsView->value,
+            ],
+            'password' => 'securePass1',
+            'password_confirmation' => 'securePass1',
+        ])->assertUnprocessable();
+    }
+
+    public function test_super_admin_can_view_admin_dossier_with_roles_permissions_and_logins(): void
+    {
+        $super = $this->userWithRole(RoleSlug::SuperAdmin, [
+            'email' => 'chief.view@school.test',
+            'password' => 'password',
+        ]);
+        $target = $this->userWithRole(RoleSlug::ContentManager, [
+            'email' => 'news.view@school.test',
+            'password' => 'password',
+        ]);
+
+        $this->postJson('/login', [
+            'email' => 'news.view@school.test',
+            'password' => 'password',
+            'portal' => 'portal',
+        ])->assertOk();
+
+        $this->actingAs($super)
+            ->getJson('/api/v1/admins/'.$target->id)
+            ->assertOk()
+            ->assertJsonPath('data.email', 'news.view@school.test')
+            ->assertJsonPath('data.role', RoleSlug::ContentManager->value)
+            ->assertJsonPath('data.login_summary.total_logins', 1)
+            ->assertJsonPath('data.login_summary.recent.0.portal', 'portal')
+            ->assertJsonStructure([
+                'data' => [
+                    'role_details',
+                    'permission_groups',
+                    'login_summary' => ['total_logins', 'last_login_at', 'recent'],
+                ],
+            ]);
+
+        $this->assertTrue(
+            collect($this->actingAs($super)->getJson('/api/v1/admins/'.$target->id)->json('data.permissions') ?: [])
+                ->contains(PermissionSlug::NewsManage->value)
+        );
+    }
+
+    public function test_admins_portal_page_includes_view_sheet(): void
+    {
+        $super = $this->userWithRole(RoleSlug::SuperAdmin);
+
+        $this->actingAs($super)
+            ->get('/portal/admins')
+            ->assertOk()
+            ->assertSee('data-admin-view', false)
+            ->assertSee('data-admin-view-body', false)
+            ->assertSee('portal-admins.js', false);
     }
 
     public function test_parent_and_student_roles_are_not_appointable(): void

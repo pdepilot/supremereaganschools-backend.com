@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Admissions;
 
+use App\Enums\ApplicationStatus;
 use App\Enums\EnquiryStatus;
 use App\Enums\RoleSlug;
 use App\Mail\SchoolCircularMail;
+use App\Models\AdmissionApplication;
 use App\Models\ContactEnquiry;
 use App\Models\ContactEnquiryReply;
 use App\Models\OutboundMail;
@@ -44,6 +46,8 @@ class PortalContactDeskTest extends TestCase
             ->assertSee('data-contact-letter', false)
             ->assertSee('data-contact-reply-form', false)
             ->assertSee('data-contact-delete', false)
+            ->assertSee('data-application-list', false)
+            ->assertSee('data-desk-tab="applications"', false)
             ->assertSee('data-desk-alert', false)
             ->assertSee('portal-contact.js', false)
             ->assertSee('href="/portal/contact"', false)
@@ -52,10 +56,57 @@ class PortalContactDeskTest extends TestCase
 
         $js = (string) file_get_contents(public_path('site/JS/portal-contact.js'));
         $this->assertStringContainsString('/api/v1/contact-enquiries', $js);
+        $this->assertStringContainsString('/api/v1/admission-applications', $js);
         $this->assertStringContainsString('/reply', $js);
         $this->assertStringContainsString('DELETE', $js);
         $this->assertStringContainsString('confirmDesk', $js);
         $this->assertStringContainsString('escapeHtml', $js);
+    }
+
+    public function test_admin_can_list_and_update_submitted_admission_applications(): void
+    {
+        $admin = $this->admin();
+        $this->level(['name' => 'Junior Secondary', 'slug' => 'jss']);
+        $this->academicSession(['name' => '2025/2026']);
+
+        $this->post('/api/v1/admission-applications', [
+            'session' => '2025/2026',
+            'level' => 'Junior Secondary',
+            'classApplied' => 'JSS 1',
+            'entryTerm' => 'First Term',
+            'surname' => 'Okafor',
+            'firstName' => 'Chiamaka',
+            'gender' => 'Female',
+            'dob' => '2014-05-12',
+            'nationality' => 'Nigerian',
+            'stateOfOrigin' => 'Imo',
+            'homeAddress' => '12 Wetheral Road, Owerri',
+            'parentName' => 'Mrs. Okafor',
+            'relationship' => 'mother',
+            'parentPhone' => '08031112233',
+            'parentEmail' => 'okafor.parent@school.test',
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'submitted');
+
+        $application = AdmissionApplication::query()->firstOrFail();
+
+        $this->actingAs($admin)->getJson('/api/v1/admission-applications')
+            ->assertOk()
+            ->assertJsonPath('data.0.reference', $application->reference)
+            ->assertJsonPath('data.0.full_name', 'Okafor Chiamaka')
+            ->assertJsonPath('data.0.parent_email', 'okafor.parent@school.test');
+
+        $this->actingAs($admin)->getJson('/api/v1/admission-applications/'.$application->id)
+            ->assertOk()
+            ->assertJsonPath('data.class_applied', 'JSS 1')
+            ->assertJsonPath('data.status', 'submitted');
+
+        $this->actingAs($admin)->putJson('/api/v1/admission-applications/'.$application->id, [
+            'status' => ApplicationStatus::UnderReview->value,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'under_review');
     }
 
     public function test_parents_cannot_open_the_contact_desk(): void

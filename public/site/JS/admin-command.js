@@ -87,6 +87,10 @@
   document.querySelectorAll("[data-logout]").forEach(function (link) {
     link.addEventListener("click", function (event) {
       event.preventDefault();
+      if (typeof window.srsLogout === "function") {
+        window.srsLogout();
+        return;
+      }
       fetch("/logout", {
         method: "POST",
         headers: {
@@ -96,7 +100,7 @@
         },
         credentials: "same-origin"
       }).finally(function () {
-        window.location.replace(loginHref);
+        window.location.replace((window.srsLoginPath && window.srsLoginPath()) || loginHref);
       });
     });
   });

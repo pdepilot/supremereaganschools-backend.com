@@ -193,15 +193,31 @@ class FrontendLinker
             return (string) preg_replace('/<\/body>/i', '  '.$tag."\n</body>", $html, 1);
         }
 
-        if (str_contains($html, 'portal-session.js') || str_contains($html, 'admin-command.js')) {
+        if (str_contains($html, 'portal-session.js')) {
             return $html;
         }
 
-        if (! str_contains($html, 'data-logout') && ! str_contains($html, 'logout-link') && ! str_contains($html, 'ps-logout')) {
+        $isDesk = str_contains($html, 'admin-command.js')
+            || str_contains($html, 'data-logout')
+            || str_contains($html, 'logout-link')
+            || str_contains($html, 'ps-logout');
+
+        if (! $isDesk) {
             return $html;
         }
 
         $tag = '<script src="/site/JS/portal-session.js"></script>';
+
+        if (preg_match('/<script\b[^>]*src=["\'][^"\']*admin-command\.js/i', $html) === 1) {
+            $updated = preg_replace(
+                '/(<script\b[^>]*src=["\'][^"\']*admin-command\.js)/i',
+                $tag."\n  $1",
+                $html,
+                1,
+            );
+
+            return is_string($updated) ? $updated : $html;
+        }
 
         if (preg_match('/<script\b/i', $html) === 1) {
             $updated = preg_replace('/<script\b/i', $tag."\n<script", $html, 1);
