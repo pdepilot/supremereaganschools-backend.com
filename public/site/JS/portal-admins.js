@@ -18,13 +18,35 @@
     return fetch(url, Object.assign({
       credentials: "same-origin"
     }, options, { headers })).then(function (response) {
+      const type = response.headers.get("content-type") || "";
+      if (type.indexOf("application/json") === -1) {
+        if (response.status === 401) window.location.replace("/portal/login");
+        return {
+          ok: false,
+          status: response.status,
+          body: { message: response.status === 419
+            ? "Your desk session expired. Refresh and sign in again."
+            : "The office could not complete that request (" + response.status + ")." }
+        };
+      }
       return response.json().then(function (body) {
         if (response.status === 401) window.location.replace("/portal/login");
         return { ok: response.ok, status: response.status, body: body };
       }).catch(function () {
-        return { ok: false, status: response.status, body: {} };
+        return { ok: false, status: response.status, body: { message: "The office returned an unreadable reply." } };
       });
+    }).catch(function () {
+      return { ok: false, status: 0, body: { message: "Network error. Check your connection and try again." } };
     });
+  };
+
+  const setButtonState = function (button, busy, label) {
+    if (!button) return;
+    if (!button.dataset.label) button.dataset.label = button.textContent;
+    button.disabled = !!busy;
+    button.classList.toggle("is-busy", !!busy);
+    if (label) button.textContent = label;
+    else if (!busy) button.textContent = button.dataset.label;
   };
 
   const firstError = function (body) {
@@ -128,6 +150,9 @@
     node.textContent = message || "";
     node.classList.toggle("is-ok", !!ok && !!message);
     node.classList.toggle("is-error", !ok && !!message);
+    if (message) {
+      try { node.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+    }
   };
 
   const formatDate = function (value) {
@@ -502,7 +527,7 @@
         danger: true
       }).then(function (ok) {
         if (!ok) return;
-        request("/api/v1/admins/" + deleteId, { method: "DELETE" }).then(function (res) {
+        request("/api/v1/admins/" + deleteId + "/remove", { method: "POST", body: "{}" }).then(function (res) {
           if (!res.ok) return setNotice(notice, firstError(res.body), false);
           setNotice(notice, "Admin removed from the desk.", true);
           if (editingId && String(editingId) === String(deleteId)) resetForm();
@@ -546,21 +571,49 @@
         role: roleSelect ? roleSelect.value : ""
       };
 
+      if (!payload.first_name || !payload.last_name || !payload.email) {
+        setNotice(formNotice, "First name, last name, and email are required.", false);
+        return;
+      }
+      if (!payload.role) {
+        setNotice(formNotice, "Choose a role template before saving.", false);
+        return;
+      }
+
       if (payload.role !== "super_admin") {
         payload.permissions = selectedPermissions();
+        if (!payload.permissions.length) {
+          setNotice(formNotice, "Tick at least one desk permission.", false);
+          return;
+        }
       }
 
       if (!editingId) {
         payload.password = passwordInput ? passwordInput.value : "";
         payload.password_confirmation = passwordConfirm ? passwordConfirm.value : "";
+        if (!payload.password || payload.password.length < 8) {
+          setNotice(formNotice, "Password must be at least 8 characters.", false);
+          return;
+        }
+        if (payload.password !== payload.password_confirmation) {
+          setNotice(formNotice, "Password confirmation does not match.", false);
+          return;
+        }
       }
 
       const url = editingId ? "/api/v1/admins/" + editingId : "/api/v1/admins";
-      const method = editingId ? "PUT" : "POST";
+      const wasEditing = !!editingId;
+      setButtonState(submit, true, wasEditing ? "Saving…" : "Creating…");
+      setNotice(formNotice, wasEditing ? "Saving admin…" : "Creating admin…", true);
 
-      request(url, { method: method, body: JSON.stringify(payload) }).then(function (res) {
+      request(url, {
+        method: "POST",
+        headers: wasEditing ? { "X-HTTP-METHOD-OVERRIDE": "PUT" } : {},
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        setButtonState(submit, false);
         if (!res.ok) return setNotice(formNotice, firstError(res.body), false);
-        setNotice(formNotice, editingId ? "Admin updated." : "Admin created.", true);
+        setNotice(formNotice, wasEditing ? "Admin saved." : "Admin created.", true);
         resetForm();
         return load();
       });
@@ -574,8 +627,10 @@
       if (password == null) return;
       const confirm = window.prompt("Confirm the new password:");
       if (confirm == null) return;
+      setNotice(formNotice, "Resetting password…", true);
       request("/api/v1/admins/" + editingId + "/password", {
-        method: "PUT",
+        method: "POST",
+        headers: { "X-HTTP-METHOD-OVERRIDE": "PUT" },
         body: JSON.stringify({ password: password, password_confirmation: confirm })
       }).then(function (res) {
         if (!res.ok) return setNotice(formNotice, firstError(res.body), false);

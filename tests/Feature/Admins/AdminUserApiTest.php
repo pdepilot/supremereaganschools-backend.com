@@ -92,6 +92,16 @@ class AdminUserApiTest extends TestCase
             ->assertJsonPath('data.email', 'books.desk@school.test')
             ->assertJsonPath('data.role', RoleSlug::Principal->value);
 
+        $this->actingAs($super)->postJson('/api/v1/admins/'.$target->id, [
+            'first_name' => 'Books',
+            'last_name' => 'Officer',
+            'email' => 'books.desk@school.test',
+            'role' => RoleSlug::Principal->value,
+        ], [
+            'HTTP_X_HTTP_METHOD_OVERRIDE' => 'PUT',
+        ])->assertOk()
+            ->assertJsonPath('data.email', 'books.desk@school.test');
+
         $this->actingAs($super)
             ->postJson('/api/v1/admins/'.$target->id.'/suspend')
             ->assertOk()

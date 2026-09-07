@@ -1304,11 +1304,27 @@ button.cell.is-active {
 [data-inbox-notice],
 [data-contact-notice],
 [data-contact-form-notice],
-[data-report-notice] {
+[data-report-notice],
+[data-admins-notice],
+[data-admins-form-notice],
+[data-admin-view-notice] {
   min-height: 1.1rem;
   margin: 0 0 0.75rem;
   color: #8a3b2a;
   font-size: 0.75rem;
+}
+
+[data-admins-form-notice].is-ok,
+[data-admins-notice].is-ok,
+[data-admin-view-notice].is-ok {
+  color: #1f5a3a;
+}
+
+[data-admins-form-notice].is-error,
+[data-admins-notice].is-error,
+[data-admin-view-notice].is-error {
+  color: #8a3b2a;
+  font-weight: 600;
 }
 
 [data-pupil-hint],
