@@ -120,9 +120,9 @@
 
   const audienceLabel = function (value) {
     const map = {
-      user: "One person",
-      users: "Several people",
-      custom: "Typed addresses",
+      user: "One person on the books",
+      users: "Several people on the books",
+      custom: "Any email address",
       whole_school: "Whole school",
       parents: "All parents",
       staff: "All staff",
@@ -168,7 +168,7 @@
   };
 
   const payload = function () {
-    const audience = (document.getElementById("emailAudience") || {}).value || "user";
+    const audience = (document.getElementById("emailAudience") || {}).value || "custom";
     const body = {
       template_id: Number((document.getElementById("emailTemplateId") || {}).value || 0) || null,
       subject: ((document.getElementById("emailSubject") || {}).value || "").trim(),
@@ -183,7 +183,15 @@
   };
 
   const currentAudience = function () {
-    return (document.getElementById("emailAudience") || {}).value || "user";
+    return (document.getElementById("emailAudience") || {}).value || "custom";
+  };
+
+  const countTypedAddresses = function (text) {
+    return String(text || "")
+      .split(/[\s,;]+/)
+      .map(function (part) { return part.trim(); })
+      .filter(function (part) { return part.indexOf("@") > 0; })
+      .length;
   };
 
   const syncAudience = function () {
@@ -347,7 +355,7 @@
       return;
     }
     if (body.audience === "custom" && !body.recipients) {
-      setFormNotice("Add at least one mailbox for a named dispatch.");
+      setFormNotice("Add at least one email address.");
       return;
     }
     if ((body.audience === "user" || body.audience === "users") && !selectedUserIds.length) {
@@ -389,7 +397,7 @@
         return;
       }
       if (body.audience === "custom" && !body.recipients) {
-        setFormNotice("Add at least one mailbox for a named dispatch.");
+        setFormNotice("Add at least one email address.");
         return;
       }
       if ((body.audience === "user" || body.audience === "users") && !selectedUserIds.length) {
@@ -399,11 +407,14 @@
         return;
       }
       const chosen = selectedPeople();
+      const typedCount = countTypedAddresses(body.recipients);
       const who = body.audience === "user" && chosen[0]
         ? chosen[0].name
         : (body.audience === "users"
           ? selectedUserIds.length + (selectedUserIds.length === 1 ? " person" : " people") + " on the books"
-          : audienceLabel(body.audience));
+          : (body.audience === "custom"
+            ? typedCount + (typedCount === 1 ? " typed address" : " typed addresses")
+            : audienceLabel(body.audience)));
       confirmDesk({
         title: "Dispatch this circular?",
         copy: "It will leave through the Hostinger mailbox to " + who + ".",
