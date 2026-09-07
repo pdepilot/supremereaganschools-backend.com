@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260904d">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260907d">
 </head>
 <body data-page="fees">
   <div class="vault">
@@ -91,6 +91,12 @@
                 </div>
                 <div class="form-actions"><button class="solid-btn" type="submit">Record payment</button></div>
               </form>
+              <div class="panel-title" style="margin-top:1.25rem">
+                <div>
+                  <h2>Recent receipts</h2>
+                  <p data-receipt-copy>Latest posts on the book</p>
+                </div>
+              </div>
               <div class="tickets" data-receipt-list></div>
             </div>
             <div class="surface" data-stamp="Book" id="set-fee">
@@ -199,6 +205,28 @@
       </main>
     </div>
   </div>
+  <div class="desk-alert" data-receipt-mail hidden>
+    <div class="desk-alert-backdrop" data-receipt-mail-dismiss></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true" aria-labelledby="receiptMailTitle">
+      <p class="eyebrow">Fees desk</p>
+      <h2 id="receiptMailTitle">Email this receipt</h2>
+      <p data-receipt-mail-copy>Send the official house receipt to any mailbox.</p>
+      <input type="hidden" data-receipt-mail-id value="">
+      <div class="field">
+        <label for="receiptMailEmail">Email address</label>
+        <input id="receiptMailEmail" type="email" data-receipt-mail-email placeholder="parent@example.com" required>
+      </div>
+      <div class="field">
+        <label for="receiptMailName">Recipient name (optional)</label>
+        <input id="receiptMailName" type="text" data-receipt-mail-name placeholder="Parent / Guardian">
+      </div>
+      <p data-receipt-mail-notice></p>
+      <div class="desk-alert-actions">
+        <button type="button" class="ghost-btn" data-receipt-mail-dismiss>Cancel</button>
+        <button type="button" class="solid-btn" data-receipt-mail-send>Send receipt</button>
+      </div>
+    </div>
+  </div>
   <div class="desk-alert" data-desk-alert hidden>
     <div class="desk-alert-backdrop" data-desk-alert-dismiss></div>
     <div class="desk-alert-card" role="dialog" aria-modal="true">
@@ -216,6 +244,6 @@
     </div>
   </div>
   <script src="../JS/admin-command.js"></script>
-  <script src="../JS/portal-fees.js"></script>
+  <script src="../JS/portal-fees.js?v=20260907d"></script>
 </body>
 </html>

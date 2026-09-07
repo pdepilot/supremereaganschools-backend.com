@@ -591,14 +591,118 @@
         tickets.innerHTML = rows.map(function (row) {
           const line = [row.student_name || row.admission_number, row.form, channelLabel(row.channel)]
             .filter(Boolean).join(" · ");
-          return '<article class="ticket">'
+          return '<article class="ticket receipt-ticket">'
             + '<div class="ticket-code">' + escapeHtml(row.reference || "—") + "</div>"
-            + "<div><h3>" + escapeHtml(naira(row.amount_naira)) + "</h3><p>" + escapeHtml(line) + "</p></div>"
+            + "<div><h3>" + escapeHtml(naira(row.amount_naira)) + "</h3><p>" + escapeHtml(line) + "</p>"
+            + '<div class="row-actions">'
+            + '<button class="ghost-btn" type="button" data-print-receipt="' + row.id + '">Print</button>'
+            + '<button class="ghost-btn" type="button" data-email-receipt="' + row.id + '" data-receipt-ref="'
+            + escapeHtml(row.reference || "") + '">Email</button>'
+            + "</div></div>"
             + '<span class="badge ' + badgeClass(row.status) + '">' + escapeHtml(statusLabel(row.status)) + "</span>"
             + "</article>";
         }).join("");
       });
     };
+
+    const openReceipt = function (id) {
+      window.open("/api/v1/payments/" + id + "/receipt", "srs-receipt-" + id, "noopener,noreferrer");
+    };
+
+    const mailRoot = document.querySelector("[data-receipt-mail]");
+    const openEmailReceipt = function (id, reference) {
+      if (!mailRoot) {
+        const email = window.prompt("Email this receipt to:");
+        if (!email) return;
+        request("/api/v1/payments/" + id + "/email", {
+          method: "POST",
+          body: JSON.stringify({ email: email })
+        }).then(function (result) {
+          setNotice(notice, result.ok
+            ? "Receipt emailed to " + email + "."
+            : firstError(result.body));
+        });
+        return;
+      }
+      const idInput = mailRoot.querySelector("[data-receipt-mail-id]");
+      const emailInput = mailRoot.querySelector("[data-receipt-mail-email]");
+      const nameInput = mailRoot.querySelector("[data-receipt-mail-name]");
+      const copy = mailRoot.querySelector("[data-receipt-mail-copy]");
+      const mailNotice = mailRoot.querySelector("[data-receipt-mail-notice]");
+      if (idInput) idInput.value = String(id);
+      if (emailInput) emailInput.value = "";
+      if (nameInput) nameInput.value = "";
+      if (mailNotice) mailNotice.textContent = "";
+      if (copy) copy.textContent = reference
+        ? "Send receipt " + reference + " to any mailbox — portal account not required."
+        : "Send the official house receipt to any mailbox.";
+      mailRoot.hidden = false;
+      if (emailInput) emailInput.focus();
+      request("/api/v1/payments/" + id).then(function (result) {
+        if (!result.ok) return;
+        const row = result.body.data || {};
+        if (emailInput && row.suggested_email) emailInput.value = row.suggested_email;
+        if (nameInput && row.suggested_name) nameInput.value = row.suggested_name;
+      });
+    };
+
+    const closeEmailReceipt = function () {
+      if (mailRoot) mailRoot.hidden = true;
+    };
+
+    if (mailRoot) {
+      mailRoot.addEventListener("click", function (event) {
+        if (event.target.closest("[data-receipt-mail-dismiss]")) {
+          event.preventDefault();
+          closeEmailReceipt();
+        }
+        if (event.target.closest("[data-receipt-mail-send]")) {
+          event.preventDefault();
+          const id = (mailRoot.querySelector("[data-receipt-mail-id]") || {}).value;
+          const email = ((mailRoot.querySelector("[data-receipt-mail-email]") || {}).value || "").trim();
+          const name = ((mailRoot.querySelector("[data-receipt-mail-name]") || {}).value || "").trim();
+          const mailNotice = mailRoot.querySelector("[data-receipt-mail-notice]");
+          const sendBtn = mailRoot.querySelector("[data-receipt-mail-send]");
+          if (!id || !email) {
+            if (mailNotice) mailNotice.textContent = "Enter an email address.";
+            return;
+          }
+          setButtonState(sendBtn, true, "Sending…");
+          request("/api/v1/payments/" + id + "/email", {
+            method: "POST",
+            body: JSON.stringify({ email: email, name: name || null })
+          }).then(function (result) {
+            setButtonState(sendBtn, false);
+            if (!result.ok) {
+              if (mailNotice) mailNotice.textContent = firstError(result.body);
+              return;
+            }
+            closeEmailReceipt();
+            setNotice(notice, "Receipt emailed to " + email + ".");
+          }).catch(function () {
+            setButtonState(sendBtn, false);
+            if (mailNotice) mailNotice.textContent = "Unable to reach the office.";
+          });
+        }
+      });
+    }
+
+    tickets.addEventListener("click", function (event) {
+      const printBtn = event.target.closest("[data-print-receipt]");
+      if (printBtn) {
+        event.preventDefault();
+        openReceipt(printBtn.getAttribute("data-print-receipt"));
+        return;
+      }
+      const emailBtn = event.target.closest("[data-email-receipt]");
+      if (emailBtn) {
+        event.preventDefault();
+        openEmailReceipt(
+          emailBtn.getAttribute("data-email-receipt"),
+          emailBtn.getAttribute("data-receipt-ref") || ""
+        );
+      }
+    });
 
     const lookupPupil = function () {
       const number = ((pupilInput && pupilInput.value) || "").trim();
@@ -660,9 +764,23 @@
         }
         form.reset();
         setNotice(hint, "");
-        setNotice(notice, "Posted " + naira(result.body.data.amount_naira) + " · " + (result.body.data.reference || ""));
+        const posted = result.body.data || {};
+        setNotice(notice, "Posted " + naira(posted.amount_naira) + " · " + (posted.reference || ""));
         setButtonState(submitBtn, false, "Posted.");
         window.setTimeout(function () { setButtonState(submitBtn, false); }, 1600);
+        if (posted.id) {
+          window.setTimeout(function () {
+            confirmDesk({
+              title: "Open the receipt?",
+              copy: "Print a beautiful official receipt now, or email it to the family.",
+              confirmLabel: "Print receipt",
+              cancelLabel: "Later",
+              danger: false
+            }).then(function (ok) {
+              if (ok) openReceipt(posted.id);
+            });
+          }, 250);
+        }
         return Promise.all([
           window.srsReloadFeeLedger ? window.srsReloadFeeLedger() : loadSummary(),
           loadReceipts()
@@ -1077,20 +1195,7 @@
     document.addEventListener("click", function (event) {
       const button = event.target.closest("[data-receipt]");
       if (!button) return;
-      request("/api/v1/payments/" + button.getAttribute("data-receipt")).then(function (result) {
-        if (!result.ok) {
-          window.alert(firstError(result.body));
-          return;
-        }
-        const row = result.body.data || {};
-        const popup = window.open("", "receipt");
-        if (!popup) return;
-        popup.document.write("<pre>Supreme Reagan Schools\nReceipt " + (row.reference || "") + "\n"
-          + (row.student_name || "") + "\n" + naira(row.amount_naira) + " · " + (row.channel || "") + "\n"
-          + (row.paid_at || "") + "</pre>");
-        popup.document.close();
-        popup.print();
-      });
+      window.open("/api/v1/payments/" + button.getAttribute("data-receipt") + "/receipt", "_blank", "noopener,noreferrer");
     });
 
     request("/api/v1/me/children").then(function (result) {

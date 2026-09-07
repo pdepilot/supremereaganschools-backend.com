@@ -12,6 +12,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
     Route::get('invoices/{invoice}/statement', [InvoiceController::class, 'statement']);
     Route::get('payments', [PaymentController::class, 'index']);
+    Route::get('payments/{payment}/receipt', [PaymentController::class, 'receipt']);
     Route::get('payments/{payment}', [PaymentController::class, 'show']);
     Route::get('me/fees/summary', [InvoiceController::class, 'mineSummary']);
     Route::get('me/fees', [InvoiceController::class, 'mine']);
@@ -37,6 +38,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy']);
 
         Route::post('payments', [PaymentController::class, 'store']);
+        Route::post('payments/{payment}/email', [PaymentController::class, 'email']);
         Route::post('payments/{payment}/void', [PaymentController::class, 'void']);
     });
 });

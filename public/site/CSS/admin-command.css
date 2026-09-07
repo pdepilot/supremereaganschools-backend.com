@@ -704,6 +704,13 @@ a {
   margin-top: 0.15rem;
 }
 
+.receipt-ticket .row-actions .ghost-btn {
+  font: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .badge {
   font-size: 0.58rem;
   letter-spacing: 0.1em;

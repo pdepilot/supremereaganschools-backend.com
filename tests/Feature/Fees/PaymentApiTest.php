@@ -11,6 +11,7 @@ use App\Models\InvoiceItem;
 use App\Models\Payment;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\CreatesAcademicContext;
 use Tests\TestCase;
 
@@ -297,6 +298,45 @@ class PaymentApiTest extends TestCase
             'reference' => 'SRS-FEE-2026-OFFICE-1',
             'amount_kobo' => 40000,
         ]);
+    }
+
+    public function test_admin_can_view_and_email_a_stunning_receipt(): void
+    {
+        Mail::fake();
+        config([
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.password' => 'secret-mailbox',
+        ]);
+
+        [$student] = $this->openInvoice(20500000);
+        $admin = $this->admin();
+
+        $paymentId = $this->actingAs($admin)->postJson('/api/v1/payments', [
+            'admission_number' => $student->admission_number,
+            'amount' => 100000,
+            'channel' => 'transfer',
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($admin)
+            ->get('/api/v1/payments/'.$paymentId.'/receipt')
+            ->assertOk()
+            ->assertSee('Official', false)
+            ->assertSee('Fee Receipt', false)
+            ->assertSee('Payment received', false)
+            ->assertSee('Supreme Reagan', false);
+
+        $this->actingAs($admin)->postJson('/api/v1/payments/'.$paymentId.'/email', [
+            'email' => 'parent.family@example.test',
+            'name' => 'Ada Parent',
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.email', 'parent.family@example.test');
+
+        Mail::assertSent(\App\Mail\PaymentReceiptMail::class, function (\App\Mail\PaymentReceiptMail $mail) {
+            return $mail->hasTo('parent.family@example.test')
+                && str_contains($mail->htmlBody, 'Payment received');
+        });
     }
 
     /**

@@ -4,21 +4,26 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Fees\EmailPaymentReceiptRequest;
 use App\Http\Requests\Fees\StorePaymentRequest;
 use App\Http\Requests\Fees\VoidPaymentRequest;
 use App\Http\Resources\Fees\PaymentResource;
 use App\Models\Payment;
+use App\Services\PaymentReceiptService;
 use App\Services\PaymentService;
 use App\Services\PeopleAccessService;
 use App\Support\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
     public function __construct(
         private readonly PaymentService $payments,
+        private readonly PaymentReceiptService $receipts,
         private readonly PeopleAccessService $access,
     ) {}
 
@@ -98,5 +103,41 @@ class PaymentController extends Controller
         $payment = $this->payments->void($payment, $request->validated(), $request->user());
 
         return ApiResponse::success('Payment voided.', (new PaymentResource($payment))->resolve());
+    }
+
+    public function receipt(Payment $payment): Response
+    {
+        $this->authorize('view', $payment);
+
+        $payment = $this->receipts->load($payment);
+
+        return response()
+            ->view('fees.payment-receipt', $this->receipts->viewData($payment, false))
+            ->header('Content-Type', 'text/html; charset=UTF-8');
+    }
+
+    public function email(EmailPaymentReceiptRequest $request, Payment $payment): JsonResponse
+    {
+        $payment = $this->receipts->load($payment);
+        $email = trim((string) ($request->validated('email') ?: $this->receipts->suggestedEmail($payment) ?: ''));
+
+        if ($email === '') {
+            throw ValidationException::withMessages([
+                'email' => 'Enter an email address for this receipt.',
+            ]);
+        }
+
+        $this->receipts->send(
+            $payment,
+            $request->user(),
+            $email,
+            $request->validated('name'),
+        );
+
+        return ApiResponse::success('Receipt emailed.', [
+            'payment_id' => $payment->id,
+            'email' => $email,
+            'reference' => $payment->reference,
+        ]);
     }
 }

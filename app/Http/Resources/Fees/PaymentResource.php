@@ -37,6 +37,14 @@ class PaymentResource extends JsonResource
             'voided_by' => $this->whenLoaded('voider', fn () => $this->voider?->name),
             'voided_at' => $this->voided_at?->timezone('Africa/Lagos')->toIso8601String(),
             'void_reason' => $this->void_reason,
+            'suggested_email' => $this->when(
+                $request->user()?->can('update', $this->resource) ?? false,
+                fn () => app(\App\Services\PaymentReceiptService::class)->suggestedEmail($this->resource),
+            ),
+            'suggested_name' => $this->when(
+                $request->user()?->can('update', $this->resource) ?? false,
+                fn () => app(\App\Services\PaymentReceiptService::class)->suggestedName($this->resource),
+            ),
             'allocations' => $this->whenLoaded('allocations', function () {
                 return $this->allocations->map(fn ($allocation) => [
                     'invoice_item_id' => $allocation->invoice_item_id,
