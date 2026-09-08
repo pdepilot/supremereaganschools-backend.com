@@ -65,6 +65,14 @@ class SchoolSettingController extends Controller
     {
         $this->authorize('viewAny', SchoolSetting::class);
 
+        $roleSlugs = [
+            RoleSlug::SuperAdmin->value,
+            RoleSlug::SchoolAdmin->value,
+            RoleSlug::Principal->value,
+            RoleSlug::VicePrincipal->value,
+            RoleSlug::ExaminationOfficer->value,
+        ];
+
         $cbtPermissionSlugs = [
             PermissionSlug::CbtView->value,
             PermissionSlug::CbtManage->value,
@@ -72,20 +80,20 @@ class SchoolSettingController extends Controller
             PermissionSlug::CbtMark->value,
         ];
 
-        $operators = User::query()
-            ->with(['roles.permissions'])
-            ->where(function ($query) use ($cbtPermissionSlugs) {
-                $query->whereHas('roles', fn ($roles) => $roles->whereIn('slug', [
-                    RoleSlug::SuperAdmin->value,
-                    RoleSlug::SchoolAdmin->value,
-                    RoleSlug::Principal->value,
-                    RoleSlug::VicePrincipal->value,
-                    RoleSlug::ExaminationOfficer->value,
-                ]))->orWhereHas('roles.permissions', fn ($permissions) => $permissions->whereIn('slug', $cbtPermissionSlugs));
-            })
+        $byRole = User::query()
+            ->whereHas('roles', fn ($roles) => $roles->whereIn('slug', $roleSlugs))
             ->orderBy('name')
-            ->get()
+            ->get(['id', 'name', 'email']);
+
+        $byPermission = User::query()
+            ->whereHas('roles.permissions', fn ($permissions) => $permissions->whereIn('slug', $cbtPermissionSlugs))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        $operators = $byRole
+            ->concat($byPermission)
             ->unique('id')
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
         return ApiResponse::success('CBT operators retrieved.', [

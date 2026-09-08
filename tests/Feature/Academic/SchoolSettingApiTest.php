@@ -163,4 +163,17 @@ class SchoolSettingApiTest extends TestCase
 
         $this->assertSame(0, SchoolSetting::query()->count());
     }
+
+    public function test_admin_can_list_cbt_operators_including_school_admins(): void
+    {
+        $this->settings();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/school-settings/cbt-operators')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.items.0.id', $admin->id)
+            ->assertJsonPath('data.items.0.email', $admin->email);
+    }
 }

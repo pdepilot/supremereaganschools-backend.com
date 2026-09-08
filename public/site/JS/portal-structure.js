@@ -18,12 +18,22 @@
     return fetch(url, Object.assign({
       credentials: "same-origin"
     }, options, { headers })).then(function (response) {
-      return response.json().then(function (body) {
+      return response.text().then(function (raw) {
+        let body = {};
+        if (raw) {
+          try {
+            body = JSON.parse(raw);
+          } catch (error) {
+            body = { message: "The office returned an unexpected response." };
+          }
+        }
         if (response.status === 401) {
           window.location.replace((window.srsLoginPath && window.srsLoginPath()) || "/portal/login");
         }
         return { ok: response.ok, status: response.status, body: body };
       });
+    }).catch(function () {
+      return { ok: false, status: 0, body: { message: "Unable to reach the office." } };
     });
   };
 
@@ -397,49 +407,56 @@
       }).join("");
     };
 
-    Promise.all([
-      request("/api/v1/school-settings"),
-      request("/api/v1/school-settings/cbt-operators"),
-      request("/api/v1/desk-access")
-    ]).then(function (parts) {
-      const settingsResult = parts[0];
-      const operatorsResult = parts[1];
-      const desksResult = parts[2];
-
-      let items = [];
-      if (operatorsResult.ok) {
-        items = (operatorsResult.body.data && operatorsResult.body.data.items) || [];
+    const applyOperatorValue = function (cbt) {
+      if (!operatorSelect || !cbt || !cbt.operator_user_id) return;
+      operatorSelect.value = String(cbt.operator_user_id);
+      if (operatorSelect.value !== String(cbt.operator_user_id) && cbt.operator_name) {
+        operatorSelect.insertAdjacentHTML(
+          "beforeend",
+          '<option value="' + escapeHtml(cbt.operator_user_id) + '">' + escapeHtml((cbt.operator_name || "Operator") + " · " + (cbt.operator_email || "")) + "</option>"
+        );
+        operatorSelect.value = String(cbt.operator_user_id);
       }
-      if (!items.length && desksResult.ok) {
-        items = (desksResult.body.data && desksResult.body.data.admins) || [];
-      }
-      fillOperators(items);
+    };
 
-      if (!operatorsResult.ok && status) {
-        status.textContent = firstError(operatorsResult.body) || "Unable to load CBT operators.";
-      }
+    let pendingOperator = null;
 
+    request("/api/v1/school-settings").then(function (settingsResult) {
       if (!settingsResult.ok) {
         if (status) status.textContent = firstError(settingsResult.body);
         return;
       }
       const cbt = (settingsResult.body.data && settingsResult.body.data.cbt_login) || {};
+      pendingOperator = cbt;
       setField("cbtLoginEmail", cbt.email || "");
-      if (operatorSelect && cbt.operator_user_id) {
-        operatorSelect.value = String(cbt.operator_user_id);
-        if (operatorSelect.value !== String(cbt.operator_user_id) && cbt.operator_name) {
-          operatorSelect.insertAdjacentHTML(
-            "beforeend",
-            '<option value="' + escapeHtml(cbt.operator_user_id) + '">' + escapeHtml((cbt.operator_name || "Operator") + " · " + (cbt.operator_email || "")) + "</option>"
-          );
-          operatorSelect.value = String(cbt.operator_user_id);
-        }
-      }
-      if (status && operatorsResult.ok) {
+      applyOperatorValue(cbt);
+      if (status) {
         status.textContent = cbt.configured
           ? "CBT desk password is set. Leave the password fields blank to keep it."
           : "CBT desk password is not set yet. Enter a new password below.";
       }
+    });
+
+    request("/api/v1/school-settings/cbt-operators").then(function (operatorsResult) {
+      let items = [];
+      if (operatorsResult.ok) {
+        items = (operatorsResult.body.data && operatorsResult.body.data.items) || [];
+      }
+      if (items.length) {
+        fillOperators(items);
+        applyOperatorValue(pendingOperator);
+        return null;
+      }
+      return request("/api/v1/desk-access").then(function (desksResult) {
+        if (desksResult.ok) {
+          items = (desksResult.body.data && desksResult.body.data.admins) || [];
+        }
+        fillOperators(items);
+        applyOperatorValue(pendingOperator);
+        if (!operatorsResult.ok && status && !pendingOperator) {
+          status.textContent = firstError(operatorsResult.body) || "Unable to load CBT operators.";
+        }
+      });
     });
 
     form.addEventListener("submit", function (event) {

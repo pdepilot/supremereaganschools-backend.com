@@ -79,7 +79,7 @@ class SchoolSetting extends Model
     public function hasCbtLoginConfigured(): bool
     {
         return filled($this->cbt_login_email)
-            && filled($this->cbt_login_password)
+            && filled($this->getRawOriginal('cbt_login_password'))
             && $this->cbt_operator_user_id !== null;
     }
 }
