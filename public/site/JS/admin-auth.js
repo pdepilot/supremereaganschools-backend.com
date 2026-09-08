@@ -6,7 +6,9 @@
   const dust = document.querySelector("[data-dust]");
 
   const alertBox = document.querySelector("[data-auth-alert]");
-  const submit = document.querySelector("[data-auth-submit]");
+  const submit = (form && form.querySelector("[data-auth-submit], button[type=submit], .staff-submit"))
+    || document.querySelector("[data-auth-submit]");
+  const isCbtLogin = page.classList.contains("cbt-auth");
 
   const csrfToken = function () {
     const field = form && form.querySelector('input[name="_token"]');
@@ -18,15 +20,32 @@
   };
 
   const showError = function (message) {
-    if (!alertBox) return;
+    if (!alertBox) {
+      window.alert(message);
+      return;
+    }
+    alertBox.hidden = false;
     alertBox.textContent = message;
     alertBox.classList.add("is-visible");
+    alertBox.classList.remove("is-ok");
   };
 
   const clearError = function () {
     if (!alertBox) return;
     alertBox.textContent = "";
+    alertBox.hidden = true;
     alertBox.classList.remove("is-visible");
+  };
+
+  const firstError = function (body) {
+    if (!body) return "Unable to sign in.";
+    if (body.errors) {
+      const keys = Object.keys(body.errors);
+      if (keys.length && body.errors[keys[0]] && body.errors[keys[0]][0]) {
+        return body.errors[keys[0]][0];
+      }
+    }
+    return body.message || "Unable to sign in.";
   };
 
   const greeting = document.querySelector("[data-greeting]");
@@ -121,16 +140,22 @@
       const admissionEnabled = form.admission_number && !form.admission_number.disabled;
 
       const payload = {
-        email: emailEnabled ? form.email.value : "",
-        admission_number: admissionEnabled ? form.admission_number.value : "",
+        email: emailEnabled ? String(form.email.value || "").trim() : "",
+        admission_number: admissionEnabled ? String(form.admission_number.value || "").trim() : "",
         password: form.password.value,
         portal: (form.portal && form.portal.value) || "portal",
-        remember: form.remember && form.remember.checked
+        remember: !!(form.remember && form.remember.checked)
       };
+
+      if (payload.portal === "cbt" && payload.email && !payload.admission_number) {
+        delete payload.admission_number;
+      }
 
       if (submit) {
         submit.disabled = true;
         submit.classList.add("is-busy");
+        if (!submit.dataset.label) submit.dataset.label = submit.textContent;
+        submit.textContent = "Signing in…";
       }
 
       fetch(form.getAttribute("action") || "/login", {
@@ -145,21 +170,39 @@
         credentials: "same-origin",
         body: JSON.stringify(payload)
       }).then(function (response) {
-        return response.json().then(function (body) {
-          return { ok: response.ok, body: body };
+        return response.text().then(function (raw) {
+          let body = {};
+          if (raw) {
+            try {
+              body = JSON.parse(raw);
+            } catch (error) {
+              body = { message: response.status === 419
+                ? "Your sign-in page expired. Refresh and try again."
+                : "Unable to sign in." };
+            }
+          }
+          return { ok: response.ok, status: response.status, body: body };
         });
       }).then(function (result) {
         if (!result.ok) {
-          showError((result.body && result.body.message) || "Unable to sign in.");
+          showError(firstError(result.body));
           if (submit) {
             submit.disabled = false;
             submit.classList.remove("is-busy");
+            submit.textContent = submit.dataset.label || "Enter CBT";
           }
           return;
         }
 
+        const destination = (result.body && result.body.data && result.body.data.redirect)
+          || (isCbtLogin ? "/cbt" : "/portal/home");
+
+        if (isCbtLogin) {
+          window.location.href = destination;
+          return;
+        }
+
         page.classList.add("is-unlocking");
-        const destination = (result.body && result.body.data && result.body.data.redirect) || "/portal/home";
         window.setTimeout(function () {
           window.location.href = destination;
         }, 1700);
@@ -168,6 +211,7 @@
         if (submit) {
           submit.disabled = false;
           submit.classList.remove("is-busy");
+          submit.textContent = submit.dataset.label || "Enter CBT";
         }
       });
     });
