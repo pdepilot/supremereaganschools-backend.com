@@ -39,6 +39,27 @@ class CbtAuthApiSecurityTest extends TestCase
         $this->get('/cbt/login')->assertOk();
     }
 
+    public function test_portal_session_does_not_auto_enter_cbt_desk(): void
+    {
+        $officer = $this->userWithRole(RoleSlug::ExaminationOfficer, [
+            'email' => 'portal.cbt@example.test',
+        ]);
+
+        $this->actingAs($officer)
+            ->get('/cbt/login')
+            ->assertOk()
+            ->assertSee('Staff / Admin', false);
+
+        $this->actingAs($officer)
+            ->get('/cbt/admin')
+            ->assertRedirect(route('cbt.login'));
+
+        $this->actingAs($officer)
+            ->getJson('/api/v1/cbt/admin')
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Sign in at the CBT desk to continue.');
+    }
+
     public function test_student_cbt_login_reuses_existing_user(): void
     {
         $ctx = $this->cbtPublishedExam();
@@ -82,6 +103,7 @@ class CbtAuthApiSecurityTest extends TestCase
 
         $response->assertOk();
         $this->assertAuthenticatedAs($officer);
+        $this->assertTrue(session(\App\Services\AuthenticationService::CBT_DESK_SESSION_KEY));
         $response->assertJsonPath('data.redirect', '/cbt/admin');
     }
 
@@ -104,8 +126,8 @@ class CbtAuthApiSecurityTest extends TestCase
             'password' => 'SecretPass1!',
         ])->assertStatus(422);
 
-        $this->actingAs($content)->getJson('/cbt')->assertForbidden();
-        $this->actingAs($content)->getJson('/api/v1/cbt/admin')->assertForbidden();
+        $this->actingAsCbt($content)->getJson('/cbt')->assertForbidden();
+        $this->actingAsCbt($content)->getJson('/api/v1/cbt/admin')->assertForbidden();
     }
 
     public function test_student_cannot_access_admin_or_other_student_attempt(): void
@@ -119,19 +141,19 @@ class CbtAuthApiSecurityTest extends TestCase
             $ctx['student'],
         );
 
-        $this->actingAs($other['student']->user)
+        $this->actingAsCbt($other['student']->user)
             ->get('/cbt/admin')
             ->assertForbidden();
 
-        $this->actingAs($other['student']->user)
+        $this->actingAsCbt($other['student']->user)
             ->getJson('/api/v1/cbt/admin')
             ->assertForbidden();
 
-        $this->actingAs($other['student']->user)
+        $this->actingAsCbt($other['student']->user)
             ->getJson('/api/v1/cbt/attempts/'.$attempt->id)
             ->assertNotFound();
 
-        $this->actingAs($other['student']->user)
+        $this->actingAsCbt($other['student']->user)
             ->postJson('/api/v1/cbt/attempts/'.$attempt->id.'/submit')
             ->assertNotFound();
     }
@@ -140,7 +162,7 @@ class CbtAuthApiSecurityTest extends TestCase
     {
         $ctx = $this->cbtPublishedExam();
 
-        $response = $this->actingAs($ctx['student']->user)
+        $response = $this->actingAsCbt($ctx['student']->user)
             ->getJson('/api/v1/cbt/exams/'.$ctx['exam']->id);
 
         $response->assertOk();
@@ -157,18 +179,18 @@ class CbtAuthApiSecurityTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $outsider = $this->student();
 
-        $this->actingAs($outsider->user)
+        $this->actingAsCbt($outsider->user)
             ->getJson('/api/v1/cbt/exams/'.$ctx['exam']->id)
             ->assertForbidden();
 
-        $this->actingAs($outsider->user)
+        $this->actingAsCbt($outsider->user)
             ->postJson('/api/v1/cbt/exams/'.$ctx['exam']->id.'/attempts')
             ->assertForbidden();
 
         $draft = $this->cbtPublishedExam();
         $draft['exam']->update(['status' => \App\Enums\CbtExamStatus::Draft, 'published_at' => null]);
 
-        $this->actingAs($draft['student']->user)
+        $this->actingAsCbt($draft['student']->user)
             ->getJson('/api/v1/cbt/exams/'.$draft['exam']->id)
             ->assertNotFound();
     }
@@ -178,7 +200,7 @@ class CbtAuthApiSecurityTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $user = $ctx['student']->user;
 
-        $start = $this->actingAs($user)
+        $start = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/exams/'.$ctx['exam']->id.'/attempts', [])
             ->assertCreated();
 
@@ -189,14 +211,14 @@ class CbtAuthApiSecurityTest extends TestCase
 
         $correct = $ctx['examQuestion']->options()->where('is_correct', true)->firstOrFail();
 
-        $this->actingAs($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
+        $this->actingAsCbt($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
             'exam_question_id' => $ctx['examQuestion']->id,
             'selected_exam_option_id' => $correct->id,
             'score' => 999,
             'is_correct' => true,
         ])->assertOk();
 
-        $submit = $this->actingAs($user)
+        $submit = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/attempts/'.$attemptId.'/submit', [
                 'score' => 0,
                 'percentage' => 0,
@@ -206,7 +228,7 @@ class CbtAuthApiSecurityTest extends TestCase
         $resultId = $submit->json('data.id');
         $this->assertSame('100.00', $submit->json('data.percentage'));
 
-        $again = $this->actingAs($user)
+        $again = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/attempts/'.$attemptId.'/submit')
             ->assertOk();
 
@@ -223,7 +245,7 @@ class CbtAuthApiSecurityTest extends TestCase
         $attempt = app(CbtAttemptService::class)->start($ctx['exam'], $user, $ctx['student']);
         $foreign = $other['examQuestion']->options()->firstOrFail();
 
-        $this->actingAs($user)->postJson('/api/v1/cbt/attempts/'.$attempt->id.'/answers', [
+        $this->actingAsCbt($user)->postJson('/api/v1/cbt/attempts/'.$attempt->id.'/answers', [
             'exam_question_id' => $ctx['examQuestion']->id,
             'selected_exam_option_id' => $foreign->id,
         ])->assertStatus(422);
@@ -242,10 +264,10 @@ class CbtAuthApiSecurityTest extends TestCase
         ]);
         app(CbtSubmissionService::class)->submit($attempt, $ctx['student']->user);
 
-        $mine = $this->actingAs($ctx['student']->user)->getJson('/api/v1/cbt/results')->assertOk();
+        $mine = $this->actingAsCbt($ctx['student']->user)->getJson('/api/v1/cbt/results')->assertOk();
         $this->assertCount(1, $mine->json('data.results'));
 
-        $theirs = $this->actingAs($other['student']->user)->getJson('/api/v1/cbt/results')->assertOk();
+        $theirs = $this->actingAsCbt($other['student']->user)->getJson('/api/v1/cbt/results')->assertOk();
         $this->assertCount(0, $theirs->json('data.results'));
     }
 
@@ -253,8 +275,8 @@ class CbtAuthApiSecurityTest extends TestCase
     {
         $officer = $this->userWithRole(RoleSlug::ExaminationOfficer);
 
-        $this->actingAs($officer)->get('/cbt/admin')->assertOk();
-        $this->actingAs($officer)->getJson('/api/v1/cbt/admin')
+        $this->actingAsCbt($officer)->get('/cbt/admin')->assertOk();
+        $this->actingAsCbt($officer)->getJson('/api/v1/cbt/admin')
             ->assertOk()
             ->assertJsonPath('data.capabilities.manage', true);
 
@@ -268,7 +290,7 @@ class CbtAuthApiSecurityTest extends TestCase
         );
         $proctor->unsetRelation('roles');
 
-        $this->actingAs($proctor->fresh())->getJson('/api/v1/cbt/admin')
+        $this->actingAsCbt($proctor->fresh())->getJson('/api/v1/cbt/admin')
             ->assertOk()
             ->assertJsonPath('data.capabilities.proctor', true)
             ->assertJsonPath('data.capabilities.manage', false);

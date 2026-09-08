@@ -2,6 +2,7 @@
 
 use App\Enums\AuthPortal;
 use App\Enums\RoleSlug;
+use App\Http\Middleware\EnsureCbtDeskSession;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\RedirectIfAuthenticatedForPortal;
 use App\Models\User;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'guest.portal' => RedirectIfAuthenticatedForPortal::class,
+            'cbt.desk' => EnsureCbtDeskSession::class,
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request) {

@@ -25,10 +25,12 @@ class CbtAuthController extends Controller
 
     public function create(Request $request): Response|RedirectResponse
     {
-        $user = $request->user();
+        if ($this->authentication->hasCbtDeskSession()) {
+            $user = $request->user();
 
-        if ($user && AuthPortal::Cbt->admits($user)) {
-            return redirect()->to($this->access->homePath($user));
+            if ($user && AuthPortal::Cbt->admits($user)) {
+                return redirect()->to($this->access->homePath($user));
+            }
         }
 
         return $this->frontend->response('cbt/login.html', [

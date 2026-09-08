@@ -16,7 +16,7 @@ Route::post('/cbt/logout', [CbtAuthController::class, 'destroy'])
     ->middleware('auth')
     ->name('cbt.logout');
 
-Route::middleware(['auth', 'role:cbt'])->prefix('cbt')->group(function () {
+Route::middleware(['auth', 'role:cbt', 'cbt.desk'])->prefix('cbt')->group(function () {
     Route::get('/', [CbtAuthController::class, 'home'])->name('cbt.home');
     Route::get('/exams', [CbtWebController::class, 'exams'])->name('cbt.exams');
     Route::get('/exams/{exam}', [CbtWebController::class, 'exam'])->name('cbt.exams.show');

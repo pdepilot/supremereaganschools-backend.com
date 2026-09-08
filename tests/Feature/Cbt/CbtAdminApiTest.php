@@ -38,7 +38,7 @@ class CbtAdminApiTest extends TestCase
         $class = $this->schoolClass();
         $subject = $this->subject(['code' => 'ADM'.random_int(100, 999)]);
 
-        $create = $this->actingAs($manager)->postJson('/api/v1/cbt/admin/questions', [
+        $create = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/questions', [
             'school_class_id' => $class->id,
             'subject_id' => $subject->id,
             'topic' => 'Algebra',
@@ -59,7 +59,7 @@ class CbtAdminApiTest extends TestCase
 
         $id = $create->json('data.id');
 
-        $this->actingAs($manager)->putJson('/api/v1/cbt/admin/questions/'.$id, [
+        $this->actingAsCbt($manager)->putJson('/api/v1/cbt/admin/questions/'.$id, [
             'stem' => 'What is 6 + 6?',
             'options' => [
                 ['label' => 'A', 'body' => '12', 'is_correct' => true],
@@ -68,11 +68,11 @@ class CbtAdminApiTest extends TestCase
             ],
         ])->assertOk()->assertJsonPath('data.stem', 'What is 6 + 6?');
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/questions/'.$id.'/active', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/questions/'.$id.'/active', [
             'is_active' => false,
         ])->assertOk()->assertJsonPath('data.is_active', false);
 
-        $this->actingAs($manager)->getJson('/api/v1/cbt/admin/questions/'.$id)
+        $this->actingAsCbt($manager)->getJson('/api/v1/cbt/admin/questions/'.$id)
             ->assertOk()
             ->assertJsonPath('data.options.0.is_correct', true);
     }
@@ -82,11 +82,11 @@ class CbtAdminApiTest extends TestCase
         $student = $this->student();
         $content = $this->userWithRole(RoleSlug::ContentManager);
 
-        $this->actingAs($student->user)->postJson('/api/v1/cbt/admin/questions', [])
+        $this->actingAsCbt($student->user)->postJson('/api/v1/cbt/admin/questions', [])
             ->assertForbidden();
-        $this->actingAs($content)->getJson('/api/v1/cbt/admin/questions')
+        $this->actingAsCbt($content)->getJson('/api/v1/cbt/admin/questions')
             ->assertForbidden();
-        $this->actingAs($content)->postJson('/api/v1/cbt/admin/exams', [])
+        $this->actingAsCbt($content)->postJson('/api/v1/cbt/admin/exams', [])
             ->assertForbidden();
     }
 
@@ -96,7 +96,7 @@ class CbtAdminApiTest extends TestCase
         $class = $this->schoolClass();
         $subject = $this->subject(['code' => 'BAD'.random_int(100, 999)]);
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/questions', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/questions', [
             'school_class_id' => $class->id,
             'subject_id' => $subject->id,
             'stem' => 'Broken?',
@@ -107,7 +107,7 @@ class CbtAdminApiTest extends TestCase
             ],
         ])->assertStatus(422);
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/questions', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/questions', [
             'school_class_id' => $class->id,
             'subject_id' => $subject->id,
             'stem' => 'No options',
@@ -128,7 +128,7 @@ class CbtAdminApiTest extends TestCase
         $q1 = $this->cbtBankQuestion(['school_class' => $class, 'subject' => $subject, 'stem' => 'Q1', 'marks' => 2]);
         $q2 = $this->cbtBankQuestion(['school_class' => $class, 'subject' => $subject, 'stem' => 'Q2', 'marks' => 3]);
 
-        $create = $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams', [
+        $create = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams', [
             'title' => 'Draft Admin Exam',
             'subject_id' => $subject->id,
             'class_section_offering_id' => $offering->id,
@@ -142,11 +142,11 @@ class CbtAdminApiTest extends TestCase
         $this->assertFalse((bool) $create->json('data.write_to_assessment_score'));
         $examId = $create->json('data.id');
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions', [
             'question_id' => $q1->id,
         ])->assertOk();
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions', [
             'question_id' => $q2->id,
         ])->assertOk();
 
@@ -154,7 +154,7 @@ class CbtAdminApiTest extends TestCase
         $ids = $exam->examQuestions->pluck('id')->all();
         $this->assertCount(2, $ids);
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/reorder', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/reorder', [
             'exam_question_ids' => array_reverse($ids),
         ])->assertOk();
 
@@ -162,19 +162,19 @@ class CbtAdminApiTest extends TestCase
         $eq1 = CbtExamQuestion::query()->where('exam_id', $examId)->where('question_id', $q1->id)->firstOrFail();
         $this->assertSame('Q1', $eq1->stem);
 
-        $refreshed = $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions/'.$eq1->id.'/refresh')
+        $refreshed = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions/'.$eq1->id.'/refresh')
             ->assertOk()
             ->json('data.exam_questions');
 
         $this->assertTrue(collect($refreshed)->contains(fn (array $row) => $row['stem'] === 'Q1 changed'));
         $this->assertSame('Q1 changed', $eq1->fresh()->stem);
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
             'type' => 'offering',
             'class_section_offering_id' => $offering->id,
         ])->assertOk();
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/publish')
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/publish')
             ->assertOk()
             ->assertJsonPath('data.status', CbtExamStatus::Published->value)
             ->assertJsonPath('data.is_frozen', true);
@@ -183,15 +183,15 @@ class CbtAdminApiTest extends TestCase
         $this->assertNotNull($published->published_at);
         $this->assertTrue($published->examQuestions->every(fn ($row) => $row->is_frozen && $row->frozen_at !== null));
 
-        $this->actingAs($manager)->putJson('/api/v1/cbt/admin/exams/'.$examId, [
+        $this->actingAsCbt($manager)->putJson('/api/v1/cbt/admin/exams/'.$examId, [
             'title' => 'Should fail',
         ])->assertStatus(422);
 
         $frozenEq = $published->examQuestions->first();
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions/'.$frozenEq->id.'/refresh')
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions/'.$frozenEq->id.'/refresh')
             ->assertStatus(422);
 
-        $this->actingAs($manager)->deleteJson('/api/v1/cbt/admin/exams/'.$examId.'/questions/'.$frozenEq->id)
+        $this->actingAsCbt($manager)->deleteJson('/api/v1/cbt/admin/exams/'.$examId.'/questions/'.$frozenEq->id)
             ->assertStatus(422);
 
         app(CbtQuestionBankService::class)->update($q1, ['stem' => 'Bank after publish'], null);
@@ -207,7 +207,7 @@ class CbtAdminApiTest extends TestCase
         $offering = $this->offering($this->section($this->schoolClass()), $session);
         $subject = $this->subject(['code' => 'NP'.random_int(100, 999)]);
 
-        $examId = $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams', [
+        $examId = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams', [
             'title' => 'Not ready',
             'subject_id' => $subject->id,
             'class_section_offering_id' => $offering->id,
@@ -216,7 +216,7 @@ class CbtAdminApiTest extends TestCase
             'duration_minutes' => 20,
         ])->assertCreated()->json('data.id');
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/publish')
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/publish')
             ->assertStatus(422);
     }
 
@@ -231,7 +231,7 @@ class CbtAdminApiTest extends TestCase
         $student = $this->student();
         $question = $this->cbtBankQuestion(['school_class' => $class, 'subject' => $subject]);
 
-        $examId = $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams', [
+        $examId = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams', [
             'title' => 'Assign me',
             'subject_id' => $subject->id,
             'class_section_offering_id' => $offering->id,
@@ -240,26 +240,26 @@ class CbtAdminApiTest extends TestCase
             'duration_minutes' => 15,
         ])->json('data.id');
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/questions', [
             'question_id' => $question->id,
         ])->assertOk();
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
             'type' => 'offering',
             'class_section_offering_id' => $offering->id,
         ])->assertOk();
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
             'type' => 'offering',
             'class_section_offering_id' => $offering->id,
         ])->assertStatus(422);
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
             'type' => 'student',
             'student_profile_id' => $student->id,
         ])->assertOk();
 
-        $this->actingAs($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams/'.$examId.'/assignments', [
             'type' => 'student',
             'student_profile_id' => 999999,
         ])->assertStatus(422);
@@ -270,14 +270,14 @@ class CbtAdminApiTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
 
-        $preview = $this->actingAs($manager)->getJson('/api/v1/cbt/admin/exams/'.$ctx['exam']->id.'/preview')
+        $preview = $this->actingAsCbt($manager)->getJson('/api/v1/cbt/admin/exams/'.$ctx['exam']->id.'/preview')
             ->assertOk();
 
         $this->assertSame('ADMIN PREVIEW', $preview->json('data.label'));
         $options = collect($preview->json('data.exam_questions.0.options'));
         $this->assertTrue($options->contains(fn ($row) => array_key_exists('is_correct', $row) && $row['is_correct'] === true));
 
-        $studentView = $this->actingAs($ctx['student']->user)
+        $studentView = $this->actingAsCbt($ctx['student']->user)
             ->getJson('/api/v1/cbt/exams/'.$ctx['exam']->id)
             ->assertOk();
 
@@ -289,22 +289,22 @@ class CbtAdminApiTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $user = $ctx['student']->user;
 
-        $attemptId = $this->actingAs($user)
+        $attemptId = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/exams/'.$ctx['exam']->id.'/attempts')
             ->assertCreated()
             ->json('data.id');
 
         $correct = $ctx['examQuestion']->options()->where('is_correct', true)->firstOrFail();
 
-        $this->actingAs($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
+        $this->actingAsCbt($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
             'exam_question_id' => $ctx['examQuestion']->id,
             'selected_exam_option_id' => $correct->id,
         ])->assertOk();
 
-        $this->actingAs($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/submit')->assertOk();
+        $this->actingAsCbt($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/submit')->assertOk();
 
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
-        $this->actingAs($manager)->getJson('/api/v1/cbt/admin/results')
+        $this->actingAsCbt($manager)->getJson('/api/v1/cbt/admin/results')
             ->assertOk()
             ->assertJsonPath('data.items.0.student_name', $ctx['student']->fullName());
 
@@ -318,26 +318,26 @@ class CbtAdminApiTest extends TestCase
         );
         $marker->unsetRelation('roles');
 
-        $this->actingAs($marker->fresh())->getJson('/api/v1/cbt/admin/results')->assertOk();
-        $this->actingAs($marker->fresh())->getJson('/api/v1/cbt/admin/questions')->assertForbidden();
+        $this->actingAsCbt($marker->fresh())->getJson('/api/v1/cbt/admin/results')->assertOk();
+        $this->actingAsCbt($marker->fresh())->getJson('/api/v1/cbt/admin/questions')->assertForbidden();
 
         $outsider = $this->student();
-        $this->actingAs($outsider->user)->getJson('/api/v1/cbt/admin/results')->assertForbidden();
+        $this->actingAsCbt($outsider->user)->getJson('/api/v1/cbt/admin/results')->assertForbidden();
 
-        $mine = $this->actingAs($user)->getJson('/api/v1/cbt/results')->assertOk()->json('data.results');
+        $mine = $this->actingAsCbt($user)->getJson('/api/v1/cbt/results')->assertOk()->json('data.results');
         $this->assertCount(1, $mine);
 
-        $theirs = $this->actingAs($outsider->user)->getJson('/api/v1/cbt/results')->assertOk()->json('data.results');
+        $theirs = $this->actingAsCbt($outsider->user)->getJson('/api/v1/cbt/results')->assertOk()->json('data.results');
         $this->assertCount(0, $theirs);
     }
 
     public function test_admin_pages_require_cbt_staff_permissions(): void
     {
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
-        $this->actingAs($manager)->get('/cbt/admin')->assertOk()->assertSee('CBT Administration', false);
-        $this->actingAs($manager)->get('/cbt/admin/questions')->assertOk()->assertSee('Question bank', false);
+        $this->actingAsCbt($manager)->get('/cbt/admin')->assertOk()->assertSee('CBT Administration', false);
+        $this->actingAsCbt($manager)->get('/cbt/admin/questions')->assertOk()->assertSee('Question bank', false);
 
         $student = $this->student();
-        $this->actingAs($student->user)->get('/cbt/admin/questions')->assertForbidden();
+        $this->actingAsCbt($student->user)->get('/cbt/admin/questions')->assertForbidden();
     }
 }

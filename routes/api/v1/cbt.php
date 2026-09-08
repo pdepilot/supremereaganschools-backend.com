@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\V1\Cbt\CbtAttemptController;
 use App\Http\Controllers\Api\V1\Cbt\CbtStudentController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['web', 'auth'])->prefix('cbt')->name('cbt.')->group(function () {
+Route::middleware(['web', 'auth', 'cbt.desk'])->prefix('cbt')->name('cbt.')->group(function () {
     Route::get('exams', [CbtStudentController::class, 'exams'])->name('exams.index');
     Route::get('exams/{exam}', [CbtStudentController::class, 'showExam'])->name('exams.show');
     Route::post('exams/{exam}/attempts', [CbtAttemptController::class, 'start'])->name('attempts.start');

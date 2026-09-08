@@ -36,12 +36,12 @@ class CbtStudentExperienceTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $user = $ctx['student']->user;
 
-        $this->actingAs($user)->get('/cbt')->assertOk()->assertSee('CBT Student Desk', false);
-        $this->actingAs($user)->get('/cbt/exams/'.$ctx['exam']->id)->assertOk()->assertSee('Exam instructions', false);
+        $this->actingAsCbt($user)->get('/cbt')->assertOk()->assertSee('CBT Student Desk', false);
+        $this->actingAsCbt($user)->get('/cbt/exams/'.$ctx['exam']->id)->assertOk()->assertSee('Exam instructions', false);
 
         $attempt = app(CbtAttemptService::class)->start($ctx['exam'], $user, $ctx['student']);
-        $this->actingAs($user)->get('/cbt/attempts/'.$attempt->id)->assertOk()->assertSee('Submit exam', false);
-        $this->actingAs($user)->get('/cbt/results')->assertOk()->assertSee('CBT results', false);
+        $this->actingAsCbt($user)->get('/cbt/attempts/'.$attempt->id)->assertOk()->assertSee('Submit exam', false);
+        $this->actingAsCbt($user)->get('/cbt/results')->assertOk()->assertSee('CBT results', false);
     }
 
     public function test_desk_api_lists_only_eligible_exams_with_attempt_metadata(): void
@@ -49,7 +49,7 @@ class CbtStudentExperienceTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $other = $this->cbtPublishedExam();
 
-        $response = $this->actingAs($ctx['student']->user)
+        $response = $this->actingAsCbt($ctx['student']->user)
             ->getJson('/api/v1/cbt/exams')
             ->assertOk();
 
@@ -68,7 +68,7 @@ class CbtStudentExperienceTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $user = $ctx['student']->user;
 
-        $examPayload = $this->actingAs($user)
+        $examPayload = $this->actingAsCbt($user)
             ->getJson('/api/v1/cbt/exams/'.$ctx['exam']->id)
             ->assertOk()
             ->json('data');
@@ -76,12 +76,12 @@ class CbtStudentExperienceTest extends TestCase
         $this->assertTrue($examPayload['can_start']);
         $this->assertStringNotContainsString('is_correct', json_encode($examPayload));
 
-        $attempt = $this->actingAs($user)
+        $attempt = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/exams/'.$ctx['exam']->id.'/attempts')
             ->assertCreated()
             ->json('data');
 
-        $resume = $this->actingAs($user)
+        $resume = $this->actingAsCbt($user)
             ->getJson('/api/v1/cbt/attempts/'.$attempt['id'])
             ->assertOk()
             ->json('data');
@@ -91,7 +91,7 @@ class CbtStudentExperienceTest extends TestCase
         $this->assertArrayHasKey('questions', $resume['exam']);
         $this->assertStringNotContainsString('is_correct', json_encode($resume));
 
-        $again = $this->actingAs($user)
+        $again = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/exams/'.$ctx['exam']->id.'/attempts')
             ->assertStatus(422);
         $this->assertArrayHasKey('attempt', $again->json('errors'));
@@ -102,24 +102,24 @@ class CbtStudentExperienceTest extends TestCase
         $ctx = $this->cbtPublishedExam();
         $user = $ctx['student']->user;
 
-        $attemptId = $this->actingAs($user)
+        $attemptId = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/exams/'.$ctx['exam']->id.'/attempts')
             ->assertCreated()
             ->json('data.id');
 
         $correct = $ctx['examQuestion']->options()->where('is_correct', true)->firstOrFail();
 
-        $this->actingAs($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
+        $this->actingAsCbt($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
             'exam_question_id' => $ctx['examQuestion']->id,
             'selected_exam_option_id' => $correct->id,
         ])->assertOk();
 
-        $this->actingAs($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
+        $this->actingAsCbt($user)->postJson('/api/v1/cbt/attempts/'.$attemptId.'/answers', [
             'exam_question_id' => $ctx['examQuestion']->id,
             'selected_exam_option_id' => $correct->id,
         ])->assertOk();
 
-        $result = $this->actingAs($user)
+        $result = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/attempts/'.$attemptId.'/submit')
             ->assertOk()
             ->json('data');
@@ -127,11 +127,11 @@ class CbtStudentExperienceTest extends TestCase
         $this->assertSame('100.00', $result['percentage']);
         $this->assertArrayHasKey('exam_title', $result);
 
-        $history = $this->actingAs($user)->getJson('/api/v1/cbt/results')->assertOk()->json('data.results');
+        $history = $this->actingAsCbt($user)->getJson('/api/v1/cbt/results')->assertOk()->json('data.results');
         $this->assertCount(1, $history);
         $this->assertSame($result['id'], $history[0]['id']);
 
-        $this->actingAs($user)->getJson('/api/v1/cbt/attempts/'.$attemptId)
+        $this->actingAsCbt($user)->getJson('/api/v1/cbt/attempts/'.$attemptId)
             ->assertOk()
             ->assertJsonPath('data.status', 'submitted');
     }
@@ -152,7 +152,7 @@ class CbtStudentExperienceTest extends TestCase
             Carbon::setTestNow('2026-09-07 12:05:00');
             $option = $ctx['examQuestion']->options()->firstOrFail();
 
-            $this->actingAs($user)->postJson('/api/v1/cbt/attempts/'.$attempt->id.'/answers', [
+            $this->actingAsCbt($user)->postJson('/api/v1/cbt/attempts/'.$attempt->id.'/answers', [
                 'exam_question_id' => $ctx['examQuestion']->id,
                 'selected_exam_option_id' => $option->id,
             ])->assertStatus(422);
@@ -162,7 +162,7 @@ class CbtStudentExperienceTest extends TestCase
                 'published_at' => null,
             ]);
 
-            $this->actingAs($user)
+            $this->actingAsCbt($user)
                 ->getJson('/api/v1/cbt/exams/'.$ctx['exam']->id)
                 ->assertNotFound();
         } finally {
@@ -183,11 +183,11 @@ class CbtStudentExperienceTest extends TestCase
         ]);
         app(CbtSubmissionService::class)->submit($attempt, $ctx['student']->user);
 
-        $this->actingAs($other['student']->user)
+        $this->actingAsCbt($other['student']->user)
             ->get('/cbt/attempts/'.$attempt->id)
             ->assertNotFound();
 
-        $this->actingAs($other['student']->user)
+        $this->actingAsCbt($other['student']->user)
             ->getJson('/api/v1/cbt/results')
             ->assertOk()
             ->assertJsonCount(0, 'data.results');

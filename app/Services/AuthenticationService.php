@@ -22,6 +22,8 @@ class AuthenticationService
 {
     public const INVALID_CREDENTIALS = 'These credentials do not match our records.';
 
+    public const CBT_DESK_SESSION_KEY = 'cbt_desk';
+
     /**
      * @throws ValidationException
      */
@@ -75,9 +77,41 @@ class AuthenticationService
         request()->session()->regenerate();
         RateLimiter::clear($throttleKey);
 
+        $this->syncCbtDeskSession($portal);
         $this->recordLogin($user, $portal);
 
         return $user;
+    }
+
+    public function markCbtDeskSession(): void
+    {
+        if (request()->hasSession()) {
+            request()->session()->put(self::CBT_DESK_SESSION_KEY, true);
+        }
+    }
+
+    public function clearCbtDeskSession(): void
+    {
+        if (request()->hasSession()) {
+            request()->session()->forget(self::CBT_DESK_SESSION_KEY);
+        }
+    }
+
+    public function hasCbtDeskSession(): bool
+    {
+        return request()->hasSession()
+            && request()->session()->get(self::CBT_DESK_SESSION_KEY) === true;
+    }
+
+    private function syncCbtDeskSession(AuthPortal $portal): void
+    {
+        if ($portal === AuthPortal::Cbt) {
+            $this->markCbtDeskSession();
+
+            return;
+        }
+
+        $this->clearCbtDeskSession();
     }
 
     private function recordLogin(User $user, AuthPortal $portal): void

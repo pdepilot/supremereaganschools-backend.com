@@ -8,6 +8,8 @@ use App\Models\CbtExam;
 use App\Models\CbtExamQuestion;
 use App\Models\CbtQuestion;
 use App\Models\StudentProfile;
+use App\Models\User;
+use App\Services\AuthenticationService;
 use App\Services\Cbt\CbtExamAssignmentService;
 use App\Services\Cbt\CbtExamPublishService;
 use App\Services\Cbt\CbtExamService;
@@ -16,6 +18,12 @@ use App\Services\Cbt\CbtQuestionBankService;
 
 trait CreatesCbtContext
 {
+    protected function actingAsCbt(User $user): static
+    {
+        return $this->actingAs($user)->withSession([
+            AuthenticationService::CBT_DESK_SESSION_KEY => true,
+        ]);
+    }
     /**
      * @param  array<string, mixed>  $attributes
      * @param  list<array<string, mixed>>|null  $options
