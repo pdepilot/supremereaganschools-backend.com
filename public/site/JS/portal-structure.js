@@ -385,18 +385,40 @@
     const status = document.querySelector("[data-cbt-login-status]");
     const operatorSelect = document.getElementById("cbtOperator");
 
+    const fillOperators = function (items) {
+      if (!operatorSelect) return;
+      const rows = items || [];
+      if (!rows.length) {
+        operatorSelect.innerHTML = '<option value="">No eligible CBT operators found</option>';
+        return;
+      }
+      operatorSelect.innerHTML = '<option value="">Select operator…</option>' + rows.map(function (user) {
+        return '<option value="' + escapeHtml(user.id) + '">' + escapeHtml((user.name || "User") + " · " + (user.email || "")) + "</option>";
+      }).join("");
+    };
+
     Promise.all([
       request("/api/v1/school-settings"),
-      request("/api/v1/school-settings/cbt-operators")
+      request("/api/v1/school-settings/cbt-operators"),
+      request("/api/v1/desk-access")
     ]).then(function (parts) {
       const settingsResult = parts[0];
       const operatorsResult = parts[1];
-      if (operatorsResult.ok && operatorSelect) {
-        const items = (operatorsResult.body.data && operatorsResult.body.data.items) || [];
-        operatorSelect.innerHTML = '<option value="">Select operator…</option>' + items.map(function (user) {
-          return '<option value="' + user.id + '">' + escapeHtml((user.name || "User") + " · " + (user.email || "")) + "</option>";
-        }).join("");
+      const desksResult = parts[2];
+
+      let items = [];
+      if (operatorsResult.ok) {
+        items = (operatorsResult.body.data && operatorsResult.body.data.items) || [];
       }
+      if (!items.length && desksResult.ok) {
+        items = (desksResult.body.data && desksResult.body.data.admins) || [];
+      }
+      fillOperators(items);
+
+      if (!operatorsResult.ok && status) {
+        status.textContent = firstError(operatorsResult.body) || "Unable to load CBT operators.";
+      }
+
       if (!settingsResult.ok) {
         if (status) status.textContent = firstError(settingsResult.body);
         return;
@@ -405,8 +427,15 @@
       setField("cbtLoginEmail", cbt.email || "");
       if (operatorSelect && cbt.operator_user_id) {
         operatorSelect.value = String(cbt.operator_user_id);
+        if (operatorSelect.value !== String(cbt.operator_user_id) && cbt.operator_name) {
+          operatorSelect.insertAdjacentHTML(
+            "beforeend",
+            '<option value="' + escapeHtml(cbt.operator_user_id) + '">' + escapeHtml((cbt.operator_name || "Operator") + " · " + (cbt.operator_email || "")) + "</option>"
+          );
+          operatorSelect.value = String(cbt.operator_user_id);
+        }
       }
-      if (status) {
+      if (status && operatorsResult.ok) {
         status.textContent = cbt.configured
           ? "CBT desk password is set. Leave the password fields blank to keep it."
           : "CBT desk password is not set yet. Enter a new password below.";

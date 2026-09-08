@@ -124,7 +124,11 @@
               </div>
               <form data-cbt-login-form>
                 <div class="field"><label for="cbtLoginEmail">CBT login email</label><input id="cbtLoginEmail" type="email" required autocomplete="off"></div>
-                <div class="field"><label for="cbtOperator">CBT operator account</label><select id="cbtOperator" required></select></div>
+                <div class="field"><label for="cbtOperator">CBT operator account</label>
+                  <select id="cbtOperator" required>
+                    <option value="">Loading operators…</option>
+                  </select>
+                </div>
                 <p class="field-hint" data-cbt-login-status>CBT password status loading…</p>
                 <div class="field"><label for="cbtLoginPassword">New CBT password</label><input id="cbtLoginPassword" type="password" autocomplete="new-password" placeholder="Leave blank to keep current"></div>
                 <div class="field"><label for="cbtLoginPasswordConfirm">Confirm CBT password</label><input id="cbtLoginPasswordConfirm" type="password" autocomplete="new-password"></div>

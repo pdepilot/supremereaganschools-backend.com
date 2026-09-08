@@ -65,22 +65,35 @@ class SchoolSettingController extends Controller
     {
         $this->authorize('viewAny', SchoolSetting::class);
 
+        $cbtPermissionSlugs = [
+            PermissionSlug::CbtView->value,
+            PermissionSlug::CbtManage->value,
+            PermissionSlug::CbtProctor->value,
+            PermissionSlug::CbtMark->value,
+        ];
+
         $operators = User::query()
-            ->with('roles')
-            ->where(function ($query) {
-                $query->whereHas('roles', fn ($roles) => $roles->where('slug', RoleSlug::SuperAdmin->value))
-                    ->orWhereHas('roles.permissions', fn ($permissions) => $permissions->whereIn('slug', [
-                        PermissionSlug::CbtView->value,
-                        PermissionSlug::CbtManage->value,
-                        PermissionSlug::CbtProctor->value,
-                        PermissionSlug::CbtMark->value,
-                    ]));
+            ->with(['roles.permissions'])
+            ->where(function ($query) use ($cbtPermissionSlugs) {
+                $query->whereHas('roles', fn ($roles) => $roles->whereIn('slug', [
+                    RoleSlug::SuperAdmin->value,
+                    RoleSlug::SchoolAdmin->value,
+                    RoleSlug::Principal->value,
+                    RoleSlug::VicePrincipal->value,
+                    RoleSlug::ExaminationOfficer->value,
+                ]))->orWhereHas('roles.permissions', fn ($permissions) => $permissions->whereIn('slug', $cbtPermissionSlugs));
             })
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->unique('id')
+            ->values();
 
         return ApiResponse::success('CBT operators retrieved.', [
-            'items' => UserResource::collection($operators)->resolve(),
+            'items' => $operators->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])->all(),
         ]);
     }
 

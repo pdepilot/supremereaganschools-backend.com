@@ -64,6 +64,12 @@ class SchoolSettingService
         }
 
         $canOperate = $operator->hasRole(RoleSlug::SuperAdmin)
+            || $operator->hasAnyRole(
+                RoleSlug::SchoolAdmin,
+                RoleSlug::Principal,
+                RoleSlug::VicePrincipal,
+                RoleSlug::ExaminationOfficer,
+            )
             || $operator->hasAnyPermission(
                 PermissionSlug::CbtView,
                 PermissionSlug::CbtManage,
