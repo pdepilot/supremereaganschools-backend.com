@@ -286,6 +286,27 @@
   /* -------- Questions -------- */
   let questionPage = 1;
 
+  const field = function (form, name) {
+    return form.elements.namedItem(name);
+  };
+
+  const fieldValue = function (form, name) {
+    const el = field(form, name);
+    if (!el) return "";
+    if (el.type === "checkbox") return el.checked;
+    return el.value;
+  };
+
+  const setFieldValue = function (form, name, value) {
+    const el = field(form, name);
+    if (!el) return;
+    if (el.type === "checkbox") {
+      el.checked = !!value;
+      return;
+    }
+    el.value = value == null ? "" : String(value);
+  };
+
   const optionRowHtml = function (option) {
     option = option || {};
     return '<div class="cbt-option-row" data-option-row>'
@@ -298,12 +319,34 @@
 
   const collectOptions = function () {
     return Array.from(document.querySelectorAll("[data-option-row]")).map(function (row) {
+      const radio = row.querySelector('[name="correct_option"]');
+      const label = row.querySelector('[name="label"]');
+      const body = row.querySelector('[name="body"]');
       return {
-        label: row.querySelector('[name="label"]').value || null,
-        body: row.querySelector('[name="body"]').value,
-        is_correct: !!row.querySelector('[name="correct_option"]').checked
+        label: (label && label.value) || null,
+        body: body ? String(body.value || "").trim() : "",
+        is_correct: !!(radio && radio.checked)
       };
+    }).filter(function (option) {
+      return option.body.length > 0;
     });
+  };
+
+  const showQuestionFormError = function (message) {
+    const form = document.querySelector("[data-q-form]");
+    let box = form && form.querySelector("[data-q-form-alert]");
+    if (!box && form) {
+      box = document.createElement("p");
+      box.className = "cbt-alert is-visible";
+      box.setAttribute("data-q-form-alert", "1");
+      form.insertBefore(box, form.firstChild);
+    }
+    if (box) {
+      box.textContent = message || "";
+      box.classList.toggle("is-visible", !!message);
+      box.hidden = !message;
+    }
+    showAlert(message);
   };
 
   const openQuestionModal = function (question) {
@@ -313,22 +356,25 @@
     const optionsHost = document.querySelector("[data-q-options]");
     if (!modal || !form) return;
     form.reset();
+    showQuestionFormError("");
     title.textContent = question ? "Edit question #" + question.id : "Create question";
-    form.id.value = question ? question.id : "";
+    setFieldValue(form, "id", question ? question.id : "");
     if (question) {
-      form.school_class_id.value = question.school_class_id;
-      form.subject_id.value = question.subject_id;
-      form.topic.value = question.topic || "";
-      form.difficulty.value = question.difficulty || "";
-      form.type.value = question.type || "mcq";
-      form.marks.value = question.marks;
-      form.stem.value = question.stem || "";
-      form.explanation.value = question.explanation || "";
-      form.is_active.checked = !!question.is_active;
+      setFieldValue(form, "school_class_id", question.school_class_id);
+      setFieldValue(form, "subject_id", question.subject_id);
+      setFieldValue(form, "topic", question.topic || "");
+      setFieldValue(form, "difficulty", question.difficulty || "");
+      setFieldValue(form, "type", question.type || "mcq");
+      setFieldValue(form, "marks", question.marks);
+      setFieldValue(form, "stem", question.stem || "");
+      setFieldValue(form, "explanation", question.explanation || "");
+      setFieldValue(form, "is_active", !!question.is_active);
       optionsHost.innerHTML = (question.options || []).map(optionRowHtml).join("") || optionRowHtml({ is_correct: true }) + optionRowHtml({});
     } else {
-      form.type.value = "mcq";
-      form.is_active.checked = true;
+      setFieldValue(form, "type", "mcq");
+      setFieldValue(form, "difficulty", "medium");
+      setFieldValue(form, "marks", "1");
+      setFieldValue(form, "is_active", true);
       optionsHost.innerHTML = optionRowHtml({ label: "A", is_correct: true }) + optionRowHtml({ label: "B" });
     }
     openModal(modal);
@@ -398,33 +444,50 @@
     document.querySelector("[data-q-form]")?.addEventListener("submit", function (event) {
       event.preventDefault();
       const form = event.currentTarget;
-      const id = form.id.value;
+      const id = String(fieldValue(form, "id") || "").trim();
+      const classId = Number(fieldValue(form, "school_class_id"));
+      const subjectId = Number(fieldValue(form, "subject_id"));
       const payload = {
-        school_class_id: Number(form.school_class_id.value),
-        subject_id: Number(form.subject_id.value),
-        topic: form.topic.value || null,
-        difficulty: form.difficulty.value || null,
-        type: form.type.value || "mcq",
-        stem: form.stem.value,
-        marks: Number(form.marks.value),
-        explanation: form.explanation.value || null,
-        is_active: !!form.is_active.checked,
+        school_class_id: classId,
+        subject_id: subjectId,
+        topic: fieldValue(form, "topic") || null,
+        difficulty: fieldValue(form, "difficulty") || "medium",
+        type: fieldValue(form, "type") || "mcq",
+        stem: String(fieldValue(form, "stem") || "").trim(),
+        marks: Number(fieldValue(form, "marks") || 1),
+        explanation: fieldValue(form, "explanation") || null,
+        is_active: !!fieldValue(form, "is_active"),
         options: collectOptions()
       };
       const correct = payload.options.filter(function (o) { return o.is_correct; }).length;
-      if (payload.options.length < 2 || correct !== 1 || !payload.stem.trim()) {
-        showAlert("Provide a stem, at least two options, and exactly one correct answer.");
+      if (!classId || !subjectId) {
+        showQuestionFormError("Choose a school class and subject.");
         return;
       }
+      if (payload.options.length < 2 || correct !== 1 || !payload.stem) {
+        showQuestionFormError("Provide a stem, at least two options, and exactly one correct answer.");
+        return;
+      }
+      const saveBtn = form.querySelector('button[type="submit"]');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        if (!saveBtn.dataset.label) saveBtn.dataset.label = saveBtn.textContent;
+        saveBtn.textContent = "Saving…";
+      }
       request(id ? "/api/v1/cbt/admin/questions/" + id : "/api/v1/cbt/admin/questions", {
-        method: id ? "PUT" : "POST",
+        method: "POST",
         body: JSON.stringify(payload)
       }).then(function (result) {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = saveBtn.dataset.label || "Save question";
+        }
         if (!result.ok) {
-          showAlert(firstError(result.body));
+          showQuestionFormError(firstError(result.body));
           return;
         }
         closeModal(document.querySelector("[data-q-modal]"));
+        showQuestionFormError("");
         showAlert(id ? "Question updated." : "Question created.", "info");
         loadQuestions(questionPage);
       });

@@ -2,6 +2,7 @@
 
 namespace App\Services\Cbt;
 
+use App\Enums\CbtQuestionDifficulty;
 use App\Enums\CbtQuestionType;
 use App\Models\CbtExamQuestion;
 use App\Models\CbtExamQuestionOption;
@@ -24,7 +25,7 @@ class CbtQuestionBankService
             'school_class_id' => $attributes['school_class_id'],
             'subject_id' => $attributes['subject_id'],
             'topic' => $attributes['topic'] ?? null,
-            'difficulty' => $attributes['difficulty'] ?? null,
+            'difficulty' => $attributes['difficulty'] ?? CbtQuestionDifficulty::Medium,
             'type' => $attributes['type'] ?? CbtQuestionType::Mcq,
             'stem' => $attributes['stem'],
             'marks' => $attributes['marks'] ?? 1,
@@ -54,7 +55,9 @@ class CbtQuestionBankService
             'school_class_id' => $attributes['school_class_id'] ?? $question->school_class_id,
             'subject_id' => $attributes['subject_id'] ?? $question->subject_id,
             'topic' => array_key_exists('topic', $attributes) ? $attributes['topic'] : $question->topic,
-            'difficulty' => $attributes['difficulty'] ?? $question->difficulty,
+            'difficulty' => array_key_exists('difficulty', $attributes)
+                ? ($attributes['difficulty'] ?? CbtQuestionDifficulty::Medium)
+                : $question->difficulty,
             'type' => $type,
             'stem' => $attributes['stem'] ?? $question->stem,
             'marks' => $attributes['marks'] ?? $question->marks,

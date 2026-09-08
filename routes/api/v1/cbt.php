@@ -27,13 +27,13 @@ Route::middleware(['web', 'auth', 'cbt.desk'])->prefix('cbt')->name('cbt.')->gro
         Route::get('questions', [CbtAdminQuestionController::class, 'index'])->name('questions.index');
         Route::post('questions', [CbtAdminQuestionController::class, 'store'])->name('questions.store');
         Route::get('questions/{question}', [CbtAdminQuestionController::class, 'show'])->name('questions.show');
-        Route::put('questions/{question}', [CbtAdminQuestionController::class, 'update'])->name('questions.update');
+        Route::match(['put', 'post'], 'questions/{question}', [CbtAdminQuestionController::class, 'update'])->name('questions.update');
         Route::post('questions/{question}/active', [CbtAdminQuestionController::class, 'setActive'])->name('questions.active');
 
         Route::get('exams', [CbtAdminExamController::class, 'index'])->name('exams.index');
         Route::post('exams', [CbtAdminExamController::class, 'store'])->name('exams.store');
         Route::get('exams/{exam}', [CbtAdminExamController::class, 'show'])->name('exams.show');
-        Route::put('exams/{exam}', [CbtAdminExamController::class, 'update'])->name('exams.update');
+        Route::match(['put', 'post'], 'exams/{exam}', [CbtAdminExamController::class, 'update'])->name('exams.update');
         Route::post('exams/{exam}/questions', [CbtAdminExamController::class, 'attachQuestion'])->name('exams.questions.attach');
         Route::delete('exams/{exam}/questions/{examQuestion}', [CbtAdminExamController::class, 'detachQuestion'])->name('exams.questions.detach');
         Route::post('exams/{exam}/questions/{examQuestion}/refresh', [CbtAdminExamController::class, 'refreshQuestion'])->name('exams.questions.refresh');

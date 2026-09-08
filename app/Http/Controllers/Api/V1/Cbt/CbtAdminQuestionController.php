@@ -106,7 +106,7 @@ class CbtAdminQuestionController extends Controller
             'subject_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:subjects,id'],
             'topic' => ['sometimes', 'nullable', 'string', 'max:255'],
             'difficulty' => ['sometimes', 'nullable', Rule::enum(CbtQuestionDifficulty::class)],
-            'type' => ['sometimes', Rule::enum(CbtQuestionType::class)],
+            'type' => ['sometimes', 'nullable', Rule::enum(CbtQuestionType::class)],
             'stem' => [$updating ? 'sometimes' : 'required', 'string'],
             'marks' => ['sometimes', 'numeric', 'gt:0'],
             'explanation' => ['sometimes', 'nullable', 'string'],
@@ -117,6 +117,14 @@ class CbtAdminQuestionController extends Controller
             'options.*.is_correct' => ['required_with:options', 'boolean'],
             'options.*.sort_order' => ['sometimes', 'integer', 'min:1'],
         ]);
+
+        if (array_key_exists('difficulty', $validated) && blank($validated['difficulty'])) {
+            $validated['difficulty'] = CbtQuestionDifficulty::Medium->value;
+        }
+
+        if (array_key_exists('type', $validated) && blank($validated['type'])) {
+            $validated['type'] = CbtQuestionType::Mcq->value;
+        }
 
         $options = array_key_exists('options', $validated) ? $validated['options'] : null;
         unset($validated['options']);

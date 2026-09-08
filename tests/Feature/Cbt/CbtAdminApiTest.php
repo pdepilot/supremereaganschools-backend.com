@@ -77,6 +77,27 @@ class CbtAdminApiTest extends TestCase
             ->assertJsonPath('data.options.0.is_correct', true);
     }
 
+    public function test_manager_can_create_question_without_difficulty(): void
+    {
+        $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
+        $class = $this->schoolClass();
+        $subject = $this->subject(['code' => 'ND'.random_int(100, 999)]);
+
+        $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/questions', [
+            'school_class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'difficulty' => null,
+            'stem' => 'What is 2 + 2?',
+            'marks' => 1,
+            'options' => [
+                ['label' => 'A', 'body' => '4', 'is_correct' => true],
+                ['label' => 'B', 'body' => '5', 'is_correct' => false],
+            ],
+        ])->assertCreated()
+            ->assertJsonPath('data.stem', 'What is 2 + 2?')
+            ->assertJsonPath('data.difficulty', 'medium');
+    }
+
     public function test_unauthorized_user_cannot_manage_questions_or_exams(): void
     {
         $student = $this->student();

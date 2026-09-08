@@ -72,13 +72,18 @@
     <div class="cbt-modal-card cbt-modal-wide">
       <h2 data-q-modal-title>Question</h2>
       <form data-q-form>
+        <p class="cbt-alert" data-q-form-alert hidden></p>
         <input type="hidden" name="id">
         <div class="cbt-form-grid">
           <label>School class
-            <select name="school_class_id" data-lookup="classes" required></select>
+            <select name="school_class_id" data-lookup="classes" required>
+              <option value="">Select class…</option>
+            </select>
           </label>
           <label>Subject
-            <select name="subject_id" data-lookup="subjects" required></select>
+            <select name="subject_id" data-lookup="subjects" required>
+              <option value="">Select subject…</option>
+            </select>
           </label>
           <label>Topic
             <input type="text" name="topic" maxlength="255">
@@ -126,6 +131,6 @@
     </div>
   </div>
 
-  <script src="/site/JS/portal-cbt-admin.js"></script>
+  <script src="/site/JS/portal-cbt-admin.js?v=20260908d"></script>
 </body>
 </html>
