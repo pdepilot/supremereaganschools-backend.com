@@ -238,6 +238,30 @@
     }
   };
 
+  const ensureCbtRail = function (me) {
+    const nav = document.querySelector(".rail-nav");
+    if (!nav) return;
+    const permissions = (me && me.permissions) || [];
+    const needed = ["cbt.view", "cbt.manage", "cbt.proctor", "cbt.mark"];
+    const canSee = !!(me && (isSuper(me) || hasAny(permissions, needed)));
+    let link = nav.querySelector('a[href="/cbt/login"], a[href="/cbt"], a[data-cbt-entry]');
+    if (!canSee) {
+      if (link) link.remove();
+      return;
+    }
+    if (!link) {
+      link = document.createElement("a");
+      link.className = "rail-btn";
+      link.setAttribute("data-cbt-entry", "1");
+      link.href = "/cbt/login";
+      link.innerHTML = "<span>CBT</span>";
+      const marks = nav.querySelector('a[href="grades.html"], a[href="/portal/grades"]');
+      if (marks && marks.nextSibling) nav.insertBefore(link, marks.nextSibling);
+      else if (marks) nav.insertBefore(link, marks.nextSibling);
+      else nav.appendChild(link);
+    }
+  };
+
   const hideEmptyWingGroup = function () {
     const wings = document.querySelector(".rail-wings");
     if (!wings) return;
@@ -252,6 +276,7 @@
     ensureRolesRail(me);
     ensureAdminsRail(me);
     ensureAccountRail();
+    ensureCbtRail(me);
 
     if (isSuper(me)) {
       hideEmptyWingGroup();

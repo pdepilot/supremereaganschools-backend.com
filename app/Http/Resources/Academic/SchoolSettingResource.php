@@ -38,6 +38,13 @@ class SchoolSettingResource extends JsonResource
             'current_term_id' => $this->current_term_id,
             'current_academic_session' => new AcademicSessionResource($this->whenLoaded('currentAcademicSession')),
             'current_term' => new TermResource($this->whenLoaded('currentTerm')),
+            'cbt_login' => [
+                'email' => $this->cbt_login_email,
+                'configured' => $this->hasCbtLoginConfigured(),
+                'operator_user_id' => $this->cbt_operator_user_id,
+                'operator_name' => $this->cbtOperator?->name,
+                'operator_email' => $this->cbtOperator?->email,
+            ],
         ];
     }
 

@@ -111,6 +111,7 @@ class AuthenticatedSessionController extends Controller
             AuthPortal::Staff => $this->frontend->response('staff/staff.html', area: 'staff'),
             AuthPortal::Parent => $this->frontend->response('parent_student/dashboard.html', area: 'parent'),
             AuthPortal::Student => $this->frontend->response('parent_student/student_dashboard.html', area: 'student'),
+            AuthPortal::Cbt => $this->frontend->response('cbt/desk.html', area: 'auth'),
         };
     }
 
@@ -158,6 +159,7 @@ class AuthenticatedSessionController extends Controller
             AuthPortal::Parent => str_starts_with($path, '/parent'),
             AuthPortal::Student => str_starts_with($path, '/student'),
             AuthPortal::Portal => str_starts_with($path, '/portal') || str_starts_with($path, '/admin'),
+            AuthPortal::Cbt => str_starts_with($path, '/cbt'),
         };
     }
 }

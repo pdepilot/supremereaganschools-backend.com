@@ -117,8 +117,12 @@
       event.preventDefault();
       clearError();
 
+      const emailEnabled = form.email && !form.email.disabled;
+      const admissionEnabled = form.admission_number && !form.admission_number.disabled;
+
       const payload = {
-        email: form.email.value,
+        email: emailEnabled ? form.email.value : "",
+        admission_number: admissionEnabled ? form.admission_number.value : "",
         password: form.password.value,
         portal: (form.portal && form.portal.value) || "portal",
         remember: form.remember && form.remember.checked
@@ -129,7 +133,7 @@
         submit.classList.add("is-busy");
       }
 
-      fetch("/login", {
+      fetch(form.getAttribute("action") || "/login", {
         method: "POST",
         headers: {
           "Accept": "application/json",

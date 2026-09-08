@@ -37,6 +37,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('cbt') || $request->is('cbt/*')) {
+                return route('cbt.login');
+            }
+
             if ($request->is('staff') || $request->is('staff/*')) {
                 return route('staff.login');
             }

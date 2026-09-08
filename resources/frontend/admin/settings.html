@@ -115,6 +115,22 @@
                 <div class="form-actions"><button class="solid-btn" type="submit">Save account</button></div>
               </form>
             </div>
+            <div class="surface" data-stamp="CBT">
+              <div class="panel-title">
+                <div>
+                  <h2>CBT desk login</h2>
+                  <p>Separate from portal login. Staff/admin CBT entry uses these credentials only.</p>
+                </div>
+              </div>
+              <form data-cbt-login-form>
+                <div class="field"><label for="cbtLoginEmail">CBT login email</label><input id="cbtLoginEmail" type="email" required autocomplete="off"></div>
+                <div class="field"><label for="cbtOperator">CBT operator account</label><select id="cbtOperator" required></select></div>
+                <p class="field-hint" data-cbt-login-status>CBT password status loading…</p>
+                <div class="field"><label for="cbtLoginPassword">New CBT password</label><input id="cbtLoginPassword" type="password" autocomplete="new-password" placeholder="Leave blank to keep current"></div>
+                <div class="field"><label for="cbtLoginPasswordConfirm">Confirm CBT password</label><input id="cbtLoginPasswordConfirm" type="password" autocomplete="new-password"></div>
+                <div class="form-actions"><button class="solid-btn" type="submit">Save CBT login</button></div>
+              </form>
+            </div>
             <div class="surface" data-stamp="Key">
               <div class="panel-title"><div><h2>Passphrase</h2><p>Reset the key to this desk.</p></div></div>
               <form data-password-form>

@@ -71,7 +71,14 @@ use App\Policies\PostCategoryPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\PostPolicy;
 use App\Policies\PostTagPolicy;
-use App\Policies\TimetableSlotPolicy;
+use App\Models\CbtAttempt;
+use App\Models\CbtExam;
+use App\Models\CbtQuestion;
+use App\Models\CbtResult;
+use App\Policies\CbtAttemptPolicy;
+use App\Policies\CbtExamPolicy;
+use App\Policies\CbtQuestionPolicy;
+use App\Policies\CbtResultPolicy;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -142,5 +149,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PostTag::class, PostTagPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(User::class, AdminUserPolicy::class);
+        Gate::policy(CbtExam::class, CbtExamPolicy::class);
+        Gate::policy(CbtAttempt::class, CbtAttemptPolicy::class);
+        Gate::policy(CbtResult::class, CbtResultPolicy::class);
+        Gate::policy(CbtQuestion::class, CbtQuestionPolicy::class);
     }
 }

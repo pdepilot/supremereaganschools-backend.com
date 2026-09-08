@@ -36,19 +36,22 @@ class AuthenticationService
         $this->ensureIsNotRateLimited($throttleKey);
 
         $household = $portal === AuthPortal::Student
-            || ($portal === AuthPortal::Parent && filled($admissionNumber));
+            || ($portal === AuthPortal::Parent && filled($admissionNumber))
+            || ($portal === AuthPortal::Cbt && filled($admissionNumber));
 
         $credentialField = $household ? 'admission_number' : 'email';
 
         $user = match (true) {
             $portal === AuthPortal::Student => $this->studentUserForLogin((string) $admissionNumber, $password),
+            $portal === AuthPortal::Cbt && $household => $this->studentUserForLogin((string) $admissionNumber, $password),
+            $portal === AuthPortal::Cbt => app(SchoolSettingService::class)->authenticateCbtStaff($email, $password),
             $portal === AuthPortal::Parent && $household => $this->parentUserForLogin((string) $admissionNumber, $password),
             $portal === AuthPortal::Parent => $this->parentUserForEmailLogin((string) $email, $password),
             default => User::query()->whereRaw('LOWER(email) = ?', [strtolower((string) $email)])->first(),
         };
 
         $passwordOk = match (true) {
-            $household, $portal === AuthPortal::Parent => $user !== null,
+            $household, $portal === AuthPortal::Parent, $portal === AuthPortal::Cbt => $user !== null,
             default => $user && Hash::check($password, $user->getAuthPassword()),
         };
 

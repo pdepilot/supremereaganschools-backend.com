@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT admin | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="home">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>CBT Administration</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a class="is-active" href="/cbt/admin">Dashboard</a>
+        <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
+        <a href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+
+    <div class="cbt-alert" data-cbt-alert></div>
+
+    <section class="cbt-panel">
+      <h1>Examination lifecycle</h1>
+      <p class="cbt-lede">Question bank → draft exam → attach snapshots → assign → preview → publish/freeze → monitor results.</p>
+      <div class="cbt-stat-grid" data-cbt-admin-summary>
+        <div class="cbt-empty">Loading summary…</div>
+      </div>
+      <div class="cbt-actions" style="margin-top:1rem">
+        <a class="cbt-btn cbt-btn-primary" href="/cbt/admin/questions" data-manage-only>Manage questions</a>
+        <a class="cbt-btn" href="/cbt/admin/exams">Manage exams</a>
+        <a class="cbt-btn" href="/cbt/admin/results">View results</a>
+      </div>
+    </section>
+
+    <section class="cbt-panel" data-manage-only>
+      <h2>Workflow reminder</h2>
+      <ul class="cbt-rules">
+        <li>Draft exams stay editable. Snapshots copy bank content and can be refreshed only while draft.</li>
+        <li>Publishing freezes question stems, options, marks, and ordering.</li>
+        <li>Bank edits after publish do not change frozen exam snapshots.</li>
+        <li><code>write_to_assessment_score</code> stays off unless you deliberately enable it on the exam.</li>
+      </ul>
+    </section>
+  </div>
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

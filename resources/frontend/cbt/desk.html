@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT desk | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app" data-cbt-page="desk">
+  <div class="cbt-shell">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>CBT Student Desk</strong>
+          <span data-cbt-student-label>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav">
+        <a class="is-active" href="/cbt">Desk</a>
+        <a href="/cbt/results">Results</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+
+    <div class="cbt-status-bar">
+      <span><span class="cbt-status-dot" data-cbt-conn-dot></span><span data-cbt-conn-label>Checking connection…</span></span>
+      <span data-cbt-save-label></span>
+    </div>
+
+    <div class="cbt-alert" data-cbt-alert></div>
+
+    <section class="cbt-panel">
+      <h1>Your examinations</h1>
+      <p class="cbt-lede">Only exams assigned to you appear here. Timing starts on the server when you begin an attempt.</p>
+      <div class="cbt-grid" data-cbt-exam-list>
+        <div class="cbt-empty">Loading exams…</div>
+      </div>
+    </section>
+  </div>
+  <script src="/site/JS/portal-cbt.js"></script>
+</body>
+</html>

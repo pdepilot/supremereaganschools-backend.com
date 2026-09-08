@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT results | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="results">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>CBT results</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a href="/cbt/admin">Dashboard</a>
+        <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
+        <a href="/cbt/admin/exams">Exams</a>
+        <a class="is-active" href="/cbt/admin/results">Results</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+
+    <div class="cbt-alert" data-cbt-alert></div>
+
+    <section class="cbt-panel">
+      <h1>Administrative results</h1>
+      <p class="cbt-lede">Visible to staff with <code>cbt.manage</code> or <code>cbt.mark</code>. Student endpoints remain isolated to own results.</p>
+      <form class="cbt-filters" data-results-filters>
+        <input type="search" name="q" placeholder="Student name or admission no.">
+        <input type="number" name="exam_id" placeholder="Exam ID" min="1">
+        <button type="submit" class="cbt-btn">Filter</button>
+      </form>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead>
+            <tr>
+              <th>Exam</th>
+              <th>Student</th>
+              <th>Score</th>
+              <th>%</th>
+              <th>Grade</th>
+              <th>Pass</th>
+              <th>Started</th>
+              <th>Submitted</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody data-results-rows><tr><td colspan="9">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="cbt-pager" data-results-pager></div>
+    </section>
+  </div>
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

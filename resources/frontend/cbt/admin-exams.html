@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT exams | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="exams">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>CBT exams</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a href="/cbt/admin">Dashboard</a>
+        <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
+        <a class="is-active" href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+
+    <div class="cbt-alert" data-cbt-alert></div>
+
+    <section class="cbt-panel">
+      <div class="cbt-toolbar">
+        <h1>Exams</h1>
+        <button type="button" class="cbt-btn cbt-btn-primary" data-exam-new data-manage-only>New draft exam</button>
+      </div>
+      <form class="cbt-filters" data-exam-filters>
+        <input type="search" name="q" placeholder="Search title">
+        <select name="status" data-lookup="exam_statuses"><option value="">All statuses</option></select>
+        <select name="subject_id" data-lookup="subjects"><option value="">All subjects</option></select>
+        <select name="class_section_offering_id" data-lookup="offerings"><option value="">All offerings</option></select>
+        <select name="academic_session_id" data-lookup="sessions"><option value="">All sessions</option></select>
+        <select name="term_id" data-lookup="terms"><option value="">All terms</option></select>
+        <button type="submit" class="cbt-btn">Filter</button>
+      </form>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Subject</th>
+              <th>Offering</th>
+              <th>Session / Term</th>
+              <th>Status</th>
+              <th>Availability</th>
+              <th>Frozen</th>
+              <th>Questions</th>
+              <th>Assignments</th>
+              <th>Attempts</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody data-exam-rows><tr><td colspan="11">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="cbt-pager" data-exam-pager></div>
+    </section>
+  </div>
+
+  <div class="cbt-modal" data-exam-create-modal>
+    <div class="cbt-modal-card cbt-modal-wide">
+      <h2>Create draft exam</h2>
+      <form data-exam-create-form>
+        <div class="cbt-form-grid">
+          <label class="cbt-full">Title
+            <input type="text" name="title" required maxlength="255">
+          </label>
+          <label>Subject
+            <select name="subject_id" data-lookup="subjects" required></select>
+          </label>
+          <label>Class section offering
+            <select name="class_section_offering_id" data-lookup="offerings" required></select>
+          </label>
+          <label>Academic session
+            <select name="academic_session_id" data-lookup="sessions" required></select>
+          </label>
+          <label>Term
+            <select name="term_id" data-lookup="terms" required></select>
+          </label>
+          <label>Duration (minutes)
+            <input type="number" name="duration_minutes" min="1" value="40" required>
+          </label>
+          <label>Pass mark (%)
+            <input type="number" name="pass_mark" min="0" max="100" step="0.01" value="50">
+          </label>
+          <label>Max attempts
+            <input type="number" name="max_attempts" min="1" value="1">
+          </label>
+          <label>Starts at
+            <input type="datetime-local" name="starts_at">
+          </label>
+          <label>Ends at
+            <input type="datetime-local" name="ends_at">
+          </label>
+        </div>
+        <label class="cbt-full">Instructions
+          <textarea name="instructions" rows="3"></textarea>
+        </label>
+        <label class="cbt-check"><input type="checkbox" name="randomize_questions"> Randomize questions</label>
+        <label class="cbt-check"><input type="checkbox" name="randomize_options"> Randomize options</label>
+        <label class="cbt-check"><input type="checkbox" name="is_active" checked> Active</label>
+        <label class="cbt-check"><input type="checkbox" name="write_to_assessment_score"> Write result to Examination assessment score (off by default)</label>
+        <p class="cbt-muted">Enabling assessment write bridges the CBT percentage into the existing Examination assessment only. First CA and Second CA are never modified.</p>
+        <div class="cbt-actions">
+          <button type="button" class="cbt-btn cbt-btn-ghost" data-exam-create-cancel>Cancel</button>
+          <button type="submit" class="cbt-btn cbt-btn-primary">Create draft</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

@@ -24,4 +24,5 @@ require __DIR__.'/v1/classroom.php';
 require __DIR__.'/v1/mail.php';
 require __DIR__.'/v1/news.php';
 require __DIR__.'/v1/events.php';
+require __DIR__.'/v1/cbt.php';
 

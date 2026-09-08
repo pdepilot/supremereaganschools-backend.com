@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT login | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./CSS/staff-auth.css">
+</head>
+<body class="staff-auth cbt-auth">
+  <main class="staff-stage">
+    <section class="staff-gallery">
+      <div class="staff-gallery-media" data-auth-scene="panel"></div>
+      <div class="staff-gallery-shade"></div>
+      <header class="staff-top">
+        <a href="./index.html">Return to the school</a>
+        <span class="staff-clock" data-clock>00:00:00  WAT</span>
+        <span>CBT</span>
+      </header>
+      <p class="staff-spine">Computer-Based Testing · Examination desk</p>
+      <div class="staff-gallery-copy">
+        <p class="staff-kicker">Supreme Reagan Schools · CBT</p>
+        <h1>Examination entry.</h1>
+        <div class="staff-rule"></div>
+        <p class="staff-lede">Sign in with your school credentials to enter the CBT environment. This desk is separate from the main portal.</p>
+      </div>
+    </section>
+
+    <section class="staff-vault">
+      <div class="staff-card">
+        <div class="staff-mark">
+          <img src="./Image/logo_main.png" alt="Supreme Reagan Schools">
+          <p>CBT</p>
+        </div>
+        <h1>Sign in to CBT.</h1>
+        <div class="staff-rule"></div>
+        <p class="staff-note">Pupils use admission number and passphrase/parent phone. Staff CBT entry uses the dedicated CBT desk email and password set in Portal → Setup — not the portal office password.</p>
+        <p class="staff-alert" data-auth-alert hidden></p>
+
+        <div class="staff-row cbt-mode-row" style="gap:0.75rem;margin-bottom:1rem;">
+          <button type="button" class="cbt-mode-btn is-active" data-cbt-mode="student" aria-pressed="true">Pupil</button>
+          <button type="button" class="cbt-mode-btn" data-cbt-mode="staff" aria-pressed="false">Staff / Admin</button>
+        </div>
+
+        <form class="staff-form" data-auth-form action="/cbt/login" method="post">
+          <input type="hidden" name="_token" value="{{CSRF_TOKEN}}">
+          <input type="hidden" name="portal" value="cbt">
+
+          <label class="staff-field" data-cbt-student-field>
+            <span>Admission number</span>
+            <div class="staff-input">
+              <input id="admission-number" name="admission_number" type="text" autocomplete="username" placeholder="e.g. SRS/2025/0142">
+            </div>
+          </label>
+
+          <label class="staff-field" data-cbt-staff-field hidden>
+            <span>CBT desk email</span>
+            <div class="staff-input">
+              <input id="email" name="email" type="email" autocomplete="username" placeholder="CBT desk email">
+            </div>
+          </label>
+
+          <label class="staff-field">
+            <span data-cbt-secret-label>Parent’s phone / passphrase</span>
+            <div class="staff-input">
+              <input id="password" name="password" type="password" autocomplete="current-password" required>
+              <button type="button" data-toggle-pass aria-controls="password" aria-label="Show password" aria-pressed="false">Show</button>
+            </div>
+          </label>
+
+          <div class="staff-row">
+            <label><input type="checkbox" name="remember"> Remember me</label>
+          </div>
+
+          <button class="staff-submit" type="submit">Enter CBT</button>
+        </form>
+
+        <p class="staff-note" style="margin-top:1.25rem;">
+          <a href="/portal/login" class="cbt-portal-link">Back to office portal login</a>
+        </p>
+      </div>
+    </section>
+  </main>
+  <script src="./JS/admin-auth.js"></script>
+  <script src="./JS/portal-auth-scene.js"></script>
+  <script src="./JS/cbt-auth.js"></script>
+</body>
+</html>

@@ -97,6 +97,16 @@ class StudentProfile extends Model
         return $this->hasMany(AdmissionApplication::class);
     }
 
+    public function cbtExamAssignments(): HasMany
+    {
+        return $this->hasMany(CbtExamAssignment::class);
+    }
+
+    public function cbtAttempts(): HasMany
+    {
+        return $this->hasMany(CbtAttempt::class);
+    }
+
     public function fullName(): string
     {
         return trim($this->surname.' '.$this->first_name.' '.($this->other_names ?? ''));

@@ -32,6 +32,14 @@ class EnsureUserHasRole
             return $this->reject($request, $user);
         }
 
+        if ($roles === ['cbt'] || (count($roles) === 1 && ($roles[0] ?? null) === 'cbt')) {
+            if (AuthPortal::Cbt->admits($user)) {
+                return $next($request);
+            }
+
+            return $this->reject($request, $user);
+        }
+
         $allowed = array_map(
             fn (string $role) => RoleSlug::from($role),
             $roles

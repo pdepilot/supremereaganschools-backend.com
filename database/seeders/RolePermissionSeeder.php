@@ -74,6 +74,8 @@ class RolePermissionSeeder extends Seeder
                 PermissionSlug::EventsView->value,
                 PermissionSlug::ContactView->value,
                 PermissionSlug::SettingsView->value,
+                PermissionSlug::CbtView->value,
+                PermissionSlug::CbtManage->value,
             ])),
             RoleSlug::VicePrincipal->value => [
                 PermissionSlug::DeskView->value,
@@ -89,6 +91,8 @@ class RolePermissionSeeder extends Seeder
                 PermissionSlug::NoticesView->value,
                 PermissionSlug::MessagesView->value,
                 PermissionSlug::ReportsView->value,
+                PermissionSlug::CbtView->value,
+                PermissionSlug::CbtManage->value,
             ],
             RoleSlug::ExaminationOfficer->value => [
                 PermissionSlug::DeskView->value,
@@ -99,6 +103,9 @@ class RolePermissionSeeder extends Seeder
                 PermissionSlug::AttendanceView->value,
                 PermissionSlug::ReportsView->value,
                 PermissionSlug::ReportsExport->value,
+                PermissionSlug::CbtView->value,
+                PermissionSlug::CbtManage->value,
+                PermissionSlug::CbtMark->value,
             ],
             RoleSlug::AdmissionsOfficer->value => [
                 PermissionSlug::DeskView->value,

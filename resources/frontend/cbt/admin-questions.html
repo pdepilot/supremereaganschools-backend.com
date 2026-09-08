@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT question bank | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="questions">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>Question bank</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a href="/cbt/admin">Dashboard</a>
+        <a class="is-active" href="/cbt/admin/questions">Question bank</a>
+        <a href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+
+    <div class="cbt-alert" data-cbt-alert></div>
+
+    <section class="cbt-panel">
+      <div class="cbt-toolbar">
+        <h1>Questions</h1>
+        <button type="button" class="cbt-btn cbt-btn-primary" data-q-new>New question</button>
+      </div>
+      <form class="cbt-filters" data-q-filters>
+        <input type="search" name="q" placeholder="Search stem or topic">
+        <select name="subject_id" data-lookup="subjects"><option value="">All subjects</option></select>
+        <select name="school_class_id" data-lookup="classes"><option value="">All classes</option></select>
+        <select name="difficulty" data-lookup="difficulties"><option value="">All difficulties</option></select>
+        <select name="is_active">
+          <option value="">All statuses</option>
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
+        </select>
+        <button type="submit" class="cbt-btn">Filter</button>
+      </form>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Stem</th>
+              <th>Subject</th>
+              <th>Class</th>
+              <th>Difficulty</th>
+              <th>Marks</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody data-q-rows><tr><td colspan="8">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="cbt-pager" data-q-pager></div>
+    </section>
+  </div>
+
+  <div class="cbt-modal" data-q-modal>
+    <div class="cbt-modal-card cbt-modal-wide">
+      <h2 data-q-modal-title>Question</h2>
+      <form data-q-form>
+        <input type="hidden" name="id">
+        <div class="cbt-form-grid">
+          <label>School class
+            <select name="school_class_id" data-lookup="classes" required></select>
+          </label>
+          <label>Subject
+            <select name="subject_id" data-lookup="subjects" required></select>
+          </label>
+          <label>Topic
+            <input type="text" name="topic" maxlength="255">
+          </label>
+          <label>Difficulty
+            <select name="difficulty" data-lookup="difficulties"></select>
+          </label>
+          <label>Type
+            <select name="type" data-lookup="question_types"></select>
+          </label>
+          <label>Marks
+            <input type="number" name="marks" min="0.01" step="0.01" value="1" required>
+          </label>
+        </div>
+        <label class="cbt-full">Question stem
+          <textarea name="stem" rows="4" required></textarea>
+        </label>
+        <label class="cbt-full">Explanation (optional)
+          <textarea name="explanation" rows="2"></textarea>
+        </label>
+        <label class="cbt-check"><input type="checkbox" name="is_active" checked> Active</label>
+        <div class="cbt-options-editor">
+          <div class="cbt-toolbar">
+            <strong>MCQ options</strong>
+            <button type="button" class="cbt-btn cbt-btn-ghost" data-q-add-option>Add option</button>
+          </div>
+          <p class="cbt-muted">Exactly one option must be marked correct.</p>
+          <div data-q-options></div>
+        </div>
+        <div class="cbt-actions">
+          <button type="button" class="cbt-btn cbt-btn-ghost" data-q-cancel>Cancel</button>
+          <button type="submit" class="cbt-btn cbt-btn-primary">Save question</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="cbt-modal" data-q-preview-modal>
+    <div class="cbt-modal-card cbt-modal-wide">
+      <h2>Question preview</h2>
+      <div data-q-preview-body></div>
+      <div class="cbt-actions">
+        <button type="button" class="cbt-btn" data-q-preview-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

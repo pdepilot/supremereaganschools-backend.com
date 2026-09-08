@@ -25,6 +25,8 @@ Route::middleware(['web', 'auth', 'role:portal'])->group(function () {
     Route::get('level-desks/{wing}', [LevelDeskController::class, 'show']);
     Route::get('school-settings', [SchoolSettingController::class, 'show']);
     Route::put('school-settings', [SchoolSettingController::class, 'update']);
+    Route::put('school-settings/cbt-login', [SchoolSettingController::class, 'updateCbtLogin']);
+    Route::get('school-settings/cbt-operators', [SchoolSettingController::class, 'cbtOperators']);
     Route::get('desk-access', [SchoolSettingController::class, 'desks']);
 
     Route::apiResource('campuses', CampusController::class)->except(['show']);

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADMIN PREVIEW | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="preview">
+  <div class="cbt-shell">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>ADMIN PREVIEW</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav">
+        <a href="#" data-preview-back>Back to exam</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+
+    <div class="cbt-alert is-visible is-info">Authorized administrative preview. Correct answers are shown for management only and are not available on student routes.</div>
+    <div class="cbt-alert" data-cbt-alert></div>
+
+    <section class="cbt-panel">
+      <h1 data-preview-title>Exam</h1>
+      <div class="cbt-meta" data-preview-meta></div>
+      <p class="cbt-lede" data-preview-instructions></p>
+      <div data-preview-questions></div>
+    </section>
+  </div>
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

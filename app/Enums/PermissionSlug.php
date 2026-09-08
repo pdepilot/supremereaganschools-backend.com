@@ -79,6 +79,11 @@ enum PermissionSlug: string
     case AdminsSuspend = 'admins.suspend';
     case AdminsDelete = 'admins.delete';
 
+    case CbtView = 'cbt.view';
+    case CbtManage = 'cbt.manage';
+    case CbtProctor = 'cbt.proctor';
+    case CbtMark = 'cbt.mark';
+
     public function label(): string
     {
         return match ($this) {
@@ -136,6 +141,10 @@ enum PermissionSlug: string
             self::AdminsEdit => 'Edit admin users',
             self::AdminsSuspend => 'Suspend admin users',
             self::AdminsDelete => 'Delete admin users',
+            self::CbtView => 'Enter CBT desk',
+            self::CbtManage => 'Manage CBT exams',
+            self::CbtProctor => 'Proctor CBT exams',
+            self::CbtMark => 'Mark CBT results',
         };
     }
 
@@ -162,6 +171,7 @@ enum PermissionSlug: string
             self::PermissionsView => 'Security',
             self::AdminsView, self::AdminsCreate, self::AdminsEdit, self::AdminsSuspend,
             self::AdminsDelete => 'Admin users',
+            self::CbtView, self::CbtManage, self::CbtProctor, self::CbtMark => 'CBT',
         };
     }
 
@@ -206,6 +216,7 @@ enum PermissionSlug: string
             self::PermissionsView => ['roles'],
             self::AdminsView, self::AdminsCreate, self::AdminsEdit, self::AdminsSuspend,
             self::AdminsDelete => ['admins'],
+            self::CbtView, self::CbtManage, self::CbtProctor, self::CbtMark => ['cbt'],
             default => [],
         };
     }

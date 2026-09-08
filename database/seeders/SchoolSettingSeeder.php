@@ -38,6 +38,9 @@ class SchoolSettingSeeder extends Seeder
                 'logo_path' => '/site/Image/logo_main.png',
                 'current_academic_session_id' => $session?->id,
                 'current_term_id' => $term?->id,
+                'cbt_login_email' => strtolower((string) env('CBT_LOGIN_EMAIL', 'cbt@supremereagan.com')),
+                'cbt_login_password' => (string) env('CBT_LOGIN_PASSWORD', 'CbtDeskPass1!'),
+                'cbt_operator_user_id' => LocalAdminSeeder::user()?->id,
             ],
         );
     }

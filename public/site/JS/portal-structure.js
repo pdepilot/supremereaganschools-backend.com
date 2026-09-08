@@ -378,6 +378,85 @@
     });
   };
 
+  const wireCbtLogin = function () {
+    const form = document.querySelector("[data-cbt-login-form]");
+    if (!form) return;
+    const button = form.querySelector(".solid-btn");
+    const status = document.querySelector("[data-cbt-login-status]");
+    const operatorSelect = document.getElementById("cbtOperator");
+
+    Promise.all([
+      request("/api/v1/school-settings"),
+      request("/api/v1/school-settings/cbt-operators")
+    ]).then(function (parts) {
+      const settingsResult = parts[0];
+      const operatorsResult = parts[1];
+      if (operatorsResult.ok && operatorSelect) {
+        const items = (operatorsResult.body.data && operatorsResult.body.data.items) || [];
+        operatorSelect.innerHTML = '<option value="">Select operator…</option>' + items.map(function (user) {
+          return '<option value="' + user.id + '">' + escapeHtml((user.name || "User") + " · " + (user.email || "")) + "</option>";
+        }).join("");
+      }
+      if (!settingsResult.ok) {
+        if (status) status.textContent = firstError(settingsResult.body);
+        return;
+      }
+      const cbt = (settingsResult.body.data && settingsResult.body.data.cbt_login) || {};
+      setField("cbtLoginEmail", cbt.email || "");
+      if (operatorSelect && cbt.operator_user_id) {
+        operatorSelect.value = String(cbt.operator_user_id);
+      }
+      if (status) {
+        status.textContent = cbt.configured
+          ? "CBT desk password is set. Leave the password fields blank to keep it."
+          : "CBT desk password is not set yet. Enter a new password below.";
+      }
+    });
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const password = fieldValue("cbtLoginPassword");
+      const confirm = fieldValue("cbtLoginPasswordConfirm");
+      if ((password || confirm) && password !== confirm) {
+        setButtonState(button, false, "CBT passwords do not match.");
+        window.setTimeout(function () { setButtonState(button, false); }, 1800);
+        return;
+      }
+      const operatorId = fieldValue("cbtOperator");
+      if (!operatorId) {
+        setButtonState(button, false, "Choose a CBT operator account.");
+        window.setTimeout(function () { setButtonState(button, false); }, 1800);
+        return;
+      }
+      setButtonState(button, true, "Sealing…");
+      const payload = {
+        cbt_login_email: fieldValue("cbtLoginEmail"),
+        cbt_operator_user_id: Number(operatorId)
+      };
+      if (password) payload.cbt_login_password = password;
+      request("/api/v1/school-settings/cbt-login", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      }).then(function (result) {
+        setButtonState(button, false, result.ok ? "CBT login saved." : firstError(result.body));
+        if (result.ok) {
+          const cbt = (result.body.data && result.body.data.cbt_login) || {};
+          if (status) {
+            status.textContent = cbt.configured
+              ? "CBT desk password is set. Leave the password fields blank to keep it."
+              : "CBT desk password is not set yet.";
+          }
+          document.getElementById("cbtLoginPassword").value = "";
+          document.getElementById("cbtLoginPasswordConfirm").value = "";
+        }
+        window.setTimeout(function () { setButtonState(button, false); }, 1800);
+      }).catch(function () {
+        setButtonState(button, false, "Unable to reach the office.");
+        window.setTimeout(function () { setButtonState(button, false); }, 1800);
+      });
+    });
+  };
+
   const wireSessions = function () {
     const list = document.querySelector("[data-session-list]");
     const form = document.querySelector("[data-session-form]");
@@ -1349,6 +1428,7 @@
   wireDesks();
   wireAccount();
   wirePassword();
+  wireCbtLogin();
   wireSessions();
   wireClasses();
 })();

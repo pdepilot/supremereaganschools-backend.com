@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT attempt | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app" data-cbt-page="attempt">
+  <div class="cbt-shell">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong data-cbt-exam-title>Examination</strong>
+          <span data-cbt-exam-subject>Loading…</span>
+        </div>
+      </div>
+      <div class="cbt-actions">
+        <span class="cbt-timer" data-cbt-timer>--:--</span>
+        <button type="button" class="cbt-btn cbt-btn-danger" data-cbt-submit>Submit exam</button>
+      </div>
+    </header>
+
+    <div class="cbt-status-bar">
+      <span><span class="cbt-status-dot" data-cbt-conn-dot></span><span data-cbt-conn-label>Checking connection…</span></span>
+      <span data-cbt-save-label>Ready</span>
+    </div>
+
+    <div class="cbt-alert" data-cbt-alert></div>
+
+    <div class="cbt-attempt-layout" data-cbt-attempt-root>
+      <aside class="cbt-side">
+        <p class="cbt-muted" style="margin:0 0 0.65rem;font-size:0.8rem;">Questions</p>
+        <div class="cbt-qnav" data-cbt-qnav></div>
+        <p class="cbt-muted" style="margin:0.85rem 0 0;font-size:0.78rem;" data-cbt-progress></p>
+      </aside>
+      <section>
+        <div class="cbt-question" data-cbt-question>
+          <div class="cbt-empty">Loading attempt…</div>
+        </div>
+        <div class="cbt-actions" style="margin-top:0.85rem;">
+          <button type="button" class="cbt-btn" data-cbt-prev>Previous</button>
+          <button type="button" class="cbt-btn" data-cbt-next>Next</button>
+          <button type="button" class="cbt-btn cbt-btn-ghost" data-cbt-clear>Clear answer</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="cbt-panel" data-cbt-result-panel hidden></section>
+  </div>
+
+  <div class="cbt-modal" data-cbt-modal>
+    <div class="cbt-modal-card">
+      <h2>Submit this examination?</h2>
+      <p data-cbt-modal-copy>Once submitted, you cannot change your answers. The server will mark your attempt.</p>
+      <div class="cbt-actions">
+        <button type="button" class="cbt-btn cbt-btn-ghost" data-cbt-modal-cancel>Continue exam</button>
+        <button type="button" class="cbt-btn cbt-btn-danger" data-cbt-modal-confirm>Submit now</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/site/JS/portal-cbt.js"></script>
+</body>
+</html>

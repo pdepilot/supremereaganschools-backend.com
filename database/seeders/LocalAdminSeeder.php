@@ -46,5 +46,14 @@ class LocalAdminSeeder extends Seeder
         }
 
         $user->assignRole(RoleSlug::SchoolAdmin);
+
+        $settings = \App\Models\SchoolSetting::query()->first();
+        if ($settings !== null && ! $settings->hasCbtLoginConfigured()) {
+            $settings->update([
+                'cbt_login_email' => strtolower((string) env('CBT_LOGIN_EMAIL', 'cbt@supremereagan.com')),
+                'cbt_login_password' => (string) env('CBT_LOGIN_PASSWORD', 'CbtDeskPass1!'),
+                'cbt_operator_user_id' => $user->id,
+            ]);
+        }
     }
 }

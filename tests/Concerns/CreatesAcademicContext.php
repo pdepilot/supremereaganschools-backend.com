@@ -47,6 +47,15 @@ trait CreatesAcademicContext
         );
     }
 
+    protected function configureCbtDeskLogin(string $email, string $password, User $operator): SchoolSetting
+    {
+        return $this->settings([
+            'cbt_login_email' => strtolower($email),
+            'cbt_login_password' => $password,
+            'cbt_operator_user_id' => $operator->id,
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */

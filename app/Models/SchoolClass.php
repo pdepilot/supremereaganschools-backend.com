@@ -30,4 +30,9 @@ class SchoolClass extends Model
     {
         return $this->hasMany(ClassSection::class)->orderBy('arm');
     }
+
+    public function cbtQuestions(): HasMany
+    {
+        return $this->hasMany(CbtQuestion::class);
+    }
 }

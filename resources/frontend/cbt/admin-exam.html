@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT exam builder | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="exam">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong data-exam-title>Exam builder</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a href="/cbt/admin">Dashboard</a>
+        <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
+        <a class="is-active" href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+
+    <div class="cbt-alert" data-cbt-alert></div>
+    <div class="cbt-frozen-banner" data-exam-frozen-banner hidden>
+      <strong>PUBLISHED / FROZEN</strong>
+      <span>Question snapshots, options, marks, and ordering are immutable. Create a new draft exam if changes are required.</span>
+    </div>
+
+    <section class="cbt-panel">
+      <div class="cbt-toolbar">
+        <div>
+          <h1 data-exam-heading>Exam</h1>
+          <div class="cbt-meta" data-exam-badges></div>
+        </div>
+        <div class="cbt-actions">
+          <a class="cbt-btn" data-exam-preview-link href="#">Admin preview</a>
+          <button type="button" class="cbt-btn cbt-btn-primary" data-exam-publish data-manage-only>Publish exam</button>
+          <button type="button" class="cbt-btn cbt-btn-danger" data-exam-archive data-manage-only>Archive</button>
+        </div>
+      </div>
+
+      <form data-exam-config-form>
+        <fieldset data-exam-config-fields>
+          <div class="cbt-form-grid">
+            <label class="cbt-full">Title
+              <input type="text" name="title" required maxlength="255">
+            </label>
+            <label>Subject
+              <select name="subject_id" data-lookup="subjects" required></select>
+            </label>
+            <label>Class section offering
+              <select name="class_section_offering_id" data-lookup="offerings" required></select>
+            </label>
+            <label>Academic session
+              <select name="academic_session_id" data-lookup="sessions" required></select>
+            </label>
+            <label>Term
+              <select name="term_id" data-lookup="terms" required></select>
+            </label>
+            <label>Duration (minutes)
+              <input type="number" name="duration_minutes" min="1" required>
+            </label>
+            <label>Pass mark (%)
+              <input type="number" name="pass_mark" min="0" max="100" step="0.01">
+            </label>
+            <label>Max attempts
+              <input type="number" name="max_attempts" min="1">
+            </label>
+            <label>Starts at
+              <input type="datetime-local" name="starts_at">
+            </label>
+            <label>Ends at
+              <input type="datetime-local" name="ends_at">
+            </label>
+            <label>Question count <input type="text" name="question_count" readonly></label>
+            <label>Maximum score <input type="text" name="max_score" readonly></label>
+          </div>
+          <label class="cbt-full">Instructions
+            <textarea name="instructions" rows="3"></textarea>
+          </label>
+          <label class="cbt-check"><input type="checkbox" name="randomize_questions"> Randomize questions</label>
+          <label class="cbt-check"><input type="checkbox" name="randomize_options"> Randomize options</label>
+          <label class="cbt-check"><input type="checkbox" name="is_active"> Active</label>
+          <label class="cbt-check"><input type="checkbox" name="write_to_assessment_score"> Write result to Examination assessment score</label>
+          <p class="cbt-muted">Default is off. Enabling this bridges CBT results into Examination assessment scores only — never First or Second CA.</p>
+          <div class="cbt-actions" data-manage-only data-draft-only>
+            <button type="submit" class="cbt-btn cbt-btn-primary">Save configuration</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="cbt-panel" data-manage-only>
+      <div class="cbt-toolbar">
+        <h2>Exam questions (snapshots)</h2>
+        <button type="button" class="cbt-btn" data-attach-open data-draft-only>Attach from bank</button>
+      </div>
+      <p class="cbt-lede">Attached questions are snapshots. If the bank question changed after attachment, use <strong>Refresh snapshot</strong> while the exam is still draft.</p>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Stem</th>
+              <th>Marks</th>
+              <th>Frozen</th>
+              <th>Source</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody data-exam-question-rows><tr><td colspan="6">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cbt-panel" data-manage-only>
+      <div class="cbt-toolbar">
+        <h2>Assignments</h2>
+      </div>
+      <p class="cbt-lede">Class assignment covers active students enrolled in that offering. Individual assignment works independently.</p>
+      <form class="cbt-inline-form" data-assign-form data-draft-or-published>
+        <select name="type">
+          <option value="offering">Class offering</option>
+          <option value="student">Individual student</option>
+        </select>
+        <select name="class_section_offering_id" data-lookup="offerings" data-assign-offering></select>
+        <input type="search" name="student_q" placeholder="Search student…" data-assign-student-q hidden>
+        <select name="student_profile_id" data-assign-student hidden></select>
+        <button type="submit" class="cbt-btn cbt-btn-primary">Assign</button>
+      </form>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Target</th>
+              <th>Assigned</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody data-assign-rows><tr><td colspan="4">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="cbt-modal" data-attach-modal>
+    <div class="cbt-modal-card cbt-modal-wide">
+      <h2>Attach question from bank</h2>
+      <form class="cbt-filters" data-attach-filters>
+        <input type="search" name="q" placeholder="Search bank">
+        <select name="subject_id" data-lookup="subjects"><option value="">Subject</option></select>
+        <select name="school_class_id" data-lookup="classes"><option value="">Class</option></select>
+        <button type="submit" class="cbt-btn">Search</button>
+      </form>
+      <div data-attach-list class="cbt-attach-list"></div>
+      <div class="cbt-actions">
+        <button type="button" class="cbt-btn" data-attach-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cbt-modal" data-publish-modal>
+    <div class="cbt-modal-card cbt-modal-wide">
+      <h2>Publish exam — review</h2>
+      <p class="cbt-lede">Server validation is final. Publishing freezes snapshots permanently.</p>
+      <div data-publish-review></div>
+      <div class="cbt-actions">
+        <button type="button" class="cbt-btn cbt-btn-ghost" data-publish-cancel>Cancel</button>
+        <button type="button" class="cbt-btn cbt-btn-primary" data-publish-confirm>Confirm publish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cbt-modal" data-confirm-modal>
+    <div class="cbt-modal-card">
+      <h2 data-confirm-title>Confirm</h2>
+      <p data-confirm-body></p>
+      <div class="cbt-actions">
+        <button type="button" class="cbt-btn cbt-btn-ghost" data-confirm-cancel>Cancel</button>
+        <button type="button" class="cbt-btn cbt-btn-danger" data-confirm-ok>Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

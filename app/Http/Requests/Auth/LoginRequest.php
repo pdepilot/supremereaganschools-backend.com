@@ -34,6 +34,7 @@ class LoginRequest extends FormRequest
     {
         $portal = $this->portal();
         $household = $portal === AuthPortal::Student
+            || ($portal === AuthPortal::Cbt && filled($this->input('admission_number')))
             || ($portal === AuthPortal::Parent && filled($this->input('admission_number')));
 
         return [
@@ -44,7 +45,11 @@ class LoginRequest extends FormRequest
                 'max:255',
             ],
             'admission_number' => [
-                Rule::requiredIf($portal === AuthPortal::Student || ($portal === AuthPortal::Parent && ! filled($this->input('email')))),
+                Rule::requiredIf(
+                    $portal === AuthPortal::Student
+                    || ($portal === AuthPortal::Cbt && ! filled($this->input('email')))
+                    || ($portal === AuthPortal::Parent && ! filled($this->input('email')))
+                ),
                 'nullable',
                 'string',
                 'max:50',
@@ -70,6 +75,7 @@ class LoginRequest extends FormRequest
     public function throttleIdentifier(): string
     {
         if ($this->portal() === AuthPortal::Student
+            || ($this->portal() === AuthPortal::Cbt && filled($this->input('admission_number')))
             || ($this->portal() === AuthPortal::Parent && filled($this->input('admission_number')))) {
             return (string) $this->input('admission_number', '');
         }

@@ -45,4 +45,14 @@ class Subject extends Model
     {
         return $this->hasMany(TermResult::class);
     }
+
+    public function cbtQuestions(): HasMany
+    {
+        return $this->hasMany(CbtQuestion::class);
+    }
+
+    public function cbtExams(): HasMany
+    {
+        return $this->hasMany(CbtExam::class);
+    }
 }

@@ -283,6 +283,10 @@ a {
   gap: 8px;
 }
 
+.staff-field[hidden] {
+  display: none !important;
+}
+
 .staff-field > span {
   font-size: 0.7rem;
   letter-spacing: 0.2em;
@@ -452,4 +456,25 @@ a {
   .staff-gallery-media {
     transform: none;
   }
+}
+
+/* CBT login mode toggle */
+.cbt-mode-btn {
+  appearance: none;
+  border: 1px solid #cfc6b2;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.cbt-mode-btn.is-active,
+.cbt-mode-btn[aria-pressed="true"] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
 }

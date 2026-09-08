@@ -27,15 +27,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'current_academic_session_id',
     'current_term_id',
     'updated_by',
+    'cbt_login_email',
+    'cbt_login_password',
+    'cbt_operator_user_id',
 ])]
 class SchoolSetting extends Model
 {
     use HasFactory;
 
+    protected $hidden = [
+        'cbt_login_password',
+    ];
+
     protected function casts(): array
     {
         return [
             'founded_on' => 'date',
+            'cbt_login_password' => 'hashed',
         ];
     }
 
@@ -61,5 +69,17 @@ class SchoolSetting extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function cbtOperator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cbt_operator_user_id');
+    }
+
+    public function hasCbtLoginConfigured(): bool
+    {
+        return filled($this->cbt_login_email)
+            && filled($this->cbt_login_password)
+            && $this->cbt_operator_user_id !== null;
     }
 }
