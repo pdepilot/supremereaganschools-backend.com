@@ -22,6 +22,7 @@ use App\Services\Cbt\CbtAccessService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class CbtAdminController extends Controller
 {
@@ -34,6 +35,14 @@ class CbtAdminController extends Controller
             $this->access->canManage($user) || $this->access->canMark($user) || $this->access->canProctor($user),
             403,
         );
+
+        if (! Schema::hasTable('cbt_questions') || ! Schema::hasTable('cbt_exams')) {
+            return ApiResponse::error(
+                'CBT database tables are missing. Run php artisan migrate on this environment.',
+                null,
+                503,
+            );
+        }
 
         return ApiResponse::success('CBT admin entry.', [
             'capabilities' => [
