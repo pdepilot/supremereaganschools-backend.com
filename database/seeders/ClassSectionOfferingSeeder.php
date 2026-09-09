@@ -10,6 +10,7 @@ use App\Models\ClassSectionOffering;
 use App\Models\Subject;
 use App\Models\SubjectOffering;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 
 class ClassSectionOfferingSeeder extends Seeder
 {
@@ -17,46 +18,164 @@ class ClassSectionOfferingSeeder extends Seeder
     {
         $session = AcademicSession::query()->where('status', SessionStatus::Active)->first()
             ?? AcademicSession::query()->orderByDesc('starts_on')->first();
-        $campus = Campus::query()->where('name', 'Owerri')->first();
+        $campus = Campus::query()->where('name', 'Owerri')->first()
+            ?? Campus::query()->where('is_active', true)->first()
+            ?? Campus::query()->first();
 
         if ($session === null || $campus === null) {
             return;
         }
 
-        $core = Subject::query()->whereIn('name', ['English Language', 'Mathematics'])->pluck('id');
+        $basicLowerSubjects = $this->subjectIds([
+            'Mathematics',
+            'English',
+            'Diction',
+            'Abacus',
+            'Social Studies',
+            'French',
+            'Basic Science',
+            'Christian Religious Studies',
+            'Physical and Health Education',
+            'Computer',
+            'Home Economics',
+            'Vocational Aptitude',
+            'Cultural and Creative Arts',
+            'Writing',
+            'Music',
+            'Agricultural Science',
+            'Quantitative Reasoning',
+            'Verbal Reasoning',
+            'Literature',
+            'Coding',
+            'Civic Education',
+            'Igbo',
+        ]);
 
-        $byLevel = [
-            'nursery' => Subject::query()->whereIn('name', ['Literary Studies', 'Quantitative Reasoning'])->pluck('id'),
-            'primary' => Subject::query()->whereIn('name', ['Literary Studies', 'Quantitative Reasoning', 'Basic Science', 'Social Studies'])->pluck('id'),
-            'jss' => Subject::query()->whereIn('name', ['Basic Science', 'Basic Technology', 'Social Studies', 'Civic Education', 'Computer Studies'])->pluck('id'),
-            'ss' => Subject::query()->whereIn('name', ['Biology', 'Chemistry', 'Physics', 'Government', 'Literature in English'])->pluck('id'),
+        $basicUpperSubjects = $this->subjectIds([
+            'Mathematics',
+            'English',
+            'Diction',
+            'Abacus',
+            'Social Studies',
+            'French',
+            'Basic Science',
+            'Christian Religious Studies',
+            'Physical and Health Education',
+            'Computer',
+            'Home Economics',
+            'Cultural and Creative Arts',
+            'Music',
+            'Agricultural Science',
+            'Quantitative Reasoning',
+            'Verbal Reasoning',
+            'Literature',
+            'Coding',
+            'Civic Education',
+            'Igbo',
+        ]);
+
+        $nursery3Subjects = $this->subjectIds([
+            'Discover Numeracy',
+            'Discover Literacy',
+            'Numeracy Thinking',
+            'Literacy Thinking',
+            'Calligraphy',
+            'Writing',
+            'Health Habit',
+            'Social Habit',
+            'Discovery Science',
+            'Computer Science',
+            'Christian Religious Studies',
+            'Phonics',
+            'Literature',
+            'Igbo',
+            'Diction',
+            'Colour Me',
+        ]);
+
+        $byForm = [
+            'activity' => $this->subjectIds(['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music']),
+            'nursery' => $this->subjectIds(['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music', 'Diction']),
+            'nursery-3' => $nursery3Subjects,
+            'basic-1-3' => $basicLowerSubjects,
+            'basic-4-5' => $basicUpperSubjects,
+            'jss' => $this->subjectIds(['Mathematics', 'English', 'Basic Science', 'Basic Technology', 'Social Studies', 'Civic Education', 'Computer']),
+            'ss' => $this->subjectIds(['Mathematics', 'English', 'Biology', 'Chemistry', 'Physics', 'Government', 'Literature in English']),
         ];
 
-        ClassSection::query()->with('schoolClass.level')->orderBy('id')->each(function (ClassSection $section) use ($session, $campus, $core, $byLevel): void {
-            $offering = ClassSectionOffering::query()->updateOrCreate(
-                [
-                    'class_section_id' => $section->id,
-                    'academic_session_id' => $session->id,
-                ],
-                [
-                    'campus_id' => $campus->id,
-                    'capacity' => 30,
-                    'is_active' => true,
-                ],
-            );
+        ClassSection::query()
+            ->where('is_active', true)
+            ->with('schoolClass.level')
+            ->orderBy('id')
+            ->each(function (ClassSection $section) use ($session, $campus, $byForm): void {
+                $class = $section->schoolClass;
+                if ($class === null || $class->is_active === false) {
+                    return;
+                }
 
-            $levelSlug = $section->schoolClass?->level?->slug;
-            $subjectIds = $core->merge($byLevel[$levelSlug] ?? collect())->unique();
-
-            foreach ($subjectIds as $subjectId) {
-                SubjectOffering::query()->updateOrCreate(
+                $offering = ClassSectionOffering::query()->updateOrCreate(
                     [
-                        'class_section_offering_id' => $offering->id,
-                        'subject_id' => $subjectId,
+                        'class_section_id' => $section->id,
+                        'academic_session_id' => $session->id,
                     ],
-                    [],
+                    [
+                        'campus_id' => $campus->id,
+                        'capacity' => 30,
+                        'is_active' => true,
+                    ],
                 );
-            }
-        });
+
+                $subjectIds = $this->subjectsForClass($class->name, $class->level?->slug, $byForm);
+
+                // Replace the offered set so retired subjects fall off Basic forms.
+                SubjectOffering::query()
+                    ->where('class_section_offering_id', $offering->id)
+                    ->whereNotIn('subject_id', $subjectIds)
+                    ->delete();
+
+                foreach ($subjectIds as $subjectId) {
+                    SubjectOffering::query()->updateOrCreate(
+                        [
+                            'class_section_offering_id' => $offering->id,
+                            'subject_id' => $subjectId,
+                        ],
+                        [],
+                    );
+                }
+            });
+    }
+
+    /**
+     * @param  array<string, Collection<int, int>>  $byForm
+     * @return Collection<int, int>
+     */
+    private function subjectsForClass(string $className, ?string $levelSlug, array $byForm): Collection
+    {
+        if (preg_match('/^Nursery\s+3\b/i', $className) === 1) {
+            return $byForm['nursery-3'];
+        }
+
+        if (preg_match('/^Basic\s+[123]\b/i', $className) === 1) {
+            return $byForm['basic-1-3'];
+        }
+
+        if (preg_match('/^Basic\s+[45]\b/i', $className) === 1) {
+            return $byForm['basic-4-5'];
+        }
+
+        return $byForm[$levelSlug] ?? collect();
+    }
+
+    /**
+     * @param  list<string>  $names
+     * @return Collection<int, int>
+     */
+    private function subjectIds(array $names): Collection
+    {
+        return Subject::query()
+            ->whereIn('name', $names)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->pluck('id');
     }
 }

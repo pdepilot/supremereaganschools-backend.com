@@ -22,7 +22,7 @@ class UpdateClassSectionRequest extends FormRequest
         $section = $this->route('class_section');
 
         return [
-            'arm' => ['sometimes', 'string', 'max:5', Rule::unique('class_sections', 'arm')->where('school_class_id', $section->school_class_id)->ignore($section)],
+            'arm' => ['sometimes', 'string', 'max:40', Rule::unique('class_sections', 'arm')->where('school_class_id', $section->school_class_id)->ignore($section)],
             'name' => ['sometimes', 'string', 'max:100'],
             'is_active' => ['sometimes', 'boolean'],
         ];
@@ -31,8 +31,10 @@ class UpdateClassSectionRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('arm')) {
+            $arm = trim((string) $this->input('arm'));
+
             $this->merge([
-                'arm' => strtoupper(trim((string) $this->input('arm'))),
+                'arm' => strlen($arm) <= 2 ? strtoupper($arm) : $arm,
             ]);
         }
     }

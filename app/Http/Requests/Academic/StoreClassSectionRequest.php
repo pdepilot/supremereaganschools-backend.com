@@ -21,7 +21,7 @@ class StoreClassSectionRequest extends FormRequest
         $classId = $this->route('school_class')?->id;
 
         return [
-            'arm' => ['nullable', 'string', 'max:5', Rule::unique('class_sections', 'arm')->where('school_class_id', $classId)],
+            'arm' => ['nullable', 'string', 'max:40', Rule::unique('class_sections', 'arm')->where('school_class_id', $classId)],
             'name' => ['nullable', 'string', 'max:100'],
             'is_active' => ['sometimes', 'boolean'],
         ];
@@ -29,8 +29,11 @@ class StoreClassSectionRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $arm = trim((string) $this->input('arm', ''));
+
         $this->merge([
-            'arm' => strtoupper(trim((string) $this->input('arm', ''))),
+            // Keep short letter arms uppercase (A/B); preserve named arms like "Blossom".
+            'arm' => strlen($arm) <= 2 ? strtoupper($arm) : $arm,
         ]);
     }
 }

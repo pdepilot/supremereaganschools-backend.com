@@ -12,14 +12,25 @@ class SchoolClassSeeder extends Seeder
     public function run(): void
     {
         $structure = [
-            'nursery' => [
-                ['name' => 'Nursery 1', 'short_code' => 'N1', 'arms' => ['']],
-                ['name' => 'Nursery 2', 'short_code' => 'N2', 'arms' => ['']],
+            'activity' => [
+                ['name' => 'Activity 1', 'short_code' => 'A1', 'arms' => ['']],
+                ['name' => 'Activity 2', 'short_code' => 'A2', 'arms' => ['Blossom', 'Excel']],
             ],
-            'primary' => $this->numbered('Primary', 'P', 6, ['A', 'B']),
-            'jss' => $this->numbered('JSS', 'J', 3, ['A', 'B']),
-            'ss' => $this->numbered('SS', 'S', 3, ['A', 'B']),
+            'nursery' => [
+                ['name' => 'Nursery 1', 'short_code' => 'N1', 'arms' => ['Achiever', 'Fabulous']],
+                ['name' => 'Nursery 2', 'short_code' => 'N2', 'arms' => ['Awesome', 'Amazing']],
+                ['name' => 'Nursery 3', 'short_code' => 'N3', 'arms' => ['Gold', 'Fruitful']],
+            ],
+            'primary' => [
+                ['name' => 'Basic 1', 'short_code' => 'B1', 'arms' => ['Amazing', 'Excellent']],
+                ['name' => 'Basic 2', 'short_code' => 'B2', 'arms' => ['Elegant', 'Pacesetters']],
+                ['name' => 'Basic 3', 'short_code' => 'B3', 'arms' => ['Zion', 'Rising Stars']],
+                ['name' => 'Basic 4', 'short_code' => 'B4', 'arms' => ['Brilliant', 'Victorious']],
+                ['name' => 'Basic 5', 'short_code' => 'B5', 'arms' => ['Diamonds']],
+            ],
         ];
+
+        $keptClassIds = [];
 
         foreach ($structure as $slug => $classes) {
             $level = Level::query()->where('slug', $slug)->first();
@@ -38,34 +49,56 @@ class SchoolClassSeeder extends Seeder
                     ],
                 );
 
-                foreach ($classData['arms'] as $arm) {
-                    $display = $arm === '' ? $class->name : $class->name.' '.$arm;
+                $keptClassIds[] = $class->id;
+                $keptSectionIds = [];
 
-                    ClassSection::query()->updateOrCreate(
+                foreach ($classData['arms'] as $arm) {
+                    $display = $arm === ''
+                        ? $class->name
+                        : $class->name.' – '.$arm;
+
+                    $section = ClassSection::query()->updateOrCreate(
                         ['school_class_id' => $class->id, 'arm' => $arm],
                         ['name' => $display, 'is_active' => true],
                     );
+
+                    $keptSectionIds[] = $section->id;
                 }
+
+                ClassSection::query()
+                    ->where('school_class_id', $class->id)
+                    ->whereNotIn('id', $keptSectionIds)
+                    ->update(['is_active' => false]);
             }
         }
-    }
 
-    /**
-     * @param  list<string>  $arms
-     * @return list<array{name: string, short_code: string, arms: list<string>}>
-     */
-    private function numbered(string $name, string $code, int $count, array $arms): array
-    {
-        $rows = [];
+        // Remove superseded nursery/primary class names that are no longer on the book.
+        SchoolClass::query()
+            ->whereHas('level', fn ($query) => $query->whereIn('slug', ['activity', 'nursery', 'primary']))
+            ->whereNotIn('id', $keptClassIds)
+            ->each(function (SchoolClass $class): void {
+                if ($class->sections()->exists()) {
+                    $class->update(['is_active' => false]);
+                    $class->sections()->update(['is_active' => false]);
 
-        for ($i = 1; $i <= $count; $i++) {
-            $rows[] = [
-                'name' => $name.' '.$i,
-                'short_code' => $code.$i,
-                'arms' => $arms,
-            ];
-        }
+                    return;
+                }
 
-        return $rows;
+                $class->delete();
+            });
+
+        // Secondary forms are not part of the current Supreme Reagan class book.
+        SchoolClass::query()
+            ->whereHas('level', fn ($query) => $query->whereIn('slug', ['jss', 'ss']))
+            ->each(function (SchoolClass $class): void {
+                if ($class->sections()->exists()) {
+                    $class->update(['is_active' => false]);
+                    $class->sections()->update(['is_active' => false]);
+
+                    return;
+                }
+
+                $class->delete();
+            });
     }
 }

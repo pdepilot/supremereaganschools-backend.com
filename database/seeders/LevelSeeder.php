@@ -10,10 +10,11 @@ class LevelSeeder extends Seeder
     public function run(): void
     {
         $levels = [
-            ['name' => 'Nursery', 'slug' => 'nursery', 'description' => 'Early years', 'sort_order' => 1],
-            ['name' => 'Primary', 'slug' => 'primary', 'description' => 'Primary school', 'sort_order' => 2],
-            ['name' => 'Junior Secondary', 'slug' => 'jss', 'description' => 'Junior Secondary School', 'sort_order' => 3],
-            ['name' => 'Senior Secondary', 'slug' => 'ss', 'description' => 'Senior Secondary School', 'sort_order' => 4],
+            ['name' => 'Activity', 'slug' => 'activity', 'description' => 'Activity / early years', 'sort_order' => 1],
+            ['name' => 'Nursery', 'slug' => 'nursery', 'description' => 'Nursery wing', 'sort_order' => 2],
+            ['name' => 'Primary', 'slug' => 'primary', 'description' => 'Basic / primary wing', 'sort_order' => 3],
+            ['name' => 'Junior Secondary', 'slug' => 'jss', 'description' => 'Junior Secondary School', 'sort_order' => 4],
+            ['name' => 'Senior Secondary', 'slug' => 'ss', 'description' => 'Senior Secondary School', 'sort_order' => 5],
         ];
 
         foreach ($levels as $level) {

@@ -750,8 +750,8 @@
         return;
       }
 
-      formSelect.innerHTML = '<option value="">Select a form</option>' + list.map(function (row) {
-        const label = (row.form || "Form") + (row.campus && row.campus.name ? " · " + row.campus.name : "");
+        formSelect.innerHTML = '<option value="">Select a form</option>' + list.map(function (row) {
+        const label = row.form || "Form";
         return '<option value="' + escapeHtml(String(row.id)) + '" data-section="' + escapeHtml(String(row.class_section_id))
           + '" data-session="' + escapeHtml(String(row.academic_session_id)) + '">' + escapeHtml(label) + "</option>";
       }).join("");
@@ -813,7 +813,7 @@
       return Promise.all([
         request("/api/v1/students" + query),
         request("/api/v1/school-settings"),
-        request("/api/v1/class-section-offerings"),
+        request("/api/v1/class-section-offerings?is_active=1"),
         request("/api/v1/campuses"),
         request("/api/v1/classes"),
         loadWingDesk()
