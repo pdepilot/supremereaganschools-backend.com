@@ -252,6 +252,223 @@ class CbtResultCheckerTest extends TestCase
             ->assertJsonPath('data.items.0.percentage', (string) $ctx['result']->percentage);
     }
 
+    public function test_attempt_show_hides_protected_scores_until_paid_access(): void
+    {
+        $ctx = $this->submittedResult();
+        $attemptId = $ctx['result']->attempt_id;
+
+        $locked = $this->actingAsCbt($ctx['user'])
+            ->getJson('/api/v1/cbt/attempts/'.$attemptId)
+            ->assertOk()
+            ->json('data.result');
+
+        $this->assertNotNull($locked);
+        $this->assertFalse($locked['details_unlocked']);
+        $this->assertFalse($locked['result_unlocked']);
+        $this->assertNull($locked['score']);
+        $this->assertNull($locked['percentage']);
+        $this->assertNull($locked['grade']);
+        $this->assertNull($locked['passed']);
+
+        // Client-controlled flags must not unlock protected fields.
+        $this->actingAsCbt($ctx['user'])
+            ->getJson('/api/v1/cbt/attempts/'.$attemptId.'?unlocked=true&paid=true')
+            ->assertOk()
+            ->assertJsonPath('data.result.score', null)
+            ->assertJsonPath('data.result.percentage', null);
+
+        $this->grantAccess($ctx);
+
+        $unlocked = $this->actingAsCbt($ctx['user'])
+            ->getJson('/api/v1/cbt/attempts/'.$attemptId)
+            ->assertOk()
+            ->json('data.result');
+
+        $this->assertTrue($unlocked['details_unlocked']);
+        $this->assertSame((string) $ctx['result']->score, $unlocked['score']);
+        $this->assertSame((string) $ctx['result']->percentage, $unlocked['percentage']);
+        $this->assertNotNull($unlocked['grade']);
+        $this->assertTrue($unlocked['passed']);
+    }
+
+    public function test_attempt_show_exposes_scores_when_payment_policy_disabled(): void
+    {
+        $this->settings(['cbt_result_details_require_payment' => false]);
+        $ctx = $this->submittedResult();
+
+        $this->actingAsCbt($ctx['user'])
+            ->getJson('/api/v1/cbt/attempts/'.$ctx['result']->attempt_id)
+            ->assertOk()
+            ->assertJsonPath('data.result.score', (string) $ctx['result']->score)
+            ->assertJsonPath('data.result.details_unlocked', true);
+    }
+
+    public function test_paid_payment_without_access_is_recovered_without_new_charge(): void
+    {
+        $this->fakeInitialize();
+        $ctx = $this->submittedResult();
+
+        $payment = OnlinePayment::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'reference' => 'SRS-PAY-RECOVER1',
+            'provider' => 'paystack',
+            'purpose' => OnlinePaymentPurpose::CbtResultChecker,
+            'user_id' => $ctx['user']->id,
+            'student_profile_id' => $ctx['student']->id,
+            'email' => $ctx['user']->email,
+            'amount_kobo' => 50000,
+            'currency' => 'NGN',
+            'status' => OnlinePaymentStatus::Paid,
+            'paid_at' => now(),
+            'verified_at' => now(),
+            'metadata' => [
+                'cbt_result_id' => $ctx['result']->id,
+                'cbt_attempt_id' => $ctx['result']->attempt_id,
+                'student_profile_id' => $ctx['student']->id,
+            ],
+        ]);
+
+        $this->assertSame(0, CbtResultAccess::query()->count());
+
+        $response = $this->actingAsCbt($ctx['user'])
+            ->postJson('/api/v1/cbt/results/'.$ctx['result']->id.'/unlock')
+            ->assertOk();
+
+        $this->assertTrue($response->json('data.unlocked'));
+        $this->assertNull($response->json('data.authorization_url'));
+        $this->assertSame($payment->reference, $response->json('data.payment.reference'));
+        $this->assertSame(1, CbtResultAccess::query()
+            ->where('cbt_result_id', $ctx['result']->id)
+            ->where('online_payment_id', $payment->id)
+            ->count());
+        $this->assertSame(1, OnlinePayment::query()
+            ->where('purpose', OnlinePaymentPurpose::CbtResultChecker)
+            ->where('metadata->cbt_result_id', $ctx['result']->id)
+            ->count());
+
+        // Repeat unlock remains idempotent — no second charge.
+        $again = $this->actingAsCbt($ctx['user'])
+            ->postJson('/api/v1/cbt/results/'.$ctx['result']->id.'/unlock')
+            ->assertOk();
+        $this->assertTrue($again->json('data.unlocked'));
+        $this->assertSame(1, CbtResultAccess::query()->count());
+        $this->assertSame(1, OnlinePayment::query()
+            ->where('purpose', OnlinePaymentPurpose::CbtResultChecker)
+            ->where('metadata->cbt_result_id', $ctx['result']->id)
+            ->count());
+    }
+
+    public function test_failed_or_foreign_settled_payment_cannot_unlock(): void
+    {
+        $mine = $this->submittedResult();
+        $other = $this->submittedResult();
+
+        OnlinePayment::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'reference' => 'SRS-PAY-FAILED1',
+            'provider' => 'paystack',
+            'purpose' => OnlinePaymentPurpose::CbtResultChecker,
+            'user_id' => $mine['user']->id,
+            'student_profile_id' => $mine['student']->id,
+            'email' => $mine['user']->email,
+            'amount_kobo' => 50000,
+            'currency' => 'NGN',
+            'status' => OnlinePaymentStatus::Failed,
+            'metadata' => ['cbt_result_id' => $mine['result']->id],
+        ]);
+
+        OnlinePayment::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'reference' => 'SRS-PAY-OTHER-STUDENT',
+            'provider' => 'paystack',
+            'purpose' => OnlinePaymentPurpose::CbtResultChecker,
+            'user_id' => $other['user']->id,
+            'student_profile_id' => $other['student']->id,
+            'email' => $other['user']->email,
+            'amount_kobo' => 50000,
+            'currency' => 'NGN',
+            'status' => OnlinePaymentStatus::Paid,
+            'paid_at' => now(),
+            'metadata' => ['cbt_result_id' => $mine['result']->id],
+        ]);
+
+        OnlinePayment::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'reference' => 'SRS-PAY-OTHER-RESULT',
+            'provider' => 'paystack',
+            'purpose' => OnlinePaymentPurpose::CbtResultChecker,
+            'user_id' => $mine['user']->id,
+            'student_profile_id' => $mine['student']->id,
+            'email' => $mine['user']->email,
+            'amount_kobo' => 50000,
+            'currency' => 'NGN',
+            'status' => OnlinePaymentStatus::Paid,
+            'paid_at' => now(),
+            'metadata' => ['cbt_result_id' => $other['result']->id],
+        ]);
+
+        $this->fakeInitialize();
+
+        $started = $this->actingAsCbt($mine['user'])
+            ->postJson('/api/v1/cbt/results/'.$mine['result']->id.'/unlock')
+            ->assertOk();
+
+        $this->assertFalse($started->json('data.unlocked'));
+        $this->assertNotNull($started->json('data.authorization_url'));
+        $this->assertSame(0, CbtResultAccess::query()->where('cbt_result_id', $mine['result']->id)->count());
+    }
+
+    public function test_webhook_retry_after_failed_settle_grants_access(): void
+    {
+        $this->fakeInitialize();
+        $ctx = $this->submittedResult();
+        $reference = $this->actingAsCbt($ctx['user'])
+            ->postJson('/api/v1/cbt/results/'.$ctx['result']->id.'/unlock')
+            ->json('data.reference');
+
+        // Simulate a prior delivery that recorded the event but never settled.
+        \App\Models\PaystackWebhookEvent::query()->create([
+            'event_id' => 'evt_retry_rc_1',
+            'event' => 'charge.success',
+            'reference' => $reference,
+            'status' => 'received',
+            'payload' => ['event' => 'charge.success', 'reference' => $reference],
+            'processed_at' => null,
+        ]);
+
+        $payload = json_encode([
+            'event' => 'charge.success',
+            'id' => 'evt_retry_rc_1',
+            'data' => [
+                'id' => 901,
+                'reference' => $reference,
+                'status' => 'success',
+                'amount' => 50000,
+                'currency' => 'NGN',
+            ],
+        ], JSON_THROW_ON_ERROR);
+        $sig = hash_hmac('sha512', $payload, (string) config('services.paystack.secret_key'));
+
+        $this->fakeVerify($reference, 50000, 'success');
+
+        // Retry must settle + grant access even though the event_id already exists.
+        $this->call('POST', '/payments/paystack/webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X-PAYSTACK-SIGNATURE' => $sig,
+        ], $payload)->assertOk();
+
+        $this->assertSame(1, CbtResultAccess::query()->where('cbt_result_id', $ctx['result']->id)->count());
+        $this->assertSame(OnlinePaymentStatus::Paid, OnlinePayment::query()->where('reference', $reference)->first()->status);
+        $this->assertSame(1, \App\Models\PaystackWebhookEvent::query()->where('event_id', 'evt_retry_rc_1')->count());
+
+        // Duplicate after success remains idempotent.
+        $this->call('POST', '/payments/paystack/webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X-PAYSTACK-SIGNATURE' => $sig,
+        ], $payload)->assertOk();
+        $this->assertSame(1, CbtResultAccess::query()->count());
+    }
+
     public function test_settled_event_listener_grants_access(): void
     {
         $ctx = $this->submittedResult();

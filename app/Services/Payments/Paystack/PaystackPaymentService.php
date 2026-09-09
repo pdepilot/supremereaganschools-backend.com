@@ -250,6 +250,9 @@ class PaystackPaymentService
     }
 
     /**
+     * Retry-safe webhook handler. Unique event rows do not permanently block settlement:
+     * charge.success always re-runs verifyAndSettle (idempotent), including on Paystack retries.
+     *
      * @param  array<string, mixed>  $payload
      * @return array{payment: ?OnlinePayment, newly_paid: bool, duplicate_event: bool}
      */
@@ -272,6 +275,9 @@ class PaystackPaymentService
             ]);
         }
 
+        $duplicate = false;
+        $record = null;
+
         try {
             $record = PaystackWebhookEvent::query()->create([
                 'event_id' => $eventId,
@@ -291,41 +297,48 @@ class PaystackPaymentService
                 throw $e;
             }
 
-            $payment = $reference !== '' ? $this->findByReference($reference) : null;
-
-            return [
-                'payment' => $payment,
-                'newly_paid' => false,
-                'duplicate_event' => true,
-            ];
+            $duplicate = true;
+            $record = PaystackWebhookEvent::query()->where('event_id', $eventId)->first();
         }
 
         if ($event !== 'charge.success' || $reference === '') {
-            $record->update([
-                'status' => 'ignored',
-                'processed_at' => now(),
-            ]);
+            if ($record !== null && $record->processed_at === null) {
+                $record->update([
+                    'status' => 'ignored',
+                    'processed_at' => now(),
+                ]);
+            }
 
-            return ['payment' => null, 'newly_paid' => false, 'duplicate_event' => false];
+            return [
+                'payment' => $reference !== '' ? $this->findByReference($reference) : null,
+                'newly_paid' => false,
+                'duplicate_event' => $duplicate,
+            ];
         }
 
+        // Always settle via Paystack verify API — never trust the webhook body alone.
+        // On duplicate events, still settle so a prior failed attempt can recover.
         $result = $this->verifyAndSettle($reference);
 
-        $record->update([
-            'status' => 'processed',
-            'processed_at' => now(),
-        ]);
+        if ($record !== null) {
+            $record->update([
+                'status' => 'processed',
+                'processed_at' => $record->processed_at ?? now(),
+                'reference' => $reference,
+            ]);
+        }
 
         Log::info('paystack.webhook_processed', [
             'event' => $event,
             'reference' => $reference,
             'newly_paid' => $result['newly_paid'],
+            'duplicate_event' => $duplicate,
         ]);
 
         return [
             'payment' => $result['payment'],
             'newly_paid' => $result['newly_paid'],
-            'duplicate_event' => false,
+            'duplicate_event' => $duplicate,
         ];
     }
 

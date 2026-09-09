@@ -188,6 +188,84 @@ class PaystackOnlinePaymentTest extends TestCase
         $this->assertSame(OnlinePaymentStatus::Paid, $payment->fresh()->status);
     }
 
+    public function test_webhook_retry_recovers_after_transient_verify_failure(): void
+    {
+        $payment = $this->pendingPayment();
+
+        // Prior delivery recorded the unique event without completing settlement.
+        PaystackWebhookEvent::query()->create([
+            'event_id' => 'evt_retry_stuck_1',
+            'event' => 'charge.success',
+            'reference' => $payment->reference,
+            'status' => 'received',
+            'payload' => ['event' => 'charge.success', 'reference' => $payment->reference],
+            'processed_at' => null,
+        ]);
+
+        $payload = json_encode([
+            'event' => 'charge.success',
+            'id' => 'evt_retry_stuck_1',
+            'data' => [
+                'id' => 5555,
+                'reference' => $payment->reference,
+                'status' => 'success',
+                'amount' => 10000,
+                'currency' => 'NGN',
+            ],
+        ], JSON_THROW_ON_ERROR);
+        $sig = hash_hmac('sha512', $payload, (string) config('services.paystack.secret_key'));
+
+        $this->fakeVerify($payment->reference, 10000, 'success');
+        $this->call('POST', '/payments/paystack/webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X-PAYSTACK-SIGNATURE' => $sig,
+        ], $payload)->assertOk();
+
+        $this->assertSame(OnlinePaymentStatus::Paid, $payment->fresh()->status);
+        $this->assertSame(1, PaystackWebhookEvent::query()->where('event_id', 'evt_retry_stuck_1')->count());
+        $this->assertNotNull(PaystackWebhookEvent::query()->where('event_id', 'evt_retry_stuck_1')->value('processed_at'));
+    }
+
+    public function test_webhook_currency_mismatch_does_not_mark_paid(): void
+    {
+        $payment = $this->pendingPayment(['currency' => 'NGN']);
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 10000,
+                    'currency' => 'USD',
+                    'reference' => $payment->reference,
+                    'channel' => 'card',
+                    'gateway_response' => 'Successful',
+                    'paid_at' => now()->toIso8601String(),
+                ],
+            ], 200),
+        ]);
+
+        $payload = json_encode([
+            'event' => 'charge.success',
+            'id' => 'evt_currency_mismatch',
+            'data' => [
+                'id' => 77,
+                'reference' => $payment->reference,
+                'status' => 'success',
+                'amount' => 10000,
+                'currency' => 'USD',
+            ],
+        ], JSON_THROW_ON_ERROR);
+        $sig = hash_hmac('sha512', $payload, (string) config('services.paystack.secret_key'));
+
+        $this->call('POST', '/payments/paystack/webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X-PAYSTACK-SIGNATURE' => $sig,
+        ], $payload)->assertOk();
+
+        $this->assertSame(OnlinePaymentStatus::Failed, $payment->fresh()->status);
+        $this->assertSame('Paystack amount/currency mismatch.', $payment->fresh()->failure_reason);
+    }
+
     public function test_student_cannot_view_another_transaction_or_mutate_status(): void
     {
         $owner = $this->userWithRole(RoleSlug::Student, ['email' => 'owner@example.test']);

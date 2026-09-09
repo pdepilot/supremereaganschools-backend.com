@@ -28,8 +28,9 @@ class PaystackCallbackController extends Controller
             $result = $this->payments->verifyAndSettle($reference);
             $payment = $result['payment'];
 
-            if ($result['newly_paid']) {
-                event(new OnlinePaymentSettled($payment, true));
+            // Idempotent activation: fire whenever the row is paid so missing access can recover.
+            if ($payment->isPaid()) {
+                event(new OnlinePaymentSettled($payment, (bool) $result['newly_paid']));
             }
 
             $status = $payment->isPaid() ? 'success' : 'pending';

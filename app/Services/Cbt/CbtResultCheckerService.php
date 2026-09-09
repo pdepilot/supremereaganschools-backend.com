@@ -101,6 +101,20 @@ class CbtResultCheckerService
             ];
         }
 
+        // INVARIANT: a settled payment for this student+result must never start another charge.
+        $settled = $this->matchingSettledPayment($result, $user, $student);
+        if ($settled !== null) {
+            $access = $this->activateFromPayment($settled);
+            if ($access !== null) {
+                return [
+                    'unlocked' => true,
+                    'payment' => $settled->fresh() ?? $settled,
+                    'authorization_url' => null,
+                    'access' => $access,
+                ];
+            }
+        }
+
         $pending = OnlinePayment::query()
             ->where('purpose', OnlinePaymentPurpose::CbtResultChecker)
             ->where('user_id', $user->id)
@@ -142,6 +156,21 @@ class CbtResultCheckerService
             'authorization_url' => (string) $payment->authorization_url,
             'access' => null,
         ];
+    }
+
+    /**
+     * Settled Result Checker payment bound to this authenticated student + result.
+     */
+    public function matchingSettledPayment(CbtResult $result, User $user, StudentProfile $student): ?OnlinePayment
+    {
+        return OnlinePayment::query()
+            ->where('purpose', OnlinePaymentPurpose::CbtResultChecker)
+            ->where('status', OnlinePaymentStatus::Paid)
+            ->where('user_id', $user->id)
+            ->where('student_profile_id', $student->id)
+            ->where('metadata->cbt_result_id', $result->id)
+            ->latest('id')
+            ->first();
     }
 
     public function activateFromPayment(OnlinePayment $payment): ?CbtResultAccess

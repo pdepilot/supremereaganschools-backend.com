@@ -15,14 +15,15 @@ class ActivateCbtResultCheckerOnPayment
 
     public function handle(OnlinePaymentSettled $event): void
     {
-        if (! $event->newlyPaid) {
-            return;
-        }
-
         if ($event->payment->purpose !== OnlinePaymentPurpose::CbtResultChecker) {
             return;
         }
 
+        if (! $event->payment->isPaid()) {
+            return;
+        }
+
+        // Idempotent: grants access when missing; reuses the row when already present.
         $this->checkers->activateFromPayment($event->payment);
     }
 }

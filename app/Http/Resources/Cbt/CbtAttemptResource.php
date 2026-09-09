@@ -3,6 +3,8 @@
 namespace App\Http\Resources\Cbt;
 
 use App\Models\CbtAttempt;
+use App\Services\Cbt\CbtAccessService;
+use App\Services\Cbt\CbtResultCheckerService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,6 +13,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class CbtAttemptResource extends JsonResource
 {
+    /**
+     * @param  bool|null  $resultUnlocked  Explicit unlock state; null resolves from auth + Result Checker rules.
+     */
+    public function __construct(
+        $resource,
+        private readonly ?bool $resultUnlocked = null,
+    ) {
+        parent::__construct($resource);
+    }
+
     public function toArray(Request $request): array
     {
         /** @var CbtAttempt $attempt */
@@ -40,10 +52,45 @@ class CbtAttemptResource extends JsonResource
                 'selected_exam_option_id' => $answer->selected_exam_option_id,
                 'answered_at' => optional($answer->answered_at)?->toIso8601String(),
             ])->values()->all(),
-            'result' => $attempt->result ? (new CbtResultResource($attempt->result))->resolve() : null,
+            'result' => $attempt->result
+                ? (new CbtResultResource(
+                    $attempt->result,
+                    $this->resolveResultUnlocked($request, $attempt),
+                ))->resolve()
+                : null,
             'exam' => $attempt->exam
                 ? (new CbtStudentExamResource($attempt->exam))->resolve()
                 : null,
         ];
+    }
+
+    private function resolveResultUnlocked(Request $request, CbtAttempt $attempt): bool
+    {
+        if ($this->resultUnlocked !== null) {
+            return $this->resultUnlocked;
+        }
+
+        if ($attempt->result === null) {
+            return false;
+        }
+
+        $user = $request->user();
+        if ($user === null) {
+            return false;
+        }
+
+        $access = app(CbtAccessService::class);
+
+        // Staff/ops retain full result visibility under existing authorization.
+        if ($access->canManage($user) || $access->canMark($user) || $access->canProctor($user)) {
+            return true;
+        }
+
+        $student = $access->studentProfileFor($user);
+        if ($student === null) {
+            return false;
+        }
+
+        return app(CbtResultCheckerService::class)->accountHasPaidAccess($attempt->result, $student);
     }
 }

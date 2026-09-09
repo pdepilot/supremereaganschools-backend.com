@@ -36,8 +36,10 @@ class PaystackWebhookController extends Controller
             return ApiResponse::error('Invalid webhook signature.', $e->errors(), 400);
         }
 
-        if ($result['payment'] && $result['newly_paid']) {
-            event(new OnlinePaymentSettled($result['payment'], true));
+        // Fire for every successfully paid payment so a prior settle-without-access
+        // recovery path can still grant Result Checker entitlement (listener is idempotent).
+        if ($result['payment']?->isPaid()) {
+            event(new OnlinePaymentSettled($result['payment'], (bool) $result['newly_paid']));
         }
 
         return response()->json(['status' => 'ok']);
