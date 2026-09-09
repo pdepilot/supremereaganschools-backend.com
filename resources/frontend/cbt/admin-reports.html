@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT reports | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="reports">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>CBT reports</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a href="/cbt/admin">Dashboard</a>
+        <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
+        <a href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/monitor">Monitor</a>
+        <a href="/cbt/admin/attempts">Attempts</a>
+        <a href="/cbt/admin/results">Results</a>
+        <a class="is-active" href="/cbt/admin/reports">Reports</a>
+        <a href="/cbt/admin/result-checkers" data-manage-only>Result Checkers</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+    <div class="cbt-alert" data-cbt-alert></div>
+    <section class="cbt-panel">
+      <h1>Exam performance</h1>
+      <form class="cbt-toolbar" data-exam-report-form>
+        <input name="exam_id" placeholder="Exam ID" required>
+        <button type="submit" class="cbt-btn cbt-btn-primary">Load report</button>
+        <a class="cbt-btn" data-export-results href="#">Export results CSV</a>
+        <a class="cbt-btn" data-export-attendance href="#">Export attendance CSV</a>
+      </form>
+      <div class="cbt-stat-grid" data-exam-report-stats></div>
+      <h2>Roster</h2>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead><tr><th>Student</th><th>Admission</th><th>Status</th><th>Score</th><th>%</th><th>Attempts</th></tr></thead>
+          <tbody data-exam-roster></tbody>
+        </table>
+      </div>
+      <h2>Question analytics</h2>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead><tr><th>#</th><th>Question</th><th>Marks</th><th>Correct</th><th>Incorrect</th><th>Unanswered</th><th>% correct</th><th>Difficulty</th></tr></thead>
+          <tbody data-question-analytics></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="cbt-panel">
+      <h2>Student CBT history</h2>
+      <form class="cbt-toolbar" data-student-history-form>
+        <input name="student_id" placeholder="Student ID" required>
+        <button type="submit" class="cbt-btn">Load history</button>
+        <a class="cbt-btn" data-export-student href="#">Export CSV</a>
+      </form>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead><tr><th>Exam</th><th>Subject</th><th>Score</th><th>%</th><th>Grade</th><th>Access</th><th>Payment</th></tr></thead>
+          <tbody data-student-history></tbody>
+        </table>
+      </div>
+      <div class="cbt-pager" data-student-history-pager></div>
+    </section>
+  </div>
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

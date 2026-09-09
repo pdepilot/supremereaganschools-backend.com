@@ -5,6 +5,7 @@ namespace Tests\Feature\Cbt;
 use App\Enums\PermissionSlug;
 use App\Enums\RoleSlug;
 use App\Models\CbtAttempt;
+use App\Models\CbtResult;
 use App\Models\User;
 use App\Services\Cbt\CbtAnswerService;
 use App\Services\Cbt\CbtAttemptService;
@@ -226,7 +227,9 @@ class CbtAuthApiSecurityTest extends TestCase
             ->assertOk();
 
         $resultId = $submit->json('data.id');
-        $this->assertSame('100.00', $submit->json('data.percentage'));
+        $this->assertFalse($submit->json('data.details_unlocked'));
+        $this->assertNull($submit->json('data.percentage'));
+        $this->assertEquals(100.0, (float) CbtResult::query()->findOrFail($resultId)->percentage);
 
         $again = $this->actingAsCbt($user)
             ->postJson('/api/v1/cbt/attempts/'.$attemptId.'/submit')

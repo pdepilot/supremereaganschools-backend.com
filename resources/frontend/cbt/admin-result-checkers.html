@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Result Checkers | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css?v=20260908f">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="result-checkers">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>Result Checkers</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a href="/cbt/admin">Dashboard</a>
+        <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
+        <a href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/monitor">Monitor</a>
+        <a href="/cbt/admin/attempts">Attempts</a>
+        <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/admin/reports">Reports</a>
+        <a class="is-active" href="/cbt/admin/result-checkers" data-manage-only>Result Checkers</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+    <div class="cbt-alert" data-cbt-alert></div>
+    <section class="cbt-panel">
+      <h1>Statistics</h1>
+      <div class="cbt-stat-grid" data-rc-stats><div class="cbt-empty">Loading…</div></div>
+    </section>
+    <section class="cbt-panel">
+      <div class="cbt-toolbar">
+        <h2>Products</h2>
+        <button type="button" class="cbt-btn cbt-btn-primary" data-rc-new>New product</button>
+      </div>
+      <label class="cbt-check" style="margin-bottom:1rem;">
+        <input type="checkbox" data-rc-require-payment> Require payment for detailed CBT results
+      </label>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead><tr><th>Name</th><th>Code</th><th>Price</th><th>Checks</th><th>Status</th><th></th></tr></thead>
+          <tbody data-rc-products></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="cbt-panel">
+      <h2>Recent purchases</h2>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead><tr><th>Student</th><th>Exam</th><th>Amount</th><th>Status</th><th>Paid</th><th>Reference</th></tr></thead>
+          <tbody data-rc-purchases></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <div class="cbt-modal" data-rc-modal>
+    <div class="cbt-modal-card">
+      <h2 data-rc-modal-title>Product</h2>
+      <form data-rc-form>
+        <input type="hidden" name="id">
+        <label>Name <input name="name" required></label>
+        <label>Code <input name="code" required></label>
+        <label>Description <textarea name="description" rows="2"></textarea></label>
+        <label>Amount (₦) <input name="amount_naira" type="number" min="1" step="1" required></label>
+        <label>Checks allowed <input name="checks_allowed" type="number" min="1" value="1" required></label>
+        <label>Duration days (optional) <input name="duration_days" type="number" min="1"></label>
+        <label class="cbt-check"><input type="checkbox" name="is_active" checked> Active</label>
+        <div class="cbt-actions">
+          <button type="button" class="cbt-btn" data-rc-cancel>Cancel</button>
+          <button type="submit" class="cbt-btn cbt-btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="/site/JS/portal-cbt-admin.js?v=20260908f"></script>
+</body>
+</html>

@@ -12,6 +12,7 @@ use App\Models\CbtExam;
 use App\Models\CbtResult;
 use App\Services\Cbt\CbtAccessService;
 use App\Services\Cbt\CbtExamAssignmentService;
+use App\Services\Cbt\CbtResultCheckerService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class CbtStudentController extends Controller
     public function __construct(
         private readonly CbtAccessService $access,
         private readonly CbtExamAssignmentService $assignments,
+        private readonly CbtResultCheckerService $checkers,
     ) {}
 
     public function exams(Request $request): JsonResponse
@@ -53,11 +55,14 @@ class CbtStudentController extends Controller
                 'name' => $student->fullName(),
                 'admission_number' => $student->admission_number,
             ],
-            'exams' => $exams->map(function (CbtExam $exam) use ($attempts) {
+            'exams' => $exams->map(function (CbtExam $exam) use ($attempts, $student) {
                 $examAttempts = $attempts->get($exam->id, collect());
                 $active = $examAttempts->firstWhere('status', CbtAttemptStatus::InProgress);
                 $used = $examAttempts->count();
                 $submitted = $examAttempts->firstWhere('status', CbtAttemptStatus::Submitted);
+                $unlocked = $submitted?->result
+                    ? $this->checkers->accountHasPaidAccess($submitted->result, $student)
+                    : false;
 
                 return [
                     'id' => $exam->id,
@@ -75,7 +80,7 @@ class CbtStudentController extends Controller
                     'active_attempt_id' => $active?->id,
                     'active_attempt_uuid' => $active?->uuid,
                     'latest_result' => $submitted?->result
-                        ? (new CbtResultResource($submitted->result))->resolve()
+                        ? (new CbtResultResource($submitted->result, $unlocked))->resolve()
                         : null,
                     'attempt_status' => $active
                         ? 'in_progress'
@@ -133,7 +138,13 @@ class CbtStudentController extends Controller
             ->get();
 
         return ApiResponse::success('CBT results retrieved.', [
-            'results' => CbtResultResource::collection($results)->resolve(),
+            'details_require_payment' => $this->checkers->detailsRequirePayment(),
+            'pricing' => $this->checkers->pricing(),
+            'results' => $results->map(function (CbtResult $result) use ($student) {
+                $unlocked = $this->checkers->accountHasPaidAccess($result, $student);
+
+                return (new CbtResultResource($result, $unlocked))->resolve();
+            })->all(),
         ]);
     }
 }

@@ -8,9 +8,11 @@ use App\Http\Requests\Academic\StoreClassSectionOfferingRequest;
 use App\Http\Requests\Academic\UpdateClassSectionOfferingRequest;
 use App\Http\Resources\Academic\ClassSectionOfferingResource;
 use App\Models\ClassSectionOffering;
+use App\Models\StudentProfile;
 use App\Models\SubjectOffering;
 use App\Services\ClassTeacherAssignmentService;
 use App\Support\ApiResponse;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +24,13 @@ class ClassSectionOfferingController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', ClassSectionOffering::class);
+        $user = $request->user();
+        $canViewStructure = $user?->can('viewAny', ClassSectionOffering::class) ?? false;
+        $canRegisterPupils = $user?->can('create', StudentProfile::class) ?? false;
+
+        if (! $canViewStructure && ! $canRegisterPupils) {
+            throw new AuthorizationException;
+        }
 
         $offerings = ClassSectionOffering::query()
             ->with($this->defaultRelations())

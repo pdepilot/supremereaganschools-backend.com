@@ -23,7 +23,11 @@
         <a href="/cbt/admin">Dashboard</a>
         <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
         <a class="is-active" href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/monitor">Monitor</a>
+        <a href="/cbt/admin/attempts">Attempts</a>
         <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/admin/reports">Reports</a>
+        <a href="/cbt/admin/result-checkers" data-manage-only>Result Checkers</a>
         <a href="/cbt/logout" data-cbt-logout>Sign out</a>
       </nav>
     </header>
@@ -31,7 +35,7 @@
     <div class="cbt-alert" data-cbt-alert></div>
     <div class="cbt-frozen-banner" data-exam-frozen-banner hidden>
       <strong>PUBLISHED / FROZEN</strong>
-      <span>Question snapshots, options, marks, and ordering are immutable. Create a new draft exam if changes are required.</span>
+      <span>Question snapshots, options, marks, and ordering are immutable. Duration and schedule below can still be adjusted for future attempts; use extend timers for students already writing.</span>
     </div>
 
     <section class="cbt-panel">
@@ -95,6 +99,35 @@
             <button type="submit" class="cbt-btn cbt-btn-primary">Save configuration</button>
           </div>
         </fieldset>
+      </form>
+    </section>
+
+    <section class="cbt-panel" data-exam-schedule-panel data-manage-only hidden>
+      <div class="cbt-toolbar">
+        <h2>Schedule &amp; duration</h2>
+      </div>
+      <p class="cbt-lede">Changes apply to <strong>future</strong> attempts only. In-progress timers are unchanged unless you extend them below.</p>
+      <form class="cbt-form-grid" data-exam-schedule-form>
+        <label>Duration (minutes)
+          <input type="number" name="duration_minutes" min="1" required>
+        </label>
+        <label>Starts at
+          <input type="datetime-local" name="starts_at">
+        </label>
+        <label>Ends at
+          <input type="datetime-local" name="ends_at">
+        </label>
+        <label class="cbt-check"><input type="checkbox" name="is_active"> Active</label>
+        <div class="cbt-actions cbt-full">
+          <button type="submit" class="cbt-btn cbt-btn-primary">Save schedule</button>
+        </div>
+      </form>
+      <form class="cbt-inline-form" data-exam-extend-timers-form style="margin-top:1rem">
+        <label>Extend / reset live attempts
+          <input type="number" name="minutes" min="1" max="600" placeholder="Minutes" value="15">
+        </label>
+        <button type="submit" class="cbt-btn" name="action" value="extend">Extend all in progress</button>
+        <button type="submit" class="cbt-btn" name="action" value="reset">Reset all to duration</button>
       </form>
     </section>
 

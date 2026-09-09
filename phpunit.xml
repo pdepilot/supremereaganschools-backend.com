@@ -41,5 +41,13 @@
         <env name="ADSENSE_ADS_TXT" value=""/>
         <env name="ANALYTICS_ENABLED" value="false"/>
         <env name="ANALYTICS_MEASUREMENT_ID" value=""/>
+        <env name="PAYSTACK_PUBLIC_KEY" value="pk_test_phase8"/>
+        <env name="PAYSTACK_SECRET_KEY" value="sk_test_phase8"/>
+        <env name="PAYSTACK_BASE_URL" value="https://api.paystack.co"/>
+        <env name="PAYSTACK_CURRENCY" value="NGN"/>
+        <env name="PAYSTACK_TEST_AMOUNT_KOBO" value="10000"/>
+        <env name="PAYSTACK_TEST_PAYMENTS_ENABLED" value="true"/>
+        <env name="CBT_RESULT_CHECKER_AMOUNT_KOBO" value="50000"/>
+        <env name="CBT_RESULT_CHECKER_CURRENCY" value="NGN"/>
     </php>
 </phpunit>

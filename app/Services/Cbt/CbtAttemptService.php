@@ -66,7 +66,7 @@ class CbtAttemptService
                 if ($this->isExpired($attempt)) {
                     // Lazy resolve avoids a constructor cycle with CbtSubmissionService.
                     app(CbtSubmissionService::class)->submit($attempt, $user, [
-                        'reason' => 'auto_expired',
+                        'reason' => 'timer_expired',
                     ]);
                 } else {
                     throw ValidationException::withMessages([
@@ -168,6 +168,81 @@ class CbtAttemptService
                 'attempt' => 'This attempt has expired.',
             ]);
         }
+    }
+
+    /**
+     * Admin timer control for an in-progress attempt.
+     * Extending an operationally expired attempt re-opens the writing window.
+     *
+     * @param  array{minutes?: int, reset?: bool}  $options
+     */
+    public function extendTimer(CbtAttempt $attempt, array $options = []): CbtAttempt
+    {
+        return DB::transaction(function () use ($attempt, $options) {
+            /** @var CbtAttempt $locked */
+            $locked = CbtAttempt::query()->lockForUpdate()->findOrFail($attempt->id);
+            $locked->loadMissing('exam');
+
+            if ($locked->status !== CbtAttemptStatus::InProgress) {
+                throw ValidationException::withMessages([
+                    'attempt' => 'Only in-progress attempts can have their timer adjusted.',
+                ]);
+            }
+
+            $reset = (bool) ($options['reset'] ?? false);
+            $minutes = isset($options['minutes']) ? (int) $options['minutes'] : null;
+
+            if ($reset) {
+                $duration = $minutes !== null && $minutes > 0
+                    ? $minutes
+                    : max(1, (int) ($locked->exam?->duration_minutes ?? 1));
+                $newEnds = now()->addMinutes($duration);
+            } else {
+                if ($minutes === null || $minutes < 1) {
+                    throw ValidationException::withMessages([
+                        'minutes' => 'Provide at least 1 minute to extend, or use reset.',
+                    ]);
+                }
+
+                $base = $locked->ends_at && $locked->ends_at->gt(now())
+                    ? $locked->ends_at->copy()
+                    : now();
+                $newEnds = $base->addMinutes($minutes);
+            }
+
+            $examEnds = $locked->exam?->ends_at;
+            if ($examEnds !== null && $newEnds->gt($examEnds)) {
+                // Allow admin extension past exam window — operational override.
+                // Exam schedule still gates new starts; live attempts may be extended.
+            }
+
+            $locked->update(['ends_at' => $newEnds]);
+
+            return $locked->fresh(['exam', 'studentProfile', 'result']) ?? $locked;
+        });
+    }
+
+    /**
+     * @param  array{minutes?: int, reset?: bool}  $options
+     * @return array{updated: int, attempts: list<CbtAttempt>}
+     */
+    public function extendTimersForExam(CbtExam $exam, array $options = []): array
+    {
+        $attempts = CbtAttempt::query()
+            ->where('exam_id', $exam->id)
+            ->where('status', CbtAttemptStatus::InProgress)
+            ->orderBy('id')
+            ->get();
+
+        $updated = [];
+        foreach ($attempts as $attempt) {
+            $updated[] = $this->extendTimer($attempt, $options);
+        }
+
+        return [
+            'updated' => count($updated),
+            'attempts' => $updated,
+        ];
     }
 
     private function assertExamStartable(CbtExam $exam): void

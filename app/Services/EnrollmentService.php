@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\EnrollmentStatus;
+use App\Models\Campus;
 use App\Models\ClassSection;
 use App\Models\ClassSectionOffering;
 use App\Models\Enrollment;
@@ -127,13 +128,26 @@ class EnrollmentService
             ->where('academic_session_id', $sessionId)
             ->first();
 
-        if ($offering === null) {
+        if ($offering !== null) {
+            return $offering;
+        }
+
+        $campusId = Campus::query()->where('is_active', true)->value('id')
+            ?? Campus::query()->value('id');
+
+        if ($campusId === null) {
             throw ValidationException::withMessages([
-                'class_section_id' => 'This arm is not offered in the selected academic session.',
+                'class_section_id' => 'Open a campus before placing pupils into a form.',
             ]);
         }
 
-        return $offering;
+        return ClassSectionOffering::query()->create([
+            'class_section_id' => $section->id,
+            'academic_session_id' => (int) $sessionId,
+            'campus_id' => (int) $campusId,
+            'capacity' => 40,
+            'is_active' => true,
+        ])->load('classSection');
     }
 
     private function assertNoDuplicateSession(StudentProfile $student, int $sessionId, ?int $ignoreId = null): void

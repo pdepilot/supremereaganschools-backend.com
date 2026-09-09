@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify CBT result | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css?v=20260908e">
+</head>
+<body class="cbt-app">
+  <div class="cbt-shell">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>Result verification</strong>
+          <span>Supreme Reagan Schools</span>
+        </div>
+      </div>
+      <nav class="cbt-nav">
+        <a href="/">School site</a>
+      </nav>
+    </header>
+    <div class="cbt-alert" data-verify-alert></div>
+    <section class="cbt-panel">
+      <h1>Verify a CBT result</h1>
+      <p class="cbt-lede">Enter the verification code from a paid Result Checker. Only safe confirmation details are shown.</p>
+      <form data-verify-form class="cbt-inline-form">
+        <input type="text" name="code" required placeholder="SRV-…" autocomplete="off">
+        <button type="submit" class="cbt-btn cbt-btn-primary">Verify</button>
+      </form>
+      <div data-verify-result style="margin-top:1rem"></div>
+    </section>
+  </div>
+  <script>
+    (function () {
+      const form = document.querySelector("[data-verify-form]");
+      const alertBox = document.querySelector("[data-verify-alert]");
+      const host = document.querySelector("[data-verify-result]");
+      const csrf = function () {
+        const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+        return match ? decodeURIComponent(match[1]) : "";
+      };
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        alertBox.classList.remove("is-visible");
+        host.innerHTML = "";
+        fetch("/api/v1/result/verify", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-XSRF-TOKEN": csrf()
+          },
+          body: JSON.stringify({ code: form.code.value })
+        }).then(function (response) {
+          return response.json().then(function (body) {
+            return { ok: response.ok, body: body };
+          });
+        }).then(function (result) {
+          if (!result.ok) {
+            alertBox.textContent = (result.body && result.body.message) || "Verification failed.";
+            alertBox.classList.add("is-visible");
+            return;
+          }
+          const data = result.body.data || {};
+          host.innerHTML = '<div class="cbt-card"><h3>' + (result.body.message || "VALID RESULT") + "</h3>"
+            + "<p>School: " + (data.school || "") + "</p>"
+            + "<p>Student: " + (data.student || "") + "</p>"
+            + "<p>Examination: " + (data.examination || "") + "</p>"
+            + "<p>Subject: " + (data.subject || "") + "</p>"
+            + "<p>Session: " + (data.session || "") + "</p>"
+            + "<p>Term: " + (data.term || "") + "</p>"
+            + "<p>Result status: " + (data.status || "VERIFIED") + "</p></div>";
+        }).catch(function () {
+          alertBox.textContent = "Unable to reach verification.";
+          alertBox.classList.add("is-visible");
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

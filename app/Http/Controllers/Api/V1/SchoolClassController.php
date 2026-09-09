@@ -7,7 +7,9 @@ use App\Http\Requests\Academic\StoreSchoolClassRequest;
 use App\Http\Requests\Academic\UpdateSchoolClassRequest;
 use App\Http\Resources\Academic\SchoolClassResource;
 use App\Models\SchoolClass;
+use App\Models\StudentProfile;
 use App\Support\ApiResponse;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 
@@ -15,7 +17,13 @@ class SchoolClassController extends Controller
 {
     public function index(): JsonResponse
     {
-        $this->authorize('viewAny', SchoolClass::class);
+        $user = request()->user();
+        $canViewStructure = $user?->can('viewAny', SchoolClass::class) ?? false;
+        $canRegisterPupils = $user?->can('create', StudentProfile::class) ?? false;
+
+        if (! $canViewStructure && ! $canRegisterPupils) {
+            throw new AuthorizationException;
+        }
 
         $classes = SchoolClass::query()->with(['level', 'sections'])->orderBy('sort_order')->get();
 

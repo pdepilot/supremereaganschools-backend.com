@@ -47,6 +47,20 @@ class CbtWebController extends Controller
         return $this->shell('cbt/results.html');
     }
 
+    public function resultShow(Request $request): Response
+    {
+        abort_unless($this->access->isStudentTaker($request->user()), 403);
+
+        return $this->shell('cbt/result-detail.html');
+    }
+
+    public function resultCheckerSuccess(Request $request): Response
+    {
+        abort_unless($this->access->isStudentTaker($request->user()) || $request->user() !== null, 403);
+
+        return $this->shell('cbt/result-checker-success.html');
+    }
+
     public function adminQuestions(Request $request): Response
     {
         abort_unless($this->access->canManage($request->user()), 403);
@@ -80,6 +94,34 @@ class CbtWebController extends Controller
         abort_unless($this->access->canManage($request->user()) || $this->access->canMark($request->user()), 403);
 
         return $this->shell('cbt/admin-results.html');
+    }
+
+    public function adminAttempts(Request $request): Response
+    {
+        abort_unless($this->access->canManage($request->user()) || $this->access->canMark($request->user()), 403);
+
+        return $this->shell('cbt/admin-attempts.html');
+    }
+
+    public function adminMonitor(Request $request): Response
+    {
+        abort_unless($this->access->canManage($request->user()) || $this->access->canMark($request->user()), 403);
+
+        return $this->shell('cbt/admin-monitor.html');
+    }
+
+    public function adminReports(Request $request): Response
+    {
+        abort_unless($this->access->canManage($request->user()) || $this->access->canMark($request->user()), 403);
+
+        return $this->shell('cbt/admin-reports.html');
+    }
+
+    public function adminResultCheckers(Request $request): Response
+    {
+        abort_unless($this->access->canManage($request->user()), 403);
+
+        return $this->shell('cbt/admin-result-checkers.html');
     }
 
     public function adminPage(Request $request, string $page): Response

@@ -812,6 +812,18 @@
     request("/api/v1/messages/recipients").then(function (result) {
       if (!recipient) return;
       const rows = (result.ok && result.body.data) || [];
+      if (!result.ok) {
+        if (notice) notice.textContent = firstError(result.body) || "Could not load recipients.";
+        recipient.innerHTML = '<option value="">Write to…</option>';
+        return;
+      }
+      if (!rows.length) {
+        recipient.innerHTML = '<option value="">No recipients available</option>';
+        if (notice) {
+          notice.textContent = "No office staff or teachers are available to write to yet. Ask the school office to confirm your children’s class links.";
+        }
+        return;
+      }
       recipient.innerHTML = '<option value="">Write to…</option>' + rows.map(function (row) {
         return '<option value="' + row.id + '">' + escapeHtml(row.name || "Staff") + "</option>";
       }).join("");
@@ -821,22 +833,59 @@
     if (sendBtn && !sendBtn.getAttribute("data-wired")) {
       sendBtn.setAttribute("data-wired", "1");
       sendBtn.addEventListener("click", function () {
+        const recipientId = Number((recipient || {}).value || 0);
+        const subjectValue = String((document.querySelector("[data-message-subject]") || {}).value || "").trim();
+        const bodyValue = String((document.querySelector("[data-message-body]") || {}).value || "").trim();
+
+        if (!recipientId) {
+          if (notice) notice.textContent = "Choose who to write to.";
+          return;
+        }
+        if (!subjectValue) {
+          if (notice) notice.textContent = "Enter a subject.";
+          return;
+        }
+        if (!bodyValue) {
+          if (notice) notice.textContent = "Write the letter body before sending.";
+          return;
+        }
+
         const payload = {
-          recipient_id: Number((recipient || {}).value || 0),
-          subject: (document.querySelector("[data-message-subject]") || {}).value || "",
-          body: (document.querySelector("[data-message-body]") || {}).value || ""
+          recipient_id: recipientId,
+          subject: subjectValue,
+          body: bodyValue
         };
+
+        sendBtn.disabled = true;
+        const previousLabel = sendBtn.textContent;
+        sendBtn.textContent = "Sending…";
+        if (notice) notice.textContent = "";
+
         request("/api/v1/conversations", { method: "POST", body: JSON.stringify(payload) }).then(function (result) {
+          sendBtn.disabled = false;
+          sendBtn.textContent = previousLabel;
           if (!result.ok) {
             if (notice) notice.textContent = firstError(result.body);
             return;
           }
-          if (notice) notice.textContent = "";
+          if (notice) notice.textContent = "Letter sent.";
           const subject = document.querySelector("[data-message-subject]");
           const composeBody = document.querySelector("[data-message-body]");
+          if (recipient) recipient.value = "";
           if (subject) subject.value = "";
           if (composeBody) composeBody.value = "";
-          openConversation(result.body.data.id);
+          const conversationId = result.body.data && result.body.data.id;
+          if (conversationId) {
+            openConversation(conversationId);
+          }
+          refreshList();
+          if (window.SrsDeskBell && typeof window.SrsDeskBell.refresh === "function") {
+            window.SrsDeskBell.refresh();
+          }
+        }).catch(function () {
+          sendBtn.disabled = false;
+          sendBtn.textContent = previousLabel;
+          if (notice) notice.textContent = "Could not send the letter. Check your connection and try again.";
         });
       });
     }

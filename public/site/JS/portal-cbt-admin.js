@@ -186,6 +186,7 @@
       request("/api/v1/me"),
       request("/api/v1/cbt/admin"),
       capabilities.manage || page === "home" || page === "questions" || page === "exams" || page === "exam" || page === "preview"
+        || page === "results" || page === "monitor" || page === "attempts" || page === "reports" || page === "result-checkers"
         ? request("/api/v1/cbt/admin/lookups")
         : Promise.resolve({ ok: true, body: { data: null } })
     ]).then(function (parts) {
@@ -271,16 +272,231 @@
       return;
     }
     const cards = [
-      ["Questions", summary.questions],
+      ["Total exams", summary.total_exams],
       ["Draft exams", summary.draft_exams],
-      ["Published", summary.published_exams],
-      ["Attempts", summary.attempts],
-      ["Submitted", summary.submitted_attempts],
-      ["Results", summary.results]
+      ["Published exams", summary.published_exams],
+      ["Active exams", summary.active_exams],
+      ["Completed attempts", summary.completed_attempts],
+      ["In progress", summary.in_progress_attempts],
+      ["Results generated", summary.results_generated],
+      ["Locked results", summary.locked_results],
+      ["Unlocked results", summary.unlocked_results]
     ];
     host.innerHTML = cards.map(function (row) {
       return '<div class="cbt-stat"><strong>' + escapeHtml(row[1] ?? 0) + "</strong><span>" + escapeHtml(row[0]) + "</span></div>";
     }).join("");
+
+    const rcHost = document.querySelector("[data-cbt-rc-summary]");
+    const rc = summary.result_checker || {};
+    if (rcHost) {
+      rcHost.innerHTML = [
+        ["Paid payments", rc.payments_paid],
+        ["Pending payments", rc.payments_pending],
+        ["Failed payments", rc.payments_failed],
+        ["Revenue (kobo)", rc.revenue_kobo]
+      ].map(function (row) {
+        return '<div class="cbt-stat"><strong>' + escapeHtml(row[1] ?? 0) + "</strong><span>" + escapeHtml(row[0]) + "</span></div>";
+      }).join("");
+    }
+  };
+
+  const bindMonitor = function () {
+    const rows = document.querySelector("[data-monitor-rows]");
+    const updated = document.querySelector("[data-monitor-updated]");
+    const load = function () {
+      request("/api/v1/cbt/admin/attempts/monitor").then(function (result) {
+        if (!result.ok) {
+          rows.innerHTML = '<tr><td colspan="10">Unable to load monitor.</td></tr>';
+          return showAlert(firstError(result.body));
+        }
+        const exams = (result.body.data && result.body.data.exams) || [];
+        if (!exams.length) {
+          rows.innerHTML = '<tr><td colspan="10">No active exams right now.</td></tr>';
+        } else {
+          rows.innerHTML = exams.map(function (e) {
+            return "<tr>"
+              + "<td>" + escapeHtml(e.title) + "</td>"
+              + "<td>" + escapeHtml((e.subject || "—") + " / " + (e.class || "—")) + "</td>"
+              + "<td>" + escapeHtml(e.assigned_students) + "</td>"
+              + "<td>" + escapeHtml(e.started_students) + "</td>"
+              + "<td>" + escapeHtml(e.attempts_in_progress) + "</td>"
+              + "<td>" + escapeHtml(e.attempts_submitted) + "</td>"
+              + "<td>" + escapeHtml(e.attempts_expired) + "</td>"
+              + "<td>" + escapeHtml(e.not_started_students) + "</td>"
+              + "<td>" + escapeHtml(e.completion_percentage) + "%</td>"
+              + '<td class="cbt-actions">'
+              + '<a class="cbt-btn cbt-btn-ghost" href="/cbt/admin/reports?exam_id=' + e.exam_id + '">Report</a> '
+              + (e.attempts_in_progress > 0
+                ? '<button type="button" class="cbt-btn cbt-btn-ghost" data-extend-exam="' + e.exam_id + '">Extend</button>'
+                : "")
+              + "</td>"
+              + "</tr>";
+          }).join("");
+        }
+        if (updated) updated.textContent = "Updated " + new Date().toLocaleTimeString() + " · auto-refresh 30s";
+      });
+    };
+    rows?.addEventListener("click", function (event) {
+      const btn = event.target.closest("[data-extend-exam]");
+      if (!btn) return;
+      const minutesRaw = window.prompt("Add minutes to all in-progress attempts (or leave blank to cancel):", "15");
+      if (minutesRaw === null || minutesRaw.trim() === "") return;
+      const minutes = Number(minutesRaw);
+      if (!Number.isFinite(minutes) || minutes < 1) return showAlert("Enter a valid number of minutes.");
+      request("/api/v1/cbt/admin/exams/" + btn.getAttribute("data-extend-exam") + "/extend-timers", {
+        method: "POST",
+        body: JSON.stringify({ minutes: minutes })
+      }).then(function (result) {
+        if (!result.ok) return showAlert(firstError(result.body));
+        showAlert("Extended " + ((result.body.data && result.body.data.updated) || 0) + " attempt(s).", "info");
+        load();
+      });
+    });
+    load();
+    setInterval(load, 30000);
+  };
+
+  let attemptsPage = 1;
+  const loadAttempts = function (pageNum) {
+    attemptsPage = pageNum || 1;
+    const form = document.querySelector("[data-attempts-filters]");
+    const params = new URLSearchParams(new FormData(form));
+    params.set("page", String(attemptsPage));
+    const rows = document.querySelector("[data-attempts-rows]");
+    request("/api/v1/cbt/admin/attempts?" + params.toString()).then(function (result) {
+      if (!result.ok) {
+        rows.innerHTML = '<tr><td colspan="9">Unable to load attempts.</td></tr>';
+        return showAlert(firstError(result.body));
+      }
+      const items = (result.body.data && result.body.data.items) || [];
+      rows.innerHTML = items.length ? items.map(function (a) {
+        const canExtend = !!a.can_extend_timer;
+        return "<tr>"
+          + "<td>" + escapeHtml((a.student_name || "—") + " · " + (a.admission_number || "")) + "</td>"
+          + "<td>" + escapeHtml(a.exam_title || ("#" + a.exam_id)) + "</td>"
+          + "<td>" + escapeHtml(a.status) + "</td>"
+          + "<td>" + escapeHtml(formatWhen(a.started_at)) + "</td>"
+          + "<td>" + escapeHtml(formatWhen(a.ends_at)) + "</td>"
+          + "<td>" + escapeHtml(formatWhen(a.submitted_at)) + "</td>"
+          + "<td>" + escapeHtml(a.submission_reason || "—") + "</td>"
+          + "<td>" + escapeHtml(a.score != null ? (a.score + " (" + a.percentage + "%)") : "—") + "</td>"
+          + '<td class="cbt-actions">'
+          + (canExtend
+            ? '<button type="button" class="cbt-btn cbt-btn-ghost" data-extend-attempt="' + a.id + '">Extend</button>'
+              + ' <button type="button" class="cbt-btn cbt-btn-ghost" data-reset-attempt="' + a.id + '">Reset</button>'
+            : "—")
+          + "</td>"
+          + "</tr>";
+      }).join("") : '<tr><td colspan="9">No attempts found.</td></tr>';
+      renderPager(document.querySelector("[data-attempts-pager]"), result.body.data.meta, loadAttempts);
+    });
+  };
+
+  const bindAttempts = function () {
+    document.querySelector("[data-attempts-filters]")?.addEventListener("submit", function (event) {
+      event.preventDefault();
+      loadAttempts(1);
+    });
+    document.querySelector("[data-attempts-rows]")?.addEventListener("click", function (event) {
+      const extendBtn = event.target.closest("[data-extend-attempt]");
+      const resetBtn = event.target.closest("[data-reset-attempt]");
+      if (extendBtn) {
+        const minutesRaw = window.prompt("Minutes to add:", "15");
+        if (minutesRaw === null || minutesRaw.trim() === "") return;
+        const minutes = Number(minutesRaw);
+        if (!Number.isFinite(minutes) || minutes < 1) return showAlert("Enter a valid number of minutes.");
+        request("/api/v1/cbt/admin/attempts/" + extendBtn.getAttribute("data-extend-attempt") + "/extend", {
+          method: "POST",
+          body: JSON.stringify({ minutes: minutes })
+        }).then(function (result) {
+          if (!result.ok) return showAlert(firstError(result.body));
+          showAlert("Attempt timer extended.", "info");
+          loadAttempts(attemptsPage);
+        });
+        return;
+      }
+      if (resetBtn) {
+        confirmAction("Reset timer", "Reset this attempt's timer to the exam duration from now?").then(function (ok) {
+          if (!ok) return;
+          request("/api/v1/cbt/admin/attempts/" + resetBtn.getAttribute("data-reset-attempt") + "/extend", {
+            method: "POST",
+            body: JSON.stringify({ reset: true })
+          }).then(function (result) {
+            if (!result.ok) return showAlert(firstError(result.body));
+            showAlert("Attempt timer reset.", "info");
+            loadAttempts(attemptsPage);
+          });
+        });
+      }
+    });
+    loadAttempts(1);
+  };
+
+  const bindReports = function () {
+    const params = new URLSearchParams(window.location.search);
+    const form = document.querySelector("[data-exam-report-form]");
+    if (form && params.get("exam_id")) form.exam_id.value = params.get("exam_id");
+    const loadExamReport = function (examId) {
+      request("/api/v1/cbt/admin/exams/" + examId + "/report").then(function (result) {
+        if (!result.ok) return showAlert(firstError(result.body));
+        const data = result.body.data || {};
+        const perf = data.performance || {};
+        document.querySelector("[data-exam-report-stats]").innerHTML = [
+          ["Assigned", perf.assigned_students],
+          ["Started", perf.started_students],
+          ["Submitted", perf.attempts_submitted],
+          ["Expired", perf.attempts_expired],
+          ["Not started", perf.not_started_students],
+          ["Avg score", perf.average_score],
+          ["Avg %", perf.average_percentage],
+          ["Pass rate", perf.pass_rate != null ? perf.pass_rate + "%" : "—"],
+          ["Highest", perf.highest_score],
+          ["Lowest", perf.lowest_score]
+        ].map(function (row) {
+          return '<div class="cbt-stat"><strong>' + escapeHtml(row[1] ?? "—") + "</strong><span>" + escapeHtml(row[0]) + "</span></div>";
+        }).join("");
+        document.querySelector("[data-exam-roster]").innerHTML = (data.roster || []).map(function (r) {
+          return "<tr><td>" + escapeHtml(r.student_name) + "</td><td>" + escapeHtml(r.admission_number)
+            + "</td><td>" + escapeHtml(r.status) + "</td><td>" + escapeHtml(r.score ?? "—")
+            + "</td><td>" + escapeHtml(r.percentage ?? "—") + "</td><td>" + escapeHtml(r.attempts_count) + "</td></tr>";
+        }).join("") || '<tr><td colspan="6">No assigned students.</td></tr>';
+        document.querySelector("[data-question-analytics]").innerHTML = (data.questions || []).map(function (q) {
+          return "<tr><td>" + escapeHtml(q.sort_order) + "</td><td>" + escapeHtml(q.stem_truncated)
+            + "</td><td>" + escapeHtml(q.marks) + "</td><td>" + escapeHtml(q.correct)
+            + "</td><td>" + escapeHtml(q.incorrect) + "</td><td>" + escapeHtml(q.unanswered)
+            + "</td><td>" + escapeHtml(q.percentage_correct) + "%</td><td>" + escapeHtml(q.analytics_difficulty) + "</td></tr>";
+        }).join("") || '<tr><td colspan="8">No questions.</td></tr>';
+        document.querySelector("[data-export-results]").href = "/api/v1/cbt/admin/exams/" + examId + "/export/results";
+        document.querySelector("[data-export-attendance]").href = "/api/v1/cbt/admin/exams/" + examId + "/export/attendance";
+      });
+    };
+    form?.addEventListener("submit", function (event) {
+      event.preventDefault();
+      loadExamReport(form.exam_id.value);
+    });
+    if (form?.exam_id.value) loadExamReport(form.exam_id.value);
+
+    const historyForm = document.querySelector("[data-student-history-form]");
+    const loadHistory = function (pageNum) {
+      const params = new URLSearchParams(new FormData(historyForm));
+      params.set("page", String(pageNum || 1));
+      request("/api/v1/cbt/admin/reports/student-history?" + params.toString()).then(function (result) {
+        if (!result.ok) return showAlert(firstError(result.body));
+        const items = (result.body.data && result.body.data.items) || [];
+        document.querySelector("[data-student-history]").innerHTML = items.map(function (r) {
+          return "<tr><td>" + escapeHtml(r.exam_title) + "</td><td>" + escapeHtml(r.subject)
+            + "</td><td>" + escapeHtml(r.score) + "</td><td>" + escapeHtml(r.percentage)
+            + "</td><td>" + escapeHtml(r.grade || "—") + "</td><td>" + escapeHtml(r.result_access)
+            + "</td><td>" + escapeHtml(r.payment_status || "—") + "</td></tr>";
+        }).join("") || '<tr><td colspan="7">No history.</td></tr>';
+        renderPager(document.querySelector("[data-student-history-pager]"), result.body.data.meta, loadHistory);
+        document.querySelector("[data-export-student]").href = "/api/v1/cbt/admin/reports/student-history/export?" + new URLSearchParams(new FormData(historyForm)).toString();
+      });
+    };
+    historyForm?.addEventListener("submit", function (event) {
+      event.preventDefault();
+      loadHistory(1);
+    });
   };
 
   /* -------- Questions -------- */
@@ -620,6 +836,7 @@
   const setDraftControls = function (exam) {
     const frozen = !!exam.is_frozen;
     const draft = exam.status === "draft";
+    const published = exam.status === "published";
     const banner = document.querySelector("[data-exam-frozen-banner]");
     if (banner) banner.hidden = !frozen;
     document.querySelectorAll("[data-draft-only]").forEach(function (el) {
@@ -631,6 +848,8 @@
     if (publishBtn) publishBtn.hidden = !draft || !capabilities.manage;
     const archiveBtn = document.querySelector("[data-exam-archive]");
     if (archiveBtn) archiveBtn.hidden = exam.status !== "published" || !capabilities.manage;
+    const schedulePanel = document.querySelector("[data-exam-schedule-panel]");
+    if (schedulePanel) schedulePanel.hidden = !published || !capabilities.manage;
   };
 
   const renderExam = function (exam) {
@@ -662,6 +881,14 @@
       form.randomize_options.checked = !!exam.randomize_options;
       form.is_active.checked = !!exam.is_active;
       form.write_to_assessment_score.checked = !!exam.write_to_assessment_score;
+    }
+
+    const scheduleForm = document.querySelector("[data-exam-schedule-form]");
+    if (scheduleForm) {
+      scheduleForm.duration_minutes.value = exam.duration_minutes || "";
+      scheduleForm.starts_at.value = toLocalInput(exam.starts_at);
+      scheduleForm.ends_at.value = toLocalInput(exam.ends_at);
+      scheduleForm.is_active.checked = !!exam.is_active;
     }
 
     const qRows = document.querySelector("[data-exam-question-rows]");
@@ -746,6 +973,50 @@
         if (!result.ok) return showAlert(firstError(result.body));
         showAlert("Draft configuration saved.", "info");
         renderExam(result.body.data);
+      });
+    });
+
+    document.querySelector("[data-exam-schedule-form]")?.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!currentExam || currentExam.status !== "published") return;
+      const form = event.currentTarget;
+      request("/api/v1/cbt/admin/exams/" + currentExam.id + "/schedule", {
+        method: "POST",
+        body: JSON.stringify({
+          duration_minutes: Number(form.duration_minutes.value),
+          starts_at: fromLocalInput(form.starts_at.value),
+          ends_at: fromLocalInput(form.ends_at.value),
+          is_active: !!form.is_active.checked
+        })
+      }).then(function (result) {
+        if (!result.ok) return showAlert(firstError(result.body));
+        showAlert("Schedule updated for future attempts.", "info");
+        loadExam();
+      });
+    });
+
+    document.querySelector("[data-exam-extend-timers-form]")?.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!currentExam) return;
+      const form = event.currentTarget;
+      const action = event.submitter && event.submitter.value ? event.submitter.value : "extend";
+      const minutes = Number(form.minutes.value || 0);
+      const payload = action === "reset"
+        ? { reset: true, minutes: minutes > 0 ? minutes : undefined }
+        : { minutes: minutes };
+      if (action !== "reset" && (!Number.isFinite(minutes) || minutes < 1)) {
+        return showAlert("Enter minutes to extend.");
+      }
+      const label = action === "reset" ? "Reset all in-progress timers to duration from now?" : ("Extend all in-progress attempts by " + minutes + " minutes?");
+      confirmAction("Adjust timers", label).then(function (ok) {
+        if (!ok) return;
+        request("/api/v1/cbt/admin/exams/" + currentExam.id + "/extend-timers", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        }).then(function (result) {
+          if (!result.ok) return showAlert(firstError(result.body));
+          showAlert("Updated " + ((result.body.data && result.body.data.updated) || 0) + " attempt(s).", "info");
+        });
       });
     });
 
@@ -957,14 +1228,14 @@
     const rows = document.querySelector("[data-results-rows]");
     request("/api/v1/cbt/admin/results?" + params.toString()).then(function (result) {
       if (!result.ok) {
-        rows.innerHTML = '<tr><td colspan="9">Unable to load results.</td></tr>';
+        rows.innerHTML = '<tr><td colspan="10">Unable to load results.</td></tr>';
         showAlert(firstError(result.body));
         return;
       }
       const data = result.body.data || {};
       const items = data.items || [];
       if (!items.length) {
-        rows.innerHTML = '<tr><td colspan="9">No results found.</td></tr>';
+        rows.innerHTML = '<tr><td colspan="10">No results found.</td></tr>';
       } else {
         rows.innerHTML = items.map(function (r) {
           return "<tr>"
@@ -974,7 +1245,8 @@
             + "<td>" + escapeHtml(r.percentage) + "</td>"
             + "<td>" + escapeHtml(r.grade || "—") + "</td>"
             + "<td>" + (r.passed ? "Pass" : "Fail") + "</td>"
-            + "<td>" + escapeHtml(formatWhen(r.started_at)) + "</td>"
+            + "<td>" + (r.result_checker_unlocked ? "Unlocked" : "Locked") + "</td>"
+            + "<td>" + escapeHtml(r.result_checker_payment_reference || "—") + "</td>"
             + "<td>" + escapeHtml(formatWhen(r.submitted_at)) + "</td>"
             + "<td>" + escapeHtml(r.attempt_status || "—") + "</td>"
             + "</tr>";
@@ -1021,5 +1293,135 @@
       });
       loadResults(1);
     }
+    if (page === "monitor") {
+      if (!capabilities.manage && !capabilities.mark) {
+        showAlert("Monitor requires cbt.manage or cbt.mark.");
+        return;
+      }
+      bindMonitor();
+    }
+    if (page === "attempts") {
+      if (!capabilities.manage && !capabilities.mark) {
+        showAlert("Attempts require cbt.manage or cbt.mark.");
+        return;
+      }
+      bindAttempts();
+    }
+    if (page === "reports") {
+      if (!capabilities.manage && !capabilities.mark) {
+        showAlert("Reports require cbt.manage or cbt.mark.");
+        return;
+      }
+      bindReports();
+    }
+    if (page === "result-checkers") {
+      if (!capabilities.manage) {
+        showAlert("Result Checkers require cbt.manage.");
+        return;
+      }
+      bindResultCheckers();
+    }
   });
+
+  const bindResultCheckers = function () {
+    const loadStats = function () {
+      request("/api/v1/cbt/admin/result-checkers/statistics").then(function (result) {
+        const host = document.querySelector("[data-rc-stats]");
+        if (!result.ok || !host) return;
+        const d = result.body.data || {};
+        host.innerHTML = [
+          ["Revenue (kobo)", d.revenue_kobo],
+          ["Paid purchases", d.purchases_paid],
+          ["Pending", d.purchases_pending],
+          ["Active checkers", d.active_checkers],
+          ["Failed payments", d.payments_failed]
+        ].map(function (row) {
+          return '<div class="cbt-stat"><strong>' + escapeHtml(row[1] ?? 0) + '</strong><span>' + escapeHtml(row[0]) + '</span></div>';
+        }).join("");
+      });
+    };
+    const loadProducts = function () {
+      request("/api/v1/cbt/admin/result-checkers/products").then(function (result) {
+        if (!result.ok) return showAlert(firstError(result.body));
+        const data = result.body.data || {};
+        const requirePayment = document.querySelector("[data-rc-require-payment]");
+        if (requirePayment) requirePayment.checked = !!data.details_require_payment;
+        const rows = document.querySelector("[data-rc-products]");
+        rows.innerHTML = (data.items || []).map(function (p) {
+          return "<tr><td>" + escapeHtml(p.name) + "</td><td>" + escapeHtml(p.code) + "</td><td>"
+            + escapeHtml(p.amount_label) + "</td><td>" + escapeHtml(p.checks_allowed) + "</td><td>"
+            + (p.is_active ? "Active" : "Inactive") + '</td><td><button type="button" class="cbt-btn cbt-btn-ghost" data-rc-edit=\''
+            + escapeHtml(JSON.stringify(p)) + "'>Edit</button></td></tr>";
+        }).join("") || '<tr><td colspan="6">No products</td></tr>';
+      });
+    };
+    const loadPurchases = function () {
+      request("/api/v1/cbt/admin/result-checkers/purchases").then(function (result) {
+        if (!result.ok) return;
+        const rows = document.querySelector("[data-rc-purchases]");
+        rows.innerHTML = ((result.body.data && result.body.data.items) || []).map(function (p) {
+          return "<tr><td>" + escapeHtml(p.student_name || "—") + "</td><td>" + escapeHtml(p.exam_title || "—") + "</td><td>"
+            + escapeHtml(p.amount_label) + "</td><td>" + escapeHtml(p.status) + "</td><td>"
+            + escapeHtml(p.paid_at || "—") + "</td><td>" + escapeHtml(p.payment_reference || "—") + "</td></tr>";
+        }).join("") || '<tr><td colspan="6">No purchases</td></tr>';
+      });
+    };
+    document.querySelector("[data-rc-require-payment]")?.addEventListener("change", function (event) {
+      request("/api/v1/cbt/admin/result-checkers/policy", {
+        method: "POST",
+        body: JSON.stringify({ cbt_result_details_require_payment: !!event.target.checked })
+      }).then(function (result) {
+        if (!result.ok) showAlert(firstError(result.body));
+        else showAlert("Policy saved.", "info");
+      });
+    });
+    const modal = document.querySelector("[data-rc-modal]");
+    const form = document.querySelector("[data-rc-form]");
+    document.querySelector("[data-rc-new]")?.addEventListener("click", function () {
+      form.reset();
+      form.id.value = "";
+      form.is_active.checked = true;
+      openModal(modal);
+    });
+    document.querySelector("[data-rc-cancel]")?.addEventListener("click", function () { closeModal(modal); });
+    document.querySelector("[data-rc-products]")?.addEventListener("click", function (event) {
+      const raw = event.target.getAttribute("data-rc-edit");
+      if (!raw) return;
+      const p = JSON.parse(raw);
+      form.id.value = p.id;
+      form.name.value = p.name;
+      form.code.value = p.code;
+      form.description.value = p.description || "";
+      form.amount_naira.value = Math.round((p.amount_kobo || 0) / 100);
+      form.checks_allowed.value = p.checks_allowed;
+      form.duration_days.value = p.duration_days || "";
+      form.is_active.checked = !!p.is_active;
+      openModal(modal);
+    });
+    form?.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const id = form.id.value;
+      const payload = {
+        name: form.name.value,
+        code: form.code.value,
+        description: form.description.value || null,
+        amount_kobo: Math.round(Number(form.amount_naira.value) * 100),
+        checks_allowed: Number(form.checks_allowed.value || 1),
+        duration_days: form.duration_days.value ? Number(form.duration_days.value) : null,
+        is_active: !!form.is_active.checked
+      };
+      request(id ? "/api/v1/cbt/admin/result-checkers/products/" + id : "/api/v1/cbt/admin/result-checkers/products", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      }).then(function (result) {
+        if (!result.ok) return showAlert(firstError(result.body));
+        closeModal(modal);
+        showAlert("Product saved.", "info");
+        loadProducts();
+      });
+    });
+    loadStats();
+    loadProducts();
+    loadPurchases();
+  };
 })();

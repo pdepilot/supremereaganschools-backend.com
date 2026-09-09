@@ -38,6 +38,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'cbt.desk' => EnsureCbtDeskSession::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'payments/paystack/webhook',
+        ]);
+
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('cbt') || $request->is('cbt/*')) {
                 return route('cbt.login');

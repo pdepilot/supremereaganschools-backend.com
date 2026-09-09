@@ -41,4 +41,9 @@ class CbtResult extends Model
     {
         return $this->belongsTo(AssessmentScore::class);
     }
+
+    public function access(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CbtResultAccess::class, 'cbt_result_id');
+    }
 }

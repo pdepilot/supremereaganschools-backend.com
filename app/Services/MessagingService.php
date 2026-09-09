@@ -37,7 +37,21 @@ class MessagingService
     {
         $recipient = User::query()->find($attributes['recipient_id'] ?? null);
         if ($recipient === null || ! $this->access->canMessage($actor, $recipient)) {
-            throw new AuthorizationException;
+            throw ValidationException::withMessages([
+                'recipient_id' => 'Choose a valid recipient you are allowed to write to.',
+            ]);
+        }
+
+        if (blank($attributes['subject'] ?? null)) {
+            throw ValidationException::withMessages([
+                'subject' => 'A subject is required.',
+            ]);
+        }
+
+        if (blank($attributes['body'] ?? null)) {
+            throw ValidationException::withMessages([
+                'body' => 'A message is required.',
+            ]);
         }
 
         return DB::transaction(function () use ($attributes, $actor, $recipient) {

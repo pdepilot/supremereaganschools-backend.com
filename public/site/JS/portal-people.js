@@ -261,6 +261,7 @@
     const wing = pathWing();
     let rows = [];
     let offerings = [];
+    let classArms = [];
     let school = {};
     let viewing = null;
     let editingId = null;
@@ -715,17 +716,63 @@
 
     const fillOfferings = function (sessionId) {
       if (!formSelect) return;
+      const sessionKey = sessionId == null || sessionId === "" ? "" : String(sessionId);
       const live = offerings.filter(function (row) {
-        if (!row.is_active) return false;
-        if (sessionId && row.academic_session_id !== sessionId) return false;
+        if (row.is_active === false || row.is_active === 0 || row.is_active === "0") return false;
+        if (sessionKey && String(row.academic_session_id) !== sessionKey) return false;
         return true;
       });
-      const list = live.length ? live : offerings.filter(function (row) { return row.is_active; });
-      formSelect.innerHTML = '<option value="">No form yet</option>' + list.map(function (row) {
+      let list = live.length
+        ? live
+        : offerings.filter(function (row) {
+          return !(row.is_active === false || row.is_active === 0 || row.is_active === "0");
+        });
+
+      // Production fallback: classes/arms exist, but forms were not opened for the session yet.
+      if (!list.length && classArms.length && sessionKey) {
+        list = classArms.map(function (arm) {
+          return {
+            id: "arm-" + arm.id,
+            class_section_id: arm.id,
+            academic_session_id: sessionKey,
+            form: arm.name || arm.form || "Form",
+            campus: null,
+            is_active: true
+          };
+        });
+      }
+
+      if (!list.length) {
+        formSelect.innerHTML = '<option value="">No classes available</option>';
+        if (notice && !notice.textContent) {
+          notice.textContent = "No class forms are available for the current session. Open forms on Classes, or create class arms first.";
+        }
+        return;
+      }
+
+      formSelect.innerHTML = '<option value="">Select a form</option>' + list.map(function (row) {
         const label = (row.form || "Form") + (row.campus && row.campus.name ? " · " + row.campus.name : "");
-        return '<option value="' + row.id + '" data-section="' + row.class_section_id
-          + '" data-session="' + row.academic_session_id + '">' + escapeHtml(label) + "</option>";
+        return '<option value="' + escapeHtml(String(row.id)) + '" data-section="' + escapeHtml(String(row.class_section_id))
+          + '" data-session="' + escapeHtml(String(row.academic_session_id)) + '">' + escapeHtml(label) + "</option>";
       }).join("");
+    };
+
+    const flattenClassArms = function (classes) {
+      const arms = [];
+      (classes || []).forEach(function (klass) {
+        if (klass.is_active === false || klass.is_active === 0 || klass.is_active === "0") return;
+        (klass.sections || []).forEach(function (section) {
+          if (section.is_active === false || section.is_active === 0 || section.is_active === "0") return;
+          arms.push({
+            id: section.id,
+            name: section.name || ((klass.name || "Class") + (section.arm ? " " + section.arm : "")),
+            form: section.name || ((klass.name || "Class") + (section.arm ? " " + section.arm : "")),
+            school_class_id: klass.id,
+            level_id: klass.level_id
+          });
+        });
+      });
+      return arms;
     };
 
     const loadWingDesk = function () {
@@ -768,6 +815,7 @@
         request("/api/v1/school-settings"),
         request("/api/v1/class-section-offerings"),
         request("/api/v1/campuses"),
+        request("/api/v1/classes"),
         loadWingDesk()
       ]).then(function (results) {
         if (!results[0].ok) {
@@ -782,11 +830,17 @@
         rows = results[0].body.data || [];
         school = (results[1].ok && results[1].body.data) || {};
         offerings = (results[2].ok && results[2].body.data) || [];
+        if (!Array.isArray(offerings)) offerings = [];
         const campuses = (results[3].ok && results[3].body.data) || [];
+        classArms = flattenClassArms((results[4].ok && results[4].body.data) || []);
         const campus = campuses.find(function (row) { return row.is_active; }) || campuses[0];
         const session = school.current_academic_session || {};
         const sessionName = session.name || "";
         const campusName = campus && campus.name ? campus.name : "";
+
+        if (!results[2].ok && notice) {
+          notice.textContent = firstError(results[2].body) || "Could not load class forms.";
+        }
 
         if (copy && !wing) {
           copy.textContent = [sessionName, campusName].filter(Boolean).join(" · ") || "No session sealed yet";
@@ -794,7 +848,7 @@
         if (school.name && !wing) {
           document.title = "Pupils | " + school.name;
         }
-        fillOfferings(school.current_academic_session_id || null);
+        fillOfferings(school.current_academic_session_id || session.id || null);
         apply();
       });
     };

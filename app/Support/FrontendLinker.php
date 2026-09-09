@@ -195,10 +195,6 @@ class FrontendLinker
             return (string) preg_replace('/<\/body>/i', '  '.$tag."\n</body>", $html, 1);
         }
 
-        if (str_contains($html, 'portal-session.js')) {
-            return $html;
-        }
-
         $isDesk = str_contains($html, 'admin-command.js')
             || str_contains($html, 'data-logout')
             || str_contains($html, 'logout-link')
@@ -208,12 +204,24 @@ class FrontendLinker
             return $html;
         }
 
-        $tag = '<script src="/site/JS/portal-session.js"></script>';
+        $tags = [];
+        if (! str_contains($html, 'portal-session.js')) {
+            $tags[] = '<script src="/site/JS/portal-session.js"></script>';
+        }
+        if (! str_contains($html, 'portal-desk-bell.js')) {
+            $tags[] = '<script src="/site/JS/portal-desk-bell.js"></script>';
+        }
+
+        if ($tags === []) {
+            return $html;
+        }
+
+        $inject = implode("\n  ", $tags);
 
         if (preg_match('/<script\b[^>]*src=["\'][^"\']*admin-command\.js/i', $html) === 1) {
             $updated = preg_replace(
                 '/(<script\b[^>]*src=["\'][^"\']*admin-command\.js)/i',
-                $tag."\n  $1",
+                $inject."\n  $1",
                 $html,
                 1,
             );
@@ -222,15 +230,15 @@ class FrontendLinker
         }
 
         if (preg_match('/<script\b/i', $html) === 1) {
-            $updated = preg_replace('/<script\b/i', $tag."\n<script", $html, 1);
+            $updated = preg_replace('/<script\b/i', $inject."\n<script", $html, 1);
 
             return is_string($updated) ? $updated : $html;
         }
 
         if (str_contains($html, '</body>')) {
-            return (string) preg_replace('/<\/body>/i', '  '.$tag."\n</body>", $html, 1);
+            return (string) preg_replace('/<\/body>/i', '  '.$inject."\n</body>", $html, 1);
         }
 
-        return $html.$tag;
+        return $html.$inject;
     }
 }

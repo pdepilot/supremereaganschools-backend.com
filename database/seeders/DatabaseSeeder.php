@@ -19,13 +19,13 @@ class DatabaseSeeder extends Seeder
             AcademicStructureSeeder::class,
             PeopleSeeder::class,
             AttendanceSeeder::class,
-            FeesSeeder::class,
             AssessmentSeeder::class,
             AdmissionsSeeder::class,
             ClassroomSeeder::class,
             EmailTemplateSeeder::class,
             NewsInsightsSeeder::class,
             EventSeeder::class,
+            CbtResultCheckerSeeder::class,
         ]);
     }
 }

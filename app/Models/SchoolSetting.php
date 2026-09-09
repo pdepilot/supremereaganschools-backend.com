@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'cbt_login_email',
     'cbt_login_password',
     'cbt_operator_user_id',
+    'cbt_result_details_require_payment',
 ])]
 class SchoolSetting extends Model
 {
@@ -44,6 +45,7 @@ class SchoolSetting extends Model
         return [
             'founded_on' => 'date',
             'cbt_login_password' => 'hashed',
+            'cbt_result_details_require_payment' => 'boolean',
         ];
     }
 

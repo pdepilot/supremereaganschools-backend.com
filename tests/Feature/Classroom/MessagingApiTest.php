@@ -44,7 +44,9 @@ class MessagingApiTest extends TestCase
             'recipient_id' => $otherParent->id,
             'subject' => 'Hello',
             'body' => 'This should not send.',
-        ])->assertForbidden();
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['recipient_id']);
 
         $this->actingAs($teacher)->postJson('/api/v1/conversations', [
             'recipient_id' => $linkedParent->id,

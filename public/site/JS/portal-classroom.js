@@ -1322,14 +1322,32 @@
     if (compose) {
       compose.addEventListener("submit", function (event) {
         event.preventDefault();
+        const recipientId = Number((document.getElementById("composeRecipient") || {}).value || 0);
+        const subjectValue = String((document.getElementById("composeSubject") || {}).value || "").trim();
+        const bodyValue = String((document.getElementById("composeBody") || {}).value || "").trim();
+        if (!recipientId) {
+          window.alert("Choose who to write to.");
+          return;
+        }
+        if (!subjectValue) {
+          window.alert("Enter a subject.");
+          return;
+        }
+        if (!bodyValue) {
+          window.alert("Write the letter body before sending.");
+          return;
+        }
+        const submitBtn = compose.querySelector('[type="submit"], button:not([type="button"])');
+        if (submitBtn) submitBtn.disabled = true;
         request("/api/v1/conversations", {
           method: "POST",
           body: JSON.stringify({
-            recipient_id: Number(document.getElementById("composeRecipient").value),
-            subject: document.getElementById("composeSubject").value,
-            body: document.getElementById("composeBody").value
+            recipient_id: recipientId,
+            subject: subjectValue,
+            body: bodyValue
           })
         }).then(function (result) {
+          if (submitBtn) submitBtn.disabled = false;
           if (!result.ok) {
             window.alert(firstError(result.body));
             return;
@@ -1339,6 +1357,12 @@
           refreshList().then(function () {
             if (created.id) openConversation(created.id);
           });
+          if (window.SrsDeskBell && typeof window.SrsDeskBell.refresh === "function") {
+            window.SrsDeskBell.refresh();
+          }
+        }).catch(function () {
+          if (submitBtn) submitBtn.disabled = false;
+          window.alert("Could not send the letter. Check your connection and try again.");
         });
       }, true);
     }

@@ -15,6 +15,7 @@ use App\Services\Cbt\CbtExamPublishService;
 use App\Services\Cbt\CbtExamService;
 use App\Services\Cbt\CbtExamSnapshotService;
 use App\Services\Cbt\CbtQuestionBankService;
+use Illuminate\Support\Str;
 
 trait CreatesCbtContext
 {
@@ -73,7 +74,7 @@ trait CreatesCbtContext
         $offering = $this->offering($section, $session, $campus);
         $subject = $this->subject([
             'name' => 'Subject '.random_int(10000, 99999),
-            'code' => 'SUB-'.random_int(1000, 9999),
+            'code' => 'SUB-'.Str::upper(Str::random(6)),
         ]);
         $student = $this->student();
         $this->enroll($student, $offering);

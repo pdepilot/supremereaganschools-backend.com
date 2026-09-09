@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paystack Test Payment | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#16324f; --muted:#5b6b7c; --line:#d7e0ea; --bg:#f4f7fb; --accent:#0f6cbd; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Montserrat, sans-serif; background:linear-gradient(160deg,#eef4fb,#f8fafc 45%,#e8f1f8); color:var(--ink); min-height:100vh; }
+    .wrap { max-width:440px; margin:4rem auto; padding:1.5rem; }
+    .panel { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1.75rem; box-shadow:0 10px 30px rgba(22,50,79,.06); }
+    h1 { margin:0 0 .35rem; font-size:1.35rem; }
+    p { margin:0 0 1.25rem; color:var(--muted); font-size:.92rem; line-height:1.5; }
+    .amount { font-size:1.8rem; font-weight:700; margin-bottom:1.25rem; }
+    button { width:100%; border:0; border-radius:10px; background:var(--accent); color:#fff; font:inherit; font-weight:600; padding:.9rem 1rem; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    .alert { display:none; margin-bottom:1rem; padding:.75rem .9rem; border-radius:10px; background:#fff4e5; color:#8a4b08; font-size:.88rem; }
+    .alert.is-visible { display:block; }
+    .meta { margin-top:1rem; font-size:.8rem; color:var(--muted); word-break:break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>Paystack Test Payment</h1>
+      <p>Phase 8A development checkout. Amount is fixed by the server and cannot be changed from the browser.</p>
+      <div class="alert" data-alert></div>
+      <div class="amount" data-amount>Loading…</div>
+      <button type="button" data-pay>Pay Now</button>
+      <div class="meta" data-meta></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const alertEl = document.querySelector('[data-alert]');
+      const amountEl = document.querySelector('[data-amount]');
+      const metaEl = document.querySelector('[data-meta]');
+      const payBtn = document.querySelector('[data-pay]');
+      const show = function (msg) { alertEl.textContent = msg; alertEl.classList.add('is-visible'); };
+      const csrf = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      };
+      if (csrf) headers['X-XSRF-TOKEN'] = decodeURIComponent(csrf[1]);
+
+      fetch('/api/v1/payments/test/bootstrap', { headers: headers, credentials: 'same-origin' })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (res) {
+          if (!res.ok) throw new Error((res.body && res.body.message) || 'Unable to load test payment.');
+          amountEl.textContent = res.body.data.amount_label + ' (' + res.body.data.currency + ')';
+          metaEl.textContent = 'Test mode · public key present: ' + (res.body.data.paystack_public_key ? 'yes' : 'no');
+        })
+        .catch(function (err) { show(err.message); payBtn.disabled = true; });
+
+      payBtn.addEventListener('click', function () {
+        payBtn.disabled = true;
+        fetch('/api/v1/payments/test/initialize', {
+          method: 'POST',
+          headers: headers,
+          credentials: 'same-origin',
+          body: JSON.stringify({ amount: 100 })
+        })
+          .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+          .then(function (res) {
+            if (!res.ok) throw new Error((res.body && res.body.message) || 'Unable to start checkout.');
+            const url = res.body.data.authorization_url;
+            if (!url) throw new Error('Checkout URL missing.');
+            window.location.href = url;
+          })
+          .catch(function (err) { show(err.message); payBtn.disabled = false; });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -19,6 +19,7 @@ use App\Models\StudentProfile;
 use App\Models\Subject;
 use App\Models\Term;
 use App\Services\Cbt\CbtAccessService;
+use App\Services\Cbt\CbtOperationalReportingService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,7 +27,10 @@ use Illuminate\Support\Facades\Schema;
 
 class CbtAdminController extends Controller
 {
-    public function __construct(private readonly CbtAccessService $access) {}
+    public function __construct(
+        private readonly CbtAccessService $access,
+        private readonly CbtOperationalReportingService $ops,
+    ) {}
 
     public function entry(Request $request): JsonResponse
     {
@@ -44,20 +48,15 @@ class CbtAdminController extends Controller
             );
         }
 
+        $canOps = $this->access->canManage($user) || $this->access->canMark($user);
+
         return ApiResponse::success('CBT admin entry.', [
             'capabilities' => [
                 'manage' => $this->access->canManage($user),
                 'mark' => $this->access->canMark($user),
                 'proctor' => $this->access->canProctor($user),
             ],
-            'summary' => $this->access->canManage($user) || $this->access->canMark($user) ? [
-                'questions' => CbtQuestion::query()->count(),
-                'draft_exams' => CbtExam::query()->where('status', CbtExamStatus::Draft)->count(),
-                'published_exams' => CbtExam::query()->where('status', CbtExamStatus::Published)->count(),
-                'attempts' => CbtAttempt::query()->count(),
-                'submitted_attempts' => CbtAttempt::query()->where('status', CbtAttemptStatus::Submitted)->count(),
-                'results' => CbtResult::query()->count(),
-            ] : null,
+            'summary' => $canOps ? $this->ops->dashboardSummary() : null,
         ]);
     }
 
@@ -129,7 +128,12 @@ class CbtAdminController extends Controller
         $this->authorize('viewAdmin', CbtResult::class);
 
         $rows = CbtResult::query()
-            ->with(['attempt.exam.subject', 'attempt.studentProfile', 'attempt.user'])
+            ->with([
+                'attempt.exam.subject',
+                'attempt.studentProfile',
+                'attempt.user',
+                'access.onlinePayment',
+            ])
             ->when($request->filled('exam_id'), fn ($q) => $q->whereHas('attempt', fn ($a) => $a->where('exam_id', (int) $request->input('exam_id'))))
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->string('q').'%';
@@ -144,6 +148,7 @@ class CbtAdminController extends Controller
         $items = $rows->getCollection()->map(function (CbtResult $result) {
             $base = (new CbtResultResource($result))->resolve();
             $attempt = $result->attempt;
+            $access = $result->access;
 
             return array_merge($base, [
                 'exam_id' => $attempt?->exam_id,
@@ -154,6 +159,11 @@ class CbtAdminController extends Controller
                 'attempt_status' => $attempt?->status?->value,
                 'started_at' => optional($attempt?->started_at)?->toIso8601String(),
                 'submitted_at' => optional($attempt?->submitted_at)?->toIso8601String(),
+                'result_checker_unlocked' => $access !== null && $access->revoked_at === null,
+                'result_checker_granted_at' => optional($access?->granted_at)?->toIso8601String(),
+                'result_checker_payment_reference' => $access?->onlinePayment?->reference,
+                'result_checker_payment_status' => $access?->onlinePayment?->status?->value,
+                'result_checker_paid_at' => optional($access?->onlinePayment?->paid_at)?->toIso8601String(),
             ]);
         })->values()->all();
 

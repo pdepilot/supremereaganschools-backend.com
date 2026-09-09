@@ -47,6 +47,7 @@ use App\Models\FeeStructure;
 use App\Models\FeeType;
 use App\Models\Invoice;
 use App\Models\LearningMaterial;
+use App\Models\OnlinePayment;
 use App\Models\OutboundMail;
 use App\Models\Payment;
 use App\Models\Post;
@@ -66,20 +67,27 @@ use App\Policies\FeeStructurePolicy;
 use App\Policies\FeeTypePolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\LearningMaterialPolicy;
+use App\Policies\OnlinePaymentPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PostCategoryPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\PostPolicy;
 use App\Policies\PostTagPolicy;
+use App\Policies\TimetableSlotPolicy;
 use App\Models\CbtAttempt;
 use App\Models\CbtExam;
 use App\Models\CbtQuestion;
 use App\Models\CbtResult;
+use App\Models\CbtResultProduct;
 use App\Policies\CbtAttemptPolicy;
 use App\Policies\CbtExamPolicy;
 use App\Policies\CbtQuestionPolicy;
 use App\Policies\CbtResultPolicy;
+use App\Policies\CbtResultProductPolicy;
+use App\Events\OnlinePaymentSettled;
+use App\Listeners\ActivateCbtResultCheckerOnPayment;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -93,6 +101,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         JsonResource::withoutWrapping();
+
+        EventFacade::listen(OnlinePaymentSettled::class, ActivateCbtResultCheckerOnPayment::class);
 
         Gate::before(function ($user, string $ability) {
             if ($user instanceof User && $user->hasRole(RoleSlug::SuperAdmin)) {
@@ -133,6 +143,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(FeeStructure::class, FeeStructurePolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(Payment::class, PaymentPolicy::class);
+        Gate::policy(OnlinePayment::class, OnlinePaymentPolicy::class);
         Gate::policy(ContactEnquiry::class, ContactEnquiryPolicy::class);
         Gate::policy(AdmissionApplication::class, AdmissionApplicationPolicy::class);
         Gate::policy(Document::class, DocumentPolicy::class);
@@ -153,5 +164,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CbtAttempt::class, CbtAttemptPolicy::class);
         Gate::policy(CbtResult::class, CbtResultPolicy::class);
         Gate::policy(CbtQuestion::class, CbtQuestionPolicy::class);
+        Gate::policy(CbtResultProduct::class, CbtResultProductPolicy::class);
     }
 }

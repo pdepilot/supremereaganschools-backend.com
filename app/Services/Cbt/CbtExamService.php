@@ -104,6 +104,61 @@ class CbtExamService
         return $exam->fresh() ?? $exam;
     }
 
+    /**
+     * Adjust schedule/duration on a published exam for future attempts only.
+     * Does not rewrite in-progress attempt timers (use extendTimersForExam for that).
+     *
+     * @param  array{duration_minutes?: int, starts_at?: mixed, ends_at?: mixed, is_active?: bool}  $attributes
+     */
+    public function updateSchedule(CbtExam $exam, array $attributes): CbtExam
+    {
+        if ($exam->status === CbtExamStatus::Archived) {
+            throw ValidationException::withMessages([
+                'exam' => 'Archived exams cannot have their schedule changed.',
+            ]);
+        }
+
+        if ($exam->status !== CbtExamStatus::Published && $exam->status !== CbtExamStatus::Draft) {
+            throw ValidationException::withMessages([
+                'exam' => 'Only draft or published exams can have schedule updates.',
+            ]);
+        }
+
+        $payload = [];
+
+        if (array_key_exists('duration_minutes', $attributes)) {
+            $duration = (int) $attributes['duration_minutes'];
+            if ($duration <= 0) {
+                throw ValidationException::withMessages([
+                    'duration_minutes' => 'Exam duration must be greater than zero.',
+                ]);
+            }
+            $payload['duration_minutes'] = $duration;
+        }
+
+        if (array_key_exists('starts_at', $attributes)) {
+            $payload['starts_at'] = $attributes['starts_at'];
+        }
+
+        if (array_key_exists('ends_at', $attributes)) {
+            $payload['ends_at'] = $attributes['ends_at'];
+        }
+
+        if (array_key_exists('is_active', $attributes)) {
+            $payload['is_active'] = (bool) $attributes['is_active'];
+        }
+
+        if ($payload === []) {
+            throw ValidationException::withMessages([
+                'exam' => 'No schedule fields were provided.',
+            ]);
+        }
+
+        $exam->update($payload);
+
+        return $exam->fresh() ?? $exam;
+    }
+
     public function archive(CbtExam $exam): CbtExam
     {
         if ($exam->status === CbtExamStatus::Draft) {

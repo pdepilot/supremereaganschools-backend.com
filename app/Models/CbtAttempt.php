@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'started_at',
     'ends_at',
     'submitted_at',
+    'submission_reason',
     'client_submitted_at',
     'ip_address',
 ])]
@@ -78,5 +79,10 @@ class CbtAttempt extends Model
     public function syncLogs(): HasMany
     {
         return $this->hasMany(CbtSyncLog::class, 'attempt_id');
+    }
+
+    public function integrityEvents(): HasMany
+    {
+        return $this->hasMany(CbtExamIntegrityEvent::class, 'attempt_id');
     }
 }

@@ -95,6 +95,15 @@ ul {
   overflow-y: auto;
 }
 
+/* Parent/pupil desk: more breathing room between rail links */
+.pupil-house .rail-nav {
+  gap: 0.9rem;
+}
+
+.pupil-house .rail-btn {
+  min-height: 48px;
+}
+
 .rail-btn {
   width: 100%;
   min-height: 42px;
@@ -242,6 +251,11 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.hero-top .desk-bell-cluster {
+  position: relative;
+  z-index: 4;
 }
 
 .hero-brand {
@@ -1058,6 +1072,14 @@ ul {
     gap: 0.45rem;
   }
 
+  .pupil-house .rail-nav {
+    gap: 0.7rem;
+  }
+
+  .pupil-house .rail-btn {
+    min-height: 0;
+  }
+
   .rail-nav::-webkit-scrollbar {
     display: none;
   }
@@ -1186,6 +1208,156 @@ ul {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.desk-bell {
+  position: relative;
+  z-index: 5;
+  flex: 0 0 auto;
+}
+
+.desk-bell-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.desk-bell-toggle {
+  position: relative;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(12, 22, 58, 0.28);
+  color: #f4efe4;
+  cursor: pointer;
+}
+
+.desk-bell-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.desk-bell-badge {
+  position: absolute;
+  top: -0.15rem;
+  right: -0.15rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: #a11f2e;
+  color: #fff;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15rem;
+  text-align: center;
+}
+
+.desk-bell-panel {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(24rem, 70vh);
+  overflow: auto;
+  border: 1px solid rgba(36, 58, 143, 0.18);
+  border-radius: 0.9rem;
+  background: #f7f4ee;
+  color: #1c2340;
+  box-shadow: 0 18px 40px rgba(18, 28, 68, 0.22);
+}
+
+.desk-bell.is-open .desk-bell-panel {
+  display: block;
+}
+
+.desk-bell-panel[hidden] {
+  display: none !important;
+}
+
+.desk-bell-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 0.55rem;
+  border-bottom: 1px solid rgba(28, 35, 64, 0.08);
+}
+
+.desk-bell-head strong {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.desk-bell-mark {
+  border: 0;
+  background: transparent;
+  color: #243a8f;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.desk-bell-list {
+  display: grid;
+}
+
+.desk-bell-empty {
+  margin: 0;
+  padding: 1.1rem 1rem;
+  color: #667089;
+  font-size: 0.88rem;
+}
+
+.desk-bell-item {
+  display: grid;
+  gap: 0.28rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid rgba(28, 35, 64, 0.08);
+  background: transparent;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.desk-bell-item:hover {
+  background: rgba(36, 58, 143, 0.06);
+}
+
+.desk-bell-item.is-unread {
+  background: rgba(161, 31, 46, 0.06);
+}
+
+.desk-bell-item strong {
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.desk-bell-item span {
+  color: #4c556f;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.desk-bell-item em {
+  font-style: normal;
+  color: #8891a6;
+  font-size: 0.72rem;
 }
 
 .stage-head.compact h1 {

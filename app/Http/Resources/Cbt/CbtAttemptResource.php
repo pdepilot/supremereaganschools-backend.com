@@ -32,6 +32,7 @@ class CbtAttemptResource extends JsonResource
             'started_at' => optional($attempt->started_at)?->toIso8601String(),
             'ends_at' => optional($attempt->ends_at)?->toIso8601String(),
             'submitted_at' => optional($attempt->submitted_at)?->toIso8601String(),
+            'submission_reason' => $attempt->submission_reason,
             'server_now' => $now->toIso8601String(),
             'seconds_remaining' => $secondsRemaining,
             'answers' => $attempt->answers->map(fn ($answer) => [

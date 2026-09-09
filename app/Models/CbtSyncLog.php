@@ -10,9 +10,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
+    'event_id',
     'attempt_id',
     'user_id',
     'direction',
+    'protocol',
+    'batch_id',
     'payload_hash',
     'status',
     'message',

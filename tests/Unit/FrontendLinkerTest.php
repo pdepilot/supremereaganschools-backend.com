@@ -73,11 +73,51 @@ HTML, 'public');
 HTML, 'admin');
 
         $this->assertStringContainsString('src="/site/JS/portal-session.js"', $html);
+        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $html);
         $this->assertStringContainsString('src="/site/JS/admin-command.js"', $html);
         $this->assertLessThan(
             strpos($html, 'admin-command.js'),
             strpos($html, 'portal-session.js'),
         );
+        $this->assertLessThan(
+            strpos($html, 'admin-command.js'),
+            strpos($html, 'portal-desk-bell.js'),
+        );
+    }
+
+    public function test_injects_notification_bell_on_parent_desk_pages(): void
+    {
+        $html = (new FrontendLinker)->rewrite(<<<'HTML'
+<body class="faculty-house pupil-house" data-page="parent_messages">
+  <a data-logout href="#">Log out</a>
+  <script src="../JS/portal-parent-pages.js"></script>
+</body>
+HTML, 'parent');
+
+        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $html);
+        $this->assertStringContainsString('src="/site/JS/portal-session.js"', $html);
+    }
+
+    public function test_injects_notification_bell_on_staff_and_student_home_desks(): void
+    {
+        $staff = (new FrontendLinker)->rewrite(<<<'HTML'
+<body class="faculty-house" data-page="staff-desk">
+  <header class="hero"><div class="hero-top"><div class="live-pill"></div></div></header>
+  <a data-logout href="#">Log out</a>
+  <script src="../JS/portal-staff-desk.js"></script>
+</body>
+HTML, 'staff');
+
+        $student = (new FrontendLinker)->rewrite(<<<'HTML'
+<body class="faculty-house pupil-house" data-page="student-desk">
+  <header class="hero"><div class="hero-top"><div class="live-pill"></div></div></header>
+  <a data-logout href="#">Log out</a>
+  <script src="../JS/portal-student-desk.js"></script>
+</body>
+HTML, 'student');
+
+        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $staff);
+        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $student);
     }
 
     public function test_session_lifetime_defaults_to_fifteen_minutes(): void

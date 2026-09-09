@@ -124,12 +124,20 @@ class CbtStudentExperienceTest extends TestCase
             ->assertOk()
             ->json('data');
 
-        $this->assertSame('100.00', $result['percentage']);
+        $this->assertTrue($result['result_available'] ?? true);
+        $this->assertFalse($result['details_unlocked']);
+        $this->assertNull($result['percentage']);
         $this->assertArrayHasKey('exam_title', $result);
 
         $history = $this->actingAsCbt($user)->getJson('/api/v1/cbt/results')->assertOk()->json('data.results');
         $this->assertCount(1, $history);
         $this->assertSame($result['id'], $history[0]['id']);
+        $this->assertFalse($history[0]['details_unlocked']);
+        $this->assertNull($history[0]['score']);
+
+        $this->settings(['cbt_result_details_require_payment' => false]);
+        $unlocked = $this->actingAsCbt($user)->getJson('/api/v1/cbt/results/'.$result['id'].'/detailed')->assertOk()->json('data.result');
+        $this->assertSame('100.00', $unlocked['percentage']);
 
         $this->actingAsCbt($user)->getJson('/api/v1/cbt/attempts/'.$attemptId)
             ->assertOk()

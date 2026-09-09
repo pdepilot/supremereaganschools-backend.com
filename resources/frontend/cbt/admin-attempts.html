@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT attempts | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/CSS/cbt.css">
+</head>
+<body class="cbt-app cbt-admin" data-cbt-admin-page="attempts">
+  <div class="cbt-shell cbt-shell-wide">
+    <header class="cbt-top">
+      <div class="cbt-brand">
+        <img src="/site/Image/logo_main.png" alt="">
+        <div>
+          <strong>Attempt monitoring</strong>
+          <span data-cbt-admin-user>Loading…</span>
+        </div>
+      </div>
+      <nav class="cbt-nav" data-cbt-admin-nav>
+        <a href="/cbt/admin">Dashboard</a>
+        <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
+        <a href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/monitor">Monitor</a>
+        <a class="is-active" href="/cbt/admin/attempts">Attempts</a>
+        <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/admin/reports">Reports</a>
+        <a href="/cbt/admin/result-checkers" data-manage-only>Result Checkers</a>
+        <a href="/cbt/logout" data-cbt-logout>Sign out</a>
+      </nav>
+    </header>
+    <div class="cbt-alert" data-cbt-alert></div>
+    <section class="cbt-panel">
+      <form class="cbt-toolbar" data-attempts-filters>
+        <input name="exam_id" placeholder="Exam ID">
+        <input name="student_id" placeholder="Student ID">
+        <select name="status">
+          <option value="">All statuses</option>
+          <option value="in_progress">In progress</option>
+          <option value="submitted">Submitted</option>
+          <option value="expired">Expired</option>
+          <option value="abandoned">Abandoned</option>
+        </select>
+        <button type="submit" class="cbt-btn">Filter</button>
+      </form>
+      <div class="cbt-table-wrap">
+        <table class="cbt-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Exam</th>
+              <th>Status</th>
+              <th>Started</th>
+              <th>Ends</th>
+              <th>Submitted</th>
+              <th>Reason</th>
+              <th>Score</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody data-attempts-rows><tr><td colspan="9">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="cbt-pager" data-attempts-pager></div>
+    </section>
+  </div>
+  <script src="/site/JS/portal-cbt-admin.js"></script>
+</body>
+</html>

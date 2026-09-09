@@ -167,6 +167,39 @@ class StudentApiTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_admin_can_register_pupil_into_class_arm_without_preopened_form(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $this->campus();
+        $section = $this->section();
+
+        $this->assertDatabaseMissing('class_section_offerings', [
+            'class_section_id' => $section->id,
+            'academic_session_id' => $session->id,
+        ]);
+
+        $this->registerPupil([
+            'admission_number' => 'SRS/2026/0101',
+            'surname' => 'Okoro',
+            'first_name' => 'Ifeoma',
+            'gender' => Gender::Female->value,
+            'class_section_id' => $section->id,
+            'academic_session_id' => $session->id,
+        ], $admin)->assertCreated();
+
+        $student = StudentProfile::query()->where('admission_number', 'SRS/2026/0101')->firstOrFail();
+        $this->assertDatabaseHas('class_section_offerings', [
+            'class_section_id' => $section->id,
+            'academic_session_id' => $session->id,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('enrollments', [
+            'student_profile_id' => $student->id,
+            'academic_session_id' => $session->id,
+        ]);
+    }
+
     public function test_admin_can_view_a_registered_pupil_record(): void
     {
         $admin = $this->admin();

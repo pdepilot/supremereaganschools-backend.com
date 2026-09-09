@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Status | Supreme Reagan Schools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#16324f; --muted:#5b6b7c; --line:#d7e0ea; --accent:#0f6cbd; }
+    body { margin:0; font-family: Montserrat, sans-serif; background:#f4f7fb; color:var(--ink); }
+    .wrap { max-width:480px; margin:4rem auto; padding:1.5rem; }
+    .panel { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1.75rem; }
+    h1 { margin:0 0 .5rem; font-size:1.25rem; }
+    p, .meta { color:var(--muted); font-size:.92rem; line-height:1.5; }
+    .status { font-size:1.1rem; font-weight:700; margin:1rem 0; }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>Payment status</h1>
+      <p>Browser return URLs are not trusted. Status below comes from server-side verification.</p>
+      <div class="status" data-status>Checking…</div>
+      <div class="meta" data-meta></div>
+      <p style="margin-top:1.25rem;"><a href="/payments/test">Back to test payment</a></p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const reference = params.get('reference') || '';
+      const hint = params.get('status') || '';
+      const statusEl = document.querySelector('[data-status]');
+      const metaEl = document.querySelector('[data-meta]');
+      if (!reference) {
+        statusEl.textContent = 'Payment reference missing.';
+        return;
+      }
+      metaEl.textContent = 'Reference: ' + reference + (hint ? ' · callback hint: ' + hint + ' (ignored for settlement)' : '');
+      const csrf = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+      const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+      if (csrf) headers['X-XSRF-TOKEN'] = decodeURIComponent(csrf[1]);
+      fetch('/api/v1/payments/transactions/' + encodeURIComponent(reference) + '/verify', {
+        method: 'POST', headers: headers, credentials: 'same-origin', body: '{}'
+      })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (res) {
+          const payment = res.body && res.body.data && res.body.data.payment;
+          if (!res.ok || !payment) {
+            statusEl.textContent = 'Payment status is being confirmed.';
+            return;
+          }
+          if (payment.status === 'paid') statusEl.textContent = 'Payment verified as paid.';
+          else if (payment.status === 'failed' || payment.status === 'cancelled') statusEl.textContent = 'Payment was not successful.';
+          else statusEl.textContent = 'Payment status is being confirmed.';
+          metaEl.textContent += ' · ' + (payment.amount_label || '') + ' · ' + (payment.status || '');
+        })
+        .catch(function () { statusEl.textContent = 'Payment status is being confirmed.'; });
+    })();
+  </script>
+</body>
+</html>

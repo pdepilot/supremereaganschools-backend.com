@@ -23,7 +23,11 @@
         <a class="is-active" href="/cbt/admin">Dashboard</a>
         <a href="/cbt/admin/questions" data-manage-only>Question bank</a>
         <a href="/cbt/admin/exams">Exams</a>
+        <a href="/cbt/admin/monitor">Monitor</a>
+        <a href="/cbt/admin/attempts">Attempts</a>
         <a href="/cbt/admin/results">Results</a>
+        <a href="/cbt/admin/reports">Reports</a>
+        <a href="/cbt/admin/result-checkers" data-manage-only>Result Checkers</a>
         <a href="/cbt/logout" data-cbt-logout>Sign out</a>
       </nav>
     </header>
@@ -31,16 +35,24 @@
     <div class="cbt-alert" data-cbt-alert></div>
 
     <section class="cbt-panel">
-      <h1>Examination lifecycle</h1>
-      <p class="cbt-lede">Question bank → draft exam → attach snapshots → assign → preview → publish/freeze → monitor results.</p>
+      <h1>Examination operations</h1>
+      <p class="cbt-lede">Live participation, results, and Result Checker status for Examination Officers.</p>
       <div class="cbt-stat-grid" data-cbt-admin-summary>
         <div class="cbt-empty">Loading summary…</div>
       </div>
       <div class="cbt-actions" style="margin-top:1rem">
-        <a class="cbt-btn cbt-btn-primary" href="/cbt/admin/questions" data-manage-only>Manage questions</a>
-        <a class="cbt-btn" href="/cbt/admin/exams">Manage exams</a>
-        <a class="cbt-btn" href="/cbt/admin/results">View results</a>
+        <a class="cbt-btn cbt-btn-primary" href="/cbt/admin/monitor">Active monitor</a>
+        <a class="cbt-btn" href="/cbt/admin/attempts">Attempts</a>
+        <a class="cbt-btn" href="/cbt/admin/reports">Reports</a>
+        <a class="cbt-btn" href="/cbt/admin/results">Results</a>
+        <a class="cbt-btn" href="/cbt/admin/exams">Exams</a>
+        <a class="cbt-btn" href="/cbt/admin/questions" data-manage-only>Questions</a>
       </div>
+    </section>
+
+    <section class="cbt-panel" data-rc-dashboard>
+      <h2>Result Checker</h2>
+      <div class="cbt-stat-grid" data-cbt-rc-summary></div>
     </section>
 
     <section class="cbt-panel" data-manage-only>

@@ -3,6 +3,7 @@
 namespace App\Services\Cbt;
 
 use App\Enums\CbtAttemptStatus;
+use App\Enums\CbtSubmissionReason;
 use App\Enums\CbtSyncStatus;
 use App\Models\CbtAttempt;
 use App\Models\CbtResult;
@@ -20,7 +21,7 @@ class CbtSubmissionService
     ) {}
 
     /**
-     * @param  array{client_submitted_at?: mixed, reason?: string}  $options
+     * @param  array{client_submitted_at?: mixed, reason?: string|CbtSubmissionReason|null}  $options
      */
     public function submit(CbtAttempt $attempt, User $user, array $options = []): CbtResult
     {
@@ -71,6 +72,7 @@ class CbtSubmissionService
             $attempt->update([
                 'status' => CbtAttemptStatus::Submitted,
                 'submitted_at' => $submittedAt,
+                'submission_reason' => $this->resolveReason($options['reason'] ?? null)->value,
                 'client_submitted_at' => $options['client_submitted_at'] ?? $attempt->client_submitted_at,
                 'sync_status' => CbtSyncStatus::Synced,
             ]);
@@ -79,5 +81,18 @@ class CbtSubmissionService
 
             return $result->fresh(['attempt', 'assessmentScore']) ?? $result;
         });
+    }
+
+    private function resolveReason(mixed $reason): CbtSubmissionReason
+    {
+        if ($reason instanceof CbtSubmissionReason) {
+            return $reason;
+        }
+
+        if (is_string($reason) && $reason !== '') {
+            return CbtSubmissionReason::tryFrom($reason) ?? CbtSubmissionReason::StudentManual;
+        }
+
+        return CbtSubmissionReason::StudentManual;
     }
 }

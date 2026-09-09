@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'paystack' => [
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
+        'currency' => env('PAYSTACK_CURRENCY', 'NGN'),
+        'callback_url' => env('PAYSTACK_CALLBACK_URL'),
+        'webhook_secret' => env('PAYSTACK_SECRET_KEY'),
+        'test_amount_kobo' => (int) env('PAYSTACK_TEST_AMOUNT_KOBO', 10000),
+        'test_payments_enabled' => (bool) env('PAYSTACK_TEST_PAYMENTS_ENABLED', false),
+    ],
+
+    'cbt_result_checker' => [
+        'amount_kobo' => (int) env('CBT_RESULT_CHECKER_AMOUNT_KOBO', 50000),
+        'currency' => env('CBT_RESULT_CHECKER_CURRENCY', env('PAYSTACK_CURRENCY', 'NGN')),
+    ],
+
 ];
