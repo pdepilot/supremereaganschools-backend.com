@@ -161,6 +161,9 @@
     document.querySelectorAll('[data-lookup="classes"]').forEach(function (el) {
       fillSelect(el, lookups.classes, "id", "name", el.querySelector('option[value=""]') != null || !el.required);
     });
+    document.querySelectorAll('[data-lookup="forms"]').forEach(function (el) {
+      fillSelect(el, lookups.forms || [], "id", "name", el.querySelector('option[value=""]') != null || !el.required);
+    });
     document.querySelectorAll('[data-lookup="offerings"]').forEach(function (el) {
       fillSelect(el, lookups.offerings, "id", "label", el.querySelector('option[value=""]') != null || !el.required);
     });

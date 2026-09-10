@@ -74,6 +74,24 @@ class ClassSectionOfferingSeeder extends Seeder
             'Igbo',
         ]);
 
+        $nursery2Subjects = $this->subjectIds([
+            'Discover Numeracy',
+            'Discover Literacy',
+            'Discover Me',
+            'Numeracy Thinking',
+            'Literacy Thinking',
+            'Computer',
+            'Christian Religious Studies',
+            'Igbo',
+            'Health Habit',
+            'Social Habit',
+            'Calligraphy',
+            'Colouring',
+            'Diction',
+            'Literature',
+            'Writing',
+        ]);
+
         $nursery3Subjects = $this->subjectIds([
             'Discover Numeracy',
             'Discover Literacy',
@@ -96,6 +114,7 @@ class ClassSectionOfferingSeeder extends Seeder
         $byForm = [
             'activity' => $this->subjectIds(['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music']),
             'nursery' => $this->subjectIds(['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music', 'Diction']),
+            'nursery-2' => $nursery2Subjects,
             'nursery-3' => $nursery3Subjects,
             'basic-1-3' => $basicLowerSubjects,
             'basic-4-5' => $basicUpperSubjects,
@@ -151,6 +170,10 @@ class ClassSectionOfferingSeeder extends Seeder
      */
     private function subjectsForClass(string $className, ?string $levelSlug, array $byForm): Collection
     {
+        if (preg_match('/^Nursery\s+2\b/i', $className) === 1) {
+            return $byForm['nursery-2'];
+        }
+
         if (preg_match('/^Nursery\s+3\b/i', $className) === 1) {
             return $byForm['nursery-3'];
         }

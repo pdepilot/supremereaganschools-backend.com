@@ -13,6 +13,7 @@ use App\Models\CbtAttempt;
 use App\Models\CbtExam;
 use App\Models\CbtQuestion;
 use App\Models\CbtResult;
+use App\Models\ClassSection;
 use App\Models\ClassSectionOffering;
 use App\Models\SchoolClass;
 use App\Models\StudentProfile;
@@ -68,24 +69,56 @@ class CbtAdminController extends Controller
         );
 
         return ApiResponse::success('CBT admin lookups.', [
-            'subjects' => Subject::query()->orderBy('name')->get(['id', 'name', 'code']),
-            'classes' => SchoolClass::query()->orderBy('name')->get(['id', 'name']),
+            'subjects' => Subject::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
+            // School year-group for question bank (e.g. Nursery 2, Basic 1).
+            'classes' => SchoolClass::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            // The 18 named form groups (e.g. Nursery 2 – Awesome).
+            'forms' => ClassSection::query()
+                ->where('is_active', true)
+                ->whereHas('schoolClass', fn ($q) => $q->where('is_active', true))
+                ->with('schoolClass:id,name,sort_order')
+                ->get()
+                ->sortBy([
+                    fn (ClassSection $row) => (int) ($row->schoolClass?->sort_order ?? 0),
+                    fn (ClassSection $row) => (string) $row->name,
+                ])
+                ->values()
+                ->map(fn (ClassSection $row) => [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                    'school_class_id' => $row->school_class_id,
+                    'school_class' => $row->schoolClass?->name,
+                ])
+                ->all(),
             'academic_sessions' => AcademicSession::query()->orderByDesc('id')->get(['id', 'name', 'status']),
             'terms' => Term::query()
                 ->orderByDesc('id')
                 ->get(['id', 'name', 'academic_session_id']),
+            // Session openings of the 18 forms — used to assign CBT exams.
             'offerings' => ClassSectionOffering::query()
+                ->where('is_active', true)
                 ->with(['classSection.schoolClass', 'academicSession'])
-                ->orderByDesc('id')
-                ->limit(300)
+                ->whereHas('classSection', fn ($q) => $q->where('is_active', true))
+                ->whereHas('classSection.schoolClass', fn ($q) => $q->where('is_active', true))
                 ->get()
+                ->sortBy([
+                    fn (ClassSectionOffering $row) => (int) ($row->classSection?->schoolClass?->sort_order ?? 0),
+                    fn (ClassSectionOffering $row) => (string) ($row->classSection?->name ?? ''),
+                    fn (ClassSectionOffering $row) => (string) ($row->academicSession?->name ?? ''),
+                ])
+                ->values()
                 ->map(fn (ClassSectionOffering $row) => [
                     'id' => $row->id,
-                    'label' => trim(($row->classSection?->schoolClass?->name ?? 'Class').' / '.($row->classSection?->name ?? 'Section').' · '.($row->academicSession?->name ?? '')),
+                    'label' => trim(
+                        ($row->classSection?->name ?? 'Form')
+                        .( $row->academicSession?->name ? ' · '.$row->academicSession->name : '')
+                    ),
+                    'form' => $row->classSection?->name,
                     'class_section_id' => $row->class_section_id,
                     'school_class_id' => $row->classSection?->school_class_id,
                     'academic_session_id' => $row->academic_session_id,
-                ])->values()->all(),
+                ])
+                ->all(),
             'difficulties' => array_map(fn (CbtQuestionDifficulty $case) => $case->value, CbtQuestionDifficulty::cases()),
             'question_types' => array_map(fn (CbtQuestionType $case) => $case->value, CbtQuestionType::cases()),
             'exam_statuses' => array_map(fn (CbtExamStatus $case) => $case->value, CbtExamStatus::cases()),

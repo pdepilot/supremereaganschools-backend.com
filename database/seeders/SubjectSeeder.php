@@ -53,6 +53,8 @@ class SubjectSeeder extends Seeder
             ['name' => 'Computer Science', 'code' => 'CSCI', 'department' => 'ICT'],
             ['name' => 'Phonics', 'code' => 'PHO', 'department' => 'Languages'],
             ['name' => 'Colour Me', 'code' => 'COLM', 'department' => 'Arts'],
+            ['name' => 'Discover Me', 'code' => 'DME', 'department' => 'Sciences'],
+            ['name' => 'Colouring', 'code' => 'COLR', 'department' => 'Arts'],
 
             // Kept for secondary / future forms
             ['name' => 'Basic Technology', 'code' => 'BTE', 'department' => 'Sciences'],

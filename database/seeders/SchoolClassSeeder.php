@@ -72,33 +72,21 @@ class SchoolClassSeeder extends Seeder
             }
         }
 
-        // Remove superseded nursery/primary class names that are no longer on the book.
+        // Retire superseded class names that are no longer on the book (keep rows for FK history).
         SchoolClass::query()
             ->whereHas('level', fn ($query) => $query->whereIn('slug', ['activity', 'nursery', 'primary']))
             ->whereNotIn('id', $keptClassIds)
             ->each(function (SchoolClass $class): void {
-                if ($class->sections()->exists()) {
-                    $class->update(['is_active' => false]);
-                    $class->sections()->update(['is_active' => false]);
-
-                    return;
-                }
-
-                $class->delete();
+                $class->update(['is_active' => false]);
+                $class->sections()->update(['is_active' => false]);
             });
 
         // Secondary forms are not part of the current Supreme Reagan class book.
         SchoolClass::query()
             ->whereHas('level', fn ($query) => $query->whereIn('slug', ['jss', 'ss']))
             ->each(function (SchoolClass $class): void {
-                if ($class->sections()->exists()) {
-                    $class->update(['is_active' => false]);
-                    $class->sections()->update(['is_active' => false]);
-
-                    return;
-                }
-
-                $class->delete();
+                $class->update(['is_active' => false]);
+                $class->sections()->update(['is_active' => false]);
             });
     }
 }
