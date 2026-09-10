@@ -137,6 +137,37 @@ class CbtAdminApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_manager_can_create_exam_with_typed_academic_session(): void
+    {
+        $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
+        $session = $this->academicSession(['name' => 'SRC-'.random_int(10000, 99999)]);
+        $term = $this->termFor($session);
+        $level = $this->level(['slug' => 'typed-'.random_int(10000, 99999)]);
+        $class = $this->schoolClass($level);
+        $offering = $this->offering($this->section($class), $session);
+        $subject = $this->subject(['code' => 'TS'.random_int(100, 999)]);
+        $newSessionName = '2099/2100';
+
+        $create = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/exams', [
+            'title' => 'Typed Session Exam',
+            'subject_id' => $subject->id,
+            'class_section_offering_id' => $offering->id,
+            'academic_session' => $newSessionName,
+            'term_id' => $term->id,
+            'duration_minutes' => 40,
+        ])->assertCreated()
+            ->assertJsonPath('data.academic_session', $newSessionName);
+
+        $this->assertDatabaseHas('academic_sessions', ['name' => $newSessionName]);
+        $createdSessionId = (int) $create->json('data.academic_session_id');
+        $this->assertNotSame((int) $session->id, $createdSessionId);
+        $this->assertDatabaseHas('class_section_offerings', [
+            'class_section_id' => $offering->class_section_id,
+            'academic_session_id' => $createdSessionId,
+            'is_active' => 1,
+        ]);
+    }
+
     public function test_draft_exam_attach_reorder_refresh_and_publish_freeze(): void
     {
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);

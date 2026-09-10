@@ -180,6 +180,7 @@ class CbtAdminController extends Controller
                     'class_section_id' => $row->class_section_id,
                     'school_class_id' => $row->classSection?->school_class_id,
                     'academic_session_id' => $row->academic_session_id,
+                    'academic_session' => $row->academicSession?->name,
                 ])
                 ->all(),
             'difficulties' => array_map(fn (CbtQuestionDifficulty $case) => $case->value, CbtQuestionDifficulty::cases()),

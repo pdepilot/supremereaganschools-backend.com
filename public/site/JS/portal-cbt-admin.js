@@ -200,9 +200,6 @@
     document.querySelectorAll('[data-lookup="offerings"]').forEach(function (el) {
       fillSelect(el, lookups.offerings, "id", "label", el.querySelector('option[value=""]') != null || !el.required);
     });
-    document.querySelectorAll('[data-lookup="sessions"]').forEach(function (el) {
-      fillSelect(el, lookups.academic_sessions, "id", "name", el.querySelector('option[value=""]') != null || !el.required);
-    });
     document.querySelectorAll('[data-lookup="terms"]').forEach(function (el) {
       fillSelect(el, lookups.terms, "id", "name", el.querySelector('option[value=""]') != null || !el.required);
     });
@@ -218,7 +215,72 @@
     refreshSubjectSelects();
     bindSubjectContextFilters();
     ensureAddSubjectControls();
+    bindAcademicSessionHelpers();
     applyCapabilityGates();
+  };
+
+  const sessionNameForOffering = function (offeringId) {
+    if (!lookups || !offeringId) return "";
+    const offering = (lookups.offerings || []).find(function (row) {
+      return String(row.id) === String(offeringId);
+    });
+    if (!offering) return "";
+    if (offering.academic_session) return offering.academic_session;
+    const session = (lookups.academic_sessions || []).find(function (row) {
+      return String(row.id) === String(offering.academic_session_id);
+    });
+    return session ? session.name : "";
+  };
+
+  const termsForSessionName = function (sessionName) {
+    if (!lookups) return [];
+    const name = String(sessionName || "").trim().toLowerCase();
+    if (!name) return lookups.terms || [];
+    const session = (lookups.academic_sessions || []).find(function (row) {
+      return String(row.name || "").toLowerCase() === name;
+    });
+    if (!session) return lookups.terms || [];
+    return (lookups.terms || []).filter(function (term) {
+      return String(term.academic_session_id) === String(session.id);
+    });
+  };
+
+  const refreshTermsForScope = function (scope) {
+    const root = scope || document;
+    root.querySelectorAll('[name="term_id"][data-lookup="terms"], [data-lookup="terms"][name="term_id"]').forEach(function (select) {
+      const form = select.closest("form") || root;
+      const sessionEl = form.querySelector('[name="academic_session"]');
+      const includeBlank = select.querySelector('option[value=""]') != null || !select.required;
+      fillSelect(select, termsForSessionName(sessionEl && sessionEl.value), "id", "name", includeBlank);
+    });
+  };
+
+  const bindAcademicSessionHelpers = function () {
+    document.querySelectorAll('[name="class_section_offering_id"]').forEach(function (el) {
+      if (el.dataset.sessionBound === "1") return;
+      el.dataset.sessionBound = "1";
+      el.addEventListener("change", function () {
+        const form = el.closest("form");
+        if (!form) return;
+        const sessionEl = form.querySelector('[name="academic_session"]');
+        if (sessionEl && el.value) {
+          const name = sessionNameForOffering(el.value);
+          if (name) sessionEl.value = name;
+          refreshTermsForScope(form);
+        }
+      });
+    });
+
+    document.querySelectorAll('[name="academic_session"]').forEach(function (el) {
+      if (el.dataset.termsBound === "1") return;
+      el.dataset.termsBound = "1";
+      el.addEventListener("change", function () {
+        refreshTermsForScope(el.closest("form") || document);
+      });
+      el.addEventListener("blur", function () {
+        refreshTermsForScope(el.closest("form") || document);
+      });
+    });
   };
 
   let addSubjectTargetSelect = null;
@@ -989,7 +1051,7 @@
         instructions: form.instructions.value || null,
         subject_id: Number(form.subject_id.value),
         class_section_offering_id: Number(form.class_section_offering_id.value),
-        academic_session_id: Number(form.academic_session_id.value),
+        academic_session: String(form.academic_session.value || "").trim(),
         term_id: Number(form.term_id.value),
         duration_minutes: Number(form.duration_minutes.value),
         pass_mark: form.pass_mark.value === "" ? null : Number(form.pass_mark.value),
@@ -1049,7 +1111,8 @@
       form.class_section_offering_id.value = exam.class_section_offering_id || "";
       refreshSubjectSelects(form);
       form.subject_id.value = exam.subject_id || "";
-      form.academic_session_id.value = exam.academic_session_id || "";
+      if (form.academic_session) form.academic_session.value = exam.academic_session || "";
+      refreshTermsForScope(form);
       form.term_id.value = exam.term_id || "";
       form.duration_minutes.value = exam.duration_minutes || "";
       form.pass_mark.value = exam.pass_mark || "";
@@ -1136,7 +1199,7 @@
         instructions: form.instructions.value || null,
         subject_id: Number(form.subject_id.value),
         class_section_offering_id: Number(form.class_section_offering_id.value),
-        academic_session_id: Number(form.academic_session_id.value),
+        academic_session: String(form.academic_session.value || "").trim(),
         term_id: Number(form.term_id.value),
         duration_minutes: Number(form.duration_minutes.value),
         pass_mark: form.pass_mark.value === "" ? null : Number(form.pass_mark.value),

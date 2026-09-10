@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\Api\V1\Cbt;
 
+use App\Enums\SessionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Cbt\CbtAdminExamResource;
+use App\Models\AcademicSession;
 use App\Models\CbtExam;
 use App\Models\CbtExamAssignment;
 use App\Models\CbtExamQuestion;
 use App\Models\CbtQuestion;
+use App\Models\ClassSectionOffering;
 use App\Models\StudentProfile;
+use App\Models\SubjectOffering;
+use App\Models\Term;
 use App\Services\Cbt\CbtAccessService;
 use App\Services\Cbt\CbtExamAssignmentService;
 use App\Services\Cbt\CbtExamPublishService;
@@ -17,7 +22,9 @@ use App\Services\Cbt\CbtExamSnapshotService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CbtAdminExamController extends Controller
 {
@@ -39,7 +46,11 @@ class CbtAdminExamController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('subject_id'), fn ($q) => $q->where('subject_id', (int) $request->input('subject_id')))
             ->when($request->filled('class_section_offering_id'), fn ($q) => $q->where('class_section_offering_id', (int) $request->input('class_section_offering_id')))
-            ->when($request->filled('academic_session_id'), fn ($q) => $q->where('academic_session_id', (int) $request->input('academic_session_id')))
+            ->when($request->filled('academic_session'), function ($q) use ($request) {
+                $name = trim((string) $request->input('academic_session'));
+                $q->whereHas('academicSession', fn ($s) => $s->where('name', 'like', '%'.$name.'%'));
+            })
+            ->when($request->filled('academic_session_id') && ! $request->filled('academic_session'), fn ($q) => $q->where('academic_session_id', (int) $request->input('academic_session_id')))
             ->when($request->filled('term_id'), fn ($q) => $q->where('term_id', (int) $request->input('term_id')))
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->string('q').'%';
@@ -225,12 +236,13 @@ class CbtAdminExamController extends Controller
      */
     private function validatedExam(Request $request, bool $updating = false): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'title' => [$updating ? 'sometimes' : 'required', 'string', 'max:255'],
             'instructions' => ['sometimes', 'nullable', 'string'],
             'subject_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:subjects,id'],
             'class_section_offering_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:class_section_offerings,id'],
-            'academic_session_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:academic_sessions,id'],
+            'academic_session' => [$updating ? 'sometimes' : 'required_without:academic_session_id', 'nullable', 'string', 'max:50'],
+            'academic_session_id' => [$updating ? 'sometimes' : 'required_without:academic_session', 'nullable', 'integer', 'exists:academic_sessions,id'],
             'term_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:terms,id'],
             'starts_at' => ['sometimes', 'nullable', 'date'],
             'ends_at' => ['sometimes', 'nullable', 'date', 'after:starts_at'],
@@ -243,5 +255,160 @@ class CbtAdminExamController extends Controller
             'write_to_assessment_score' => ['sometimes', 'boolean'],
             'status' => ['prohibited'],
         ]);
+
+        if (array_key_exists('academic_session', $data) || array_key_exists('academic_session_id', $data)) {
+            $sessionName = isset($data['academic_session']) ? trim((string) $data['academic_session']) : '';
+            if ($sessionName !== '') {
+                $data['academic_session_id'] = $this->resolveAcademicSessionId($sessionName);
+            } elseif (! empty($data['academic_session_id'])) {
+                $data['academic_session_id'] = (int) $data['academic_session_id'];
+            } elseif (! $updating) {
+                throw ValidationException::withMessages([
+                    'academic_session' => 'Enter an academic session (e.g. 2025/2026).',
+                ]);
+            }
+            unset($data['academic_session']);
+        }
+
+        if (! empty($data['academic_session_id']) && ! empty($data['term_id'])) {
+            $data['term_id'] = $this->resolveTermIdForSession((int) $data['term_id'], (int) $data['academic_session_id']);
+        }
+
+        if (! empty($data['academic_session_id']) && ! empty($data['class_section_offering_id'])) {
+            $data['class_section_offering_id'] = $this->alignOfferingToSession(
+                (int) $data['class_section_offering_id'],
+                (int) $data['academic_session_id'],
+            );
+        }
+
+        return $data;
+    }
+
+    private function resolveAcademicSessionId(string $name): int
+    {
+        $existing = AcademicSession::query()
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        if ($existing) {
+            return (int) $existing->id;
+        }
+
+        [$startsOn, $endsOn] = $this->inferSessionDates($name);
+
+        $session = AcademicSession::query()->create([
+            'name' => $name,
+            'starts_on' => $startsOn,
+            'ends_on' => $endsOn,
+            'term_count' => 3,
+            'status' => SessionStatus::Planned,
+            'created_by' => request()->user()?->id,
+        ]);
+
+        foreach ([1 => 'First Term', 2 => 'Second Term', 3 => 'Third Term'] as $number => $termName) {
+            Term::query()->create([
+                'academic_session_id' => $session->id,
+                'name' => $termName,
+                'term_number' => $number,
+                'status' => SessionStatus::Planned,
+            ]);
+        }
+
+        return (int) $session->id;
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function inferSessionDates(string $name): array
+    {
+        if (preg_match('/(\d{4})\s*[\/\-]\s*(\d{4})/', $name, $matches) === 1) {
+            $startYear = (int) $matches[1];
+            $endYear = (int) $matches[2];
+
+            return [
+                sprintf('%04d-09-01', $startYear),
+                sprintf('%04d-07-31', $endYear),
+            ];
+        }
+
+        $year = (int) Carbon::now()->year;
+
+        return [
+            sprintf('%04d-09-01', $year),
+            sprintf('%04d-07-31', $year + 1),
+        ];
+    }
+
+    private function resolveTermIdForSession(int $termId, int $sessionId): int
+    {
+        $term = Term::query()->find($termId);
+        if ($term === null) {
+            throw ValidationException::withMessages([
+                'term_id' => 'A valid term is required.',
+            ]);
+        }
+
+        if ((int) $term->academic_session_id === $sessionId) {
+            return (int) $term->id;
+        }
+
+        $mapped = Term::query()
+            ->where('academic_session_id', $sessionId)
+            ->where(function ($q) use ($term): void {
+                $q->where('term_number', $term->term_number)
+                    ->orWhereRaw('LOWER(name) = ?', [mb_strtolower((string) $term->name)]);
+            })
+            ->orderBy('term_number')
+            ->first();
+
+        if ($mapped) {
+            return (int) $mapped->id;
+        }
+
+        throw ValidationException::withMessages([
+            'term_id' => 'Choose a term that matches the academic session (First, Second, or Third Term).',
+        ]);
+    }
+
+    private function alignOfferingToSession(int $offeringId, int $sessionId): int
+    {
+        $offering = ClassSectionOffering::query()->with('subjectOfferings')->find($offeringId);
+        if ($offering === null) {
+            throw ValidationException::withMessages([
+                'class_section_offering_id' => 'A valid class section offering is required.',
+            ]);
+        }
+
+        if ((int) $offering->academic_session_id === $sessionId) {
+            return (int) $offering->id;
+        }
+
+        $aligned = ClassSectionOffering::query()->firstOrCreate(
+            [
+                'class_section_id' => $offering->class_section_id,
+                'academic_session_id' => $sessionId,
+            ],
+            [
+                'campus_id' => $offering->campus_id,
+                'capacity' => $offering->capacity,
+                'is_active' => true,
+            ],
+        );
+
+        if ($aligned->wasRecentlyCreated || ! $aligned->subjectOfferings()->exists()) {
+            foreach ($offering->subjectOfferings as $subjectOffering) {
+                SubjectOffering::query()->firstOrCreate([
+                    'class_section_offering_id' => $aligned->id,
+                    'subject_id' => $subjectOffering->subject_id,
+                ]);
+            }
+        }
+
+        if (! $aligned->is_active) {
+            $aligned->update(['is_active' => true]);
+        }
+
+        return (int) $aligned->id;
     }
 }

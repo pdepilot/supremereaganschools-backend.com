@@ -44,7 +44,7 @@
         <select name="status" data-lookup="exam_statuses"><option value="">All statuses</option></select>
         <select name="subject_id" data-lookup="subjects"><option value="">All subjects</option></select>
         <select name="class_section_offering_id" data-lookup="offerings"><option value="">All offerings</option></select>
-        <select name="academic_session_id" data-lookup="sessions"><option value="">All sessions</option></select>
+        <input type="search" name="academic_session" placeholder="Session e.g. 2025/2026" maxlength="50">
         <select name="term_id" data-lookup="terms"><option value="">All terms</option></select>
         <button type="submit" class="cbt-btn">Filter</button>
       </form>
@@ -87,7 +87,7 @@
             <select name="class_section_offering_id" data-lookup="offerings" required></select>
           </label>
           <label>Academic session
-            <select name="academic_session_id" data-lookup="sessions" required></select>
+            <input type="text" name="academic_session" required maxlength="50" placeholder="e.g. 2025/2026" autocomplete="off">
           </label>
           <label>Term
             <select name="term_id" data-lookup="terms" required></select>
@@ -124,6 +124,6 @@
     </div>
   </div>
 
-  <script src="/site/JS/portal-cbt-admin.js?v=20260910b"></script>
+  <script src="/site/JS/portal-cbt-admin.js?v=20260910c"></script>
 </body>
 </html>
