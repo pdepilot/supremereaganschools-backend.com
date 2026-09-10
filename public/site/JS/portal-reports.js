@@ -137,6 +137,7 @@
   let assayInFlight = false;
   let firstPaint = true;
   let pollTimer = null;
+  let sessionSyncTimer = null;
 
   const fillSelect = function (node, rows, valueKey, labelKey, placeholder, selected) {
     if (!node) return;
@@ -147,17 +148,26 @@
     if (current) node.value = current;
   };
 
+  const typedSessionName = function () {
+    return sessionSelect ? String(sessionSelect.value || "").trim() : "";
+  };
+
   const selectedSession = function () {
-    const id = sessionSelect && sessionSelect.value
-      ? sessionSelect.value
-      : catalogue.current_academic_session_id;
+    const name = typedSessionName().toLowerCase();
+    if (name) {
+      return (catalogue.sessions || []).find(function (row) {
+        return String(row.name || "").toLowerCase() === name;
+      }) || null;
+    }
+    const id = catalogue.current_academic_session_id;
     return (catalogue.sessions || []).find(function (row) {
       return String(row.id) === String(id);
     }) || null;
   };
 
   const offeringsForSession = function () {
-    const sessionId = sessionSelect && sessionSelect.value;
+    const session = selectedSession();
+    const sessionId = session ? session.id : null;
     return (catalogue.offerings || []).filter(function (row) {
       return !sessionId || String(row.academic_session_id) === String(sessionId);
     });
@@ -181,7 +191,11 @@
     fillSelect(termSelect, (selectedSession() && selectedSession().terms) || [], "id", "name", "All terms");
 
     if (needsFees && termSelect && !termSelect.value && catalogue.current_term_id) {
-      termSelect.value = String(catalogue.current_term_id);
+      const session = selectedSession();
+      const stillValid = session && (session.terms || []).some(function (term) {
+        return String(term.id) === String(catalogue.current_term_id);
+      });
+      if (stillValid) termSelect.value = String(catalogue.current_term_id);
     }
     if (needsRange && fromInput && !fromInput.getAttribute("data-touched")) {
       fromInput.value = kind === "staff" ? todayLagos() : (catalogue.from || todayLagos());
@@ -194,13 +208,49 @@
   const queryString = function () {
     const params = new URLSearchParams();
     params.set("kind", kind);
-    if (sessionSelect && sessionSelect.value) params.set("academic_session_id", sessionSelect.value);
+    const sessionName = typedSessionName();
+    if (sessionName) params.set("academic_session", sessionName);
     if (formSelect && formSelect.value) params.set("class_section_offering_id", formSelect.value);
     if (termSelect && !termSelect.hidden && termSelect.value) params.set("term_id", termSelect.value);
     if (statusSelect && !statusSelect.hidden && statusSelect.value) params.set("status", statusSelect.value);
     if (fromInput && !fromInput.hidden && fromInput.value) params.set("from", fromInput.value);
     if (toInput && !toInput.hidden && toInput.value) params.set("to", toInput.value);
     return params.toString();
+  };
+
+  const loadCatalogue = function (sessionName) {
+    const query = sessionName ? ("?academic_session=" + encodeURIComponent(sessionName)) : "";
+    return request("/api/v1/portal-reports/catalogue" + query).then(function (result) {
+      if (result.ok && result.body && result.body.data) {
+        catalogue = result.body.data;
+        if (sessionSelect && !typedSessionName() && catalogue.current_academic_session) {
+          sessionSelect.value = catalogue.current_academic_session;
+        }
+        syncFilters();
+        paintKindButtons();
+      }
+      return result;
+    });
+  };
+
+  const syncTypedSession = function () {
+    const name = typedSessionName();
+    if (!name) {
+      return loadCatalogue(null);
+    }
+    return request("/api/v1/academic-sessions/ensure", {
+      method: "POST",
+      body: JSON.stringify({ name: name })
+    }).then(function (result) {
+      if (!result.ok) {
+        setNotice(firstError(result.body));
+        return result;
+      }
+      setNotice("");
+      const house = document.querySelector("[data-report-house]");
+      if (house) house.textContent = name;
+      return loadCatalogue(name);
+    });
   };
 
   const paintTable = function (report) {
@@ -454,12 +504,22 @@
     sessionSelect.addEventListener("change", function () {
       if (formSelect) formSelect.value = "";
       if (termSelect) termSelect.value = "";
-      syncFilters();
+      window.clearTimeout(sessionSyncTimer);
+      sessionSyncTimer = window.setTimeout(function () {
+        syncTypedSession();
+      }, 200);
+    });
+    sessionSelect.addEventListener("blur", function () {
+      window.clearTimeout(sessionSyncTimer);
+      syncTypedSession();
     });
   }
   if (fromInput) fromInput.addEventListener("change", function () { fromInput.setAttribute("data-touched", "1"); });
   if (toInput) toInput.addEventListener("change", function () { toInput.setAttribute("data-touched", "1"); });
-  if (generateBtn) generateBtn.addEventListener("click", function () { generate(false); });
+  if (generateBtn) generateBtn.addEventListener("click", function () {
+    const run = typedSessionName() ? syncTypedSession() : Promise.resolve(null);
+    run.then(function () { generate(false); });
+  });
   if (exportBtn) {
     exportBtn.addEventListener("click", function () {
       if (!lastQuery) return;
@@ -481,13 +541,7 @@
     startPoll();
   });
 
-  request("/api/v1/portal-reports/catalogue").then(function (result) {
-    if (result.ok && result.body && result.body.data) {
-      catalogue = result.body.data;
-      fillSelect(sessionSelect, catalogue.sessions || [], "id", "name", "Current session", catalogue.current_academic_session_id);
-      syncFilters();
-      paintKindButtons();
-    }
+  loadCatalogue(null).then(function () {
     return tick();
   }).then(function () {
     return generate(true);

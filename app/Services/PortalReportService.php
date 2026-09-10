@@ -22,6 +22,7 @@ use App\Models\StudentProfile;
 use App\Models\Term;
 use App\Models\User;
 use App\Support\Money;
+use App\Support\SchoolBookStructure;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -320,7 +321,7 @@ class PortalReportService
     /**
      * @return array<string, mixed>
      */
-    public function catalogue(): array
+    public function catalogue(?string $academicSessionName = null): array
     {
         $settings = SchoolSetting::query()->with(['currentAcademicSession', 'currentTerm'])->first();
         $sessionId = $settings?->current_academic_session_id;
@@ -344,11 +345,36 @@ class PortalReportService
             ->values()
             ->all();
 
+        $filterSessionId = null;
+        $sessionName = trim((string) $academicSessionName);
+        if ($sessionName !== '') {
+            $filterSessionId = AcademicSession::query()
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($sessionName)])
+                ->value('id');
+        } else {
+            $filterSessionId = $sessionId;
+        }
+
         $offerings = ClassSectionOffering::query()
-            ->with(['classSection', 'academicSession'])
+            ->with(['classSection.schoolClass.level', 'academicSession'])
             ->where('is_active', true)
-            ->orderBy('id')
+            ->whereHas('classSection', function ($q): void {
+                $q->where('is_active', true)->whereIn('name', SchoolBookStructure::formNames());
+            })
+            ->whereHas('classSection.schoolClass', function ($q): void {
+                $q->where('is_active', true)
+                    ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                    ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+            })
+            ->when($filterSessionId, fn ($q) => $q->where('academic_session_id', $filterSessionId))
+            ->orderByDesc('id')
             ->get()
+            ->unique('class_section_id')
+            ->sortBy([
+                fn (ClassSectionOffering $offering) => (int) ($offering->classSection?->schoolClass?->sort_order ?? 0),
+                fn (ClassSectionOffering $offering) => (string) ($offering->classSection?->name ?? ''),
+            ])
+            ->values()
             ->map(fn (ClassSectionOffering $offering) => [
                 'id' => $offering->id,
                 'name' => $offering->classSection?->name ?: 'Form',
@@ -358,13 +384,14 @@ class PortalReportService
             ->values()
             ->all();
 
-        $currentSession = collect($sessions)->firstWhere('id', $sessionId);
+        $currentSession = collect($sessions)->firstWhere('id', $filterSessionId ?: $sessionId);
         $currentTerm = collect($currentSession['terms'] ?? [])->firstWhere('id', $termId)
             ?? (($currentSession['terms'] ?? [])[0] ?? null);
 
         return [
             'school' => $settings?->name ?: (string) config('app.name'),
             'current_academic_session_id' => $sessionId,
+            'current_academic_session' => $settings?->currentAcademicSession?->name,
             'current_term_id' => $termId,
             'from' => $currentTerm['starts_on'] ?? $now->copy()->startOfWeek()->toDateString(),
             'to' => $now->toDateString(),
@@ -688,6 +715,15 @@ class PortalReportService
     {
         if (! empty($filters['academic_session_id'])) {
             return (int) $filters['academic_session_id'];
+        }
+
+        $name = trim((string) ($filters['academic_session'] ?? ''));
+        if ($name !== '') {
+            $id = AcademicSession::query()
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+                ->value('id');
+
+            return $id ? (int) $id : null;
         }
 
         $current = SchoolSetting::query()->value('current_academic_session_id');

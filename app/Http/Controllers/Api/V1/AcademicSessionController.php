@@ -10,14 +10,17 @@ use App\Http\Resources\Academic\AcademicSessionResource;
 use App\Models\AcademicSession;
 use App\Services\AcademicSessionPromotionService;
 use App\Services\AcademicSessionService;
+use App\Services\SchoolBookSessionSync;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AcademicSessionController extends Controller
 {
     public function __construct(
         private readonly AcademicSessionService $sessions,
         private readonly AcademicSessionPromotionService $promotions,
+        private readonly SchoolBookSessionSync $sessionSync,
     ) {}
 
     public function index(): JsonResponse
@@ -27,6 +30,36 @@ class AcademicSessionController extends Controller
         $sessions = AcademicSession::query()->with('terms')->orderByDesc('starts_on')->get();
 
         return ApiResponse::success('Academic sessions retrieved.', AcademicSessionResource::collection($sessions)->resolve());
+    }
+
+    public function ensure(Request $request): JsonResponse
+    {
+        $this->authorize('create', AcademicSession::class);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:50'],
+        ]);
+
+        $session = $this->sessionSync->ensure(trim($data['name']), $request->user()?->id);
+
+        return ApiResponse::success('Academic session synced for school book forms.', [
+            'id' => $session->id,
+            'name' => $session->name,
+            'status' => $session->status?->value,
+            'terms' => $session->terms()
+                ->orderBy('term_number')
+                ->get(['id', 'name', 'term_number', 'academic_session_id', 'starts_on', 'ends_on'])
+                ->map(fn ($term) => [
+                    'id' => $term->id,
+                    'name' => $term->name,
+                    'term_number' => $term->term_number,
+                    'academic_session_id' => $term->academic_session_id,
+                    'starts_on' => $term->starts_on?->toDateString(),
+                    'ends_on' => $term->ends_on?->toDateString(),
+                ])
+                ->values()
+                ->all(),
+        ]);
     }
 
     public function store(StoreAcademicSessionRequest $request): JsonResponse

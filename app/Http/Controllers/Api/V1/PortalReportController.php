@@ -27,12 +27,15 @@ class PortalReportController extends Controller
         );
     }
 
-    public function catalogue(): JsonResponse
+    public function catalogue(Request $request): JsonResponse
     {
         $this->authorize('viewAny', SchoolSetting::class);
 
         return $this->live(
-            ApiResponse::success('Report catalogue retrieved.', $this->reports->catalogue()),
+            ApiResponse::success(
+                'Report catalogue retrieved.',
+                $this->reports->catalogue($request->string('academic_session')->toString() ?: null),
+            ),
         );
     }
 

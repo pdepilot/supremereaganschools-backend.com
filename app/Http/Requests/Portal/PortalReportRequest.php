@@ -20,6 +20,7 @@ class PortalReportRequest extends FormRequest
     {
         return [
             'kind' => ['required', Rule::in(['roll', 'fees', 'attendance', 'staff'])],
+            'academic_session' => ['nullable', 'string', 'max:50'],
             'academic_session_id' => ['nullable', 'integer', 'exists:academic_sessions,id'],
             'term_id' => ['nullable', 'integer', 'exists:terms,id'],
             'class_section_offering_id' => ['nullable', 'integer', 'exists:class_section_offerings,id'],

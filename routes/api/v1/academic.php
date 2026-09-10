@@ -33,6 +33,7 @@ Route::middleware(['web', 'auth', 'role:portal'])->group(function () {
     Route::get('departments', [DepartmentController::class, 'index']);
     Route::post('departments', [DepartmentController::class, 'store']);
 
+    Route::post('academic-sessions/ensure', [AcademicSessionController::class, 'ensure']);
     Route::post('academic-sessions/{academic_session}/activate', [AcademicSessionController::class, 'activate']);
     Route::post('academic-sessions/{academic_session}/promote', [AcademicSessionController::class, 'promote']);
     Route::apiResource('academic-sessions', AcademicSessionController::class);

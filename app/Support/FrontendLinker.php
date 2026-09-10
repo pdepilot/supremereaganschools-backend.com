@@ -209,7 +209,7 @@ class FrontendLinker
             $tags[] = '<script src="/site/JS/portal-session.js"></script>';
         }
         if (! str_contains($html, 'portal-desk-bell.js')) {
-            $tags[] = '<script src="/site/JS/portal-desk-bell.js"></script>';
+            $tags[] = '<script src="/site/JS/portal-desk-bell.js?v=20260910f"></script>';
         }
 
         if ($tags === []) {

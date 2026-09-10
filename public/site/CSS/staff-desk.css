@@ -1185,7 +1185,7 @@ ul {
 .stage-head.compact {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow: visible;
   color: var(--chalk);
   padding: clamp(1.2rem, 3vw, 2rem) clamp(1.2rem, 4vw, 3rem) 1.4rem;
   background:
@@ -1203,7 +1203,7 @@ ul {
 
 .head-top {
   position: relative;
-  z-index: 1;
+  z-index: 10;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1258,10 +1258,16 @@ ul {
   text-align: center;
 }
 
+.desk-bell-badge[hidden],
+.desk-bell-panel[hidden] {
+  display: none !important;
+}
+
 .desk-bell-panel {
   position: absolute;
   top: calc(100% + 0.55rem);
   right: 0;
+  z-index: 40;
   width: min(22rem, calc(100vw - 2rem));
   max-height: min(24rem, 70vh);
   overflow: auto;

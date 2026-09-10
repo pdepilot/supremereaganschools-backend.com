@@ -180,7 +180,7 @@ a {
 
 .stage-head {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   isolation: isolate;
   color: var(--chalk);
   padding: clamp(1.4rem, 3vw, 2.2rem) clamp(1.2rem, 3vw, 2.5rem) clamp(1.8rem, 4vw, 2.8rem);
@@ -196,6 +196,7 @@ a {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  overflow: hidden;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
@@ -226,7 +227,7 @@ a {
 
 .head-top {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -268,12 +269,15 @@ a {
   flex: 0 0 auto;
 }
 
-.desk-bell-cluster {
+.desk-bell-cluster,
+.head-aside.desk-bell-cluster {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
   flex: 0 0 auto;
   margin-left: auto;
+  position: relative;
+  z-index: 6;
 }
 
 .desk-bell-toggle {
@@ -287,6 +291,7 @@ a {
   background: rgba(12, 22, 58, 0.28);
   color: #f4efe4;
   cursor: pointer;
+  flex: 0 0 auto;
 }
 
 .desk-bell-toggle svg {
@@ -311,10 +316,16 @@ a {
   text-align: center;
 }
 
+.desk-bell-badge[hidden],
+.desk-bell-panel[hidden] {
+  display: none !important;
+}
+
 .desk-bell-panel {
   position: absolute;
   top: calc(100% + 0.55rem);
   right: 0;
+  z-index: 40;
   width: min(22rem, calc(100vw - 2rem));
   max-height: min(24rem, 70vh);
   overflow: auto;
@@ -2529,7 +2540,9 @@ body.desk-alert-open {
 }
 
 .report-filters select,
-.report-filters input[type="date"] {
+.report-filters input[type="date"],
+.report-filters input[type="text"],
+.report-filters input[type="search"] {
   min-height: 2.4rem;
   min-width: 10rem;
 }
@@ -2599,7 +2612,9 @@ body.desk-alert-open {
   }
 
   .report-filters select,
-  .report-filters input[type="date"] {
+  .report-filters input[type="date"],
+  .report-filters input[type="text"],
+  .report-filters input[type="search"] {
     min-width: 0;
     width: 100%;
   }
@@ -2608,6 +2623,8 @@ body.desk-alert-open {
 @media print {
   .rail,
   .live-pill,
+  .desk-bell,
+  .desk-bell-cluster,
   .metric-rail,
   .matrix,
   .report-filters,

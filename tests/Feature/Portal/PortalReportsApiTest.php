@@ -254,7 +254,10 @@ class PortalReportsApiTest extends TestCase
         ]);
         $term = $this->termFor($session);
         $campus = $this->campus();
-        $offering = $this->offering(null, $session, $campus);
+        $level = $this->level(['name' => 'Nursery', 'slug' => 'nursery', 'sort_order' => 2]);
+        $class = $this->schoolClass($level, ['name' => 'Nursery 2', 'short_code' => 'N2']);
+        $section = $this->section($class, ['arm' => 'Awesome', 'name' => 'Nursery 2 – Awesome']);
+        $offering = $this->offering($section, $session, $campus);
         $this->settings([
             'name' => 'Supreme Reagan Schools',
             'current_academic_session_id' => $session->id,
@@ -306,10 +309,11 @@ class PortalReportsApiTest extends TestCase
             ->assertJsonPath('data.kinds.2.slug', 'attendance')
             ->assertJsonPath('data.kinds.3.slug', 'staff')
             ->assertJsonPath('data.current_academic_session_id', $session->id)
-            ->assertJsonPath('data.offerings.0.id', $offering->id);
+            ->assertJsonPath('data.offerings.0.id', $offering->id)
+            ->assertJsonPath('data.offerings.0.name', 'Nursery 2 – Awesome');
 
         $this->actingAs($admin)
-            ->getJson('/api/v1/portal-reports/generate?kind=roll')
+            ->getJson('/api/v1/portal-reports/generate?kind=roll&academic_session='.urlencode((string) $session->name))
             ->assertOk()
             ->assertHeaderContains('Cache-Control', 'no-store')
             ->assertJsonPath('data.kind', 'roll')
