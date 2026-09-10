@@ -22,6 +22,7 @@ use App\Models\SubjectOffering;
 use App\Models\Term;
 use App\Services\Cbt\CbtAccessService;
 use App\Services\Cbt\CbtOperationalReportingService;
+use App\Services\SchoolBookSessionSync;
 use App\Support\ApiResponse;
 use App\Support\SchoolBookStructure;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +34,7 @@ class CbtAdminController extends Controller
     public function __construct(
         private readonly CbtAccessService $access,
         private readonly CbtOperationalReportingService $ops,
+        private readonly SchoolBookSessionSync $sessionSync,
     ) {}
 
     public function entry(Request $request): JsonResponse
@@ -185,41 +187,91 @@ class CbtAdminController extends Controller
                 ->orderByDesc('id')
                 ->get(['id', 'name', 'academic_session_id']),
             // Session openings of the 18 forms — used to assign CBT exams.
-            'offerings' => ClassSectionOffering::query()
-                ->where('is_active', true)
-                ->with(['classSection.schoolClass', 'academicSession'])
-                ->whereHas('classSection', function ($q): void {
-                    $q->where('is_active', true)->whereIn('name', SchoolBookStructure::formNames());
-                })
-                ->whereHas('classSection.schoolClass', function ($q): void {
-                    $q->where('is_active', true)
-                        ->whereIn('name', SchoolBookStructure::schoolClassNames())
-                        ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
-                })
-                ->get()
-                ->sortBy([
-                    fn (ClassSectionOffering $row) => (int) ($row->classSection?->schoolClass?->sort_order ?? 0),
-                    fn (ClassSectionOffering $row) => (string) ($row->classSection?->name ?? ''),
-                    fn (ClassSectionOffering $row) => (string) ($row->academicSession?->name ?? ''),
-                ])
-                ->values()
-                ->map(fn (ClassSectionOffering $row) => [
-                    'id' => $row->id,
-                    'label' => trim(
-                        ($row->classSection?->name ?? 'Form')
-                        .($row->academicSession?->name ? ' · '.$row->academicSession->name : '')
-                    ),
-                    'form' => $row->classSection?->name,
-                    'class_section_id' => $row->class_section_id,
-                    'school_class_id' => $row->classSection?->school_class_id,
-                    'academic_session_id' => $row->academic_session_id,
-                    'academic_session' => $row->academicSession?->name,
-                ])
-                ->all(),
+            'offerings' => $this->bookOfferingsForLookups($request),
             'difficulties' => array_map(fn (CbtQuestionDifficulty $case) => $case->value, CbtQuestionDifficulty::cases()),
             'question_types' => array_map(fn (CbtQuestionType $case) => $case->value, CbtQuestionType::cases()),
             'exam_statuses' => array_map(fn (CbtExamStatus $case) => $case->value, CbtExamStatus::cases()),
         ]);
+    }
+
+    public function ensureAcademicSession(Request $request): JsonResponse
+    {
+        abort_unless($this->access->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:50'],
+        ]);
+
+        $session = $this->sessionSync->ensure(trim($data['name']), $request->user()?->id);
+
+        return ApiResponse::success('Academic session synced for school book forms.', [
+            'academic_session' => [
+                'id' => $session->id,
+                'name' => $session->name,
+                'status' => $session->status?->value,
+            ],
+            'terms' => $session->terms()
+                ->orderBy('term_number')
+                ->get(['id', 'name', 'term_number', 'academic_session_id'])
+                ->values()
+                ->all(),
+        ]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function bookOfferingsForLookups(Request $request): array
+    {
+        $sessionName = trim((string) $request->input('academic_session', ''));
+        $sessionId = null;
+        if ($sessionName !== '') {
+            $sessionId = AcademicSession::query()
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($sessionName)])
+                ->value('id');
+        } elseif ($request->filled('academic_session_id')) {
+            $sessionId = (int) $request->input('academic_session_id');
+        }
+
+        $rows = ClassSectionOffering::query()
+            ->where('is_active', true)
+            ->with(['classSection.schoolClass', 'academicSession'])
+            ->whereHas('classSection', function ($q): void {
+                $q->where('is_active', true)->whereIn('name', SchoolBookStructure::formNames());
+            })
+            ->whereHas('classSection.schoolClass', function ($q): void {
+                $q->where('is_active', true)
+                    ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                    ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+            })
+            ->when($sessionId, fn ($q) => $q->where('academic_session_id', $sessionId))
+            ->get()
+            ->sortBy([
+                fn (ClassSectionOffering $row) => (int) ($row->classSection?->schoolClass?->sort_order ?? 0),
+                fn (ClassSectionOffering $row) => (string) ($row->classSection?->name ?? ''),
+                fn (ClassSectionOffering $row) => -1 * (int) $row->id,
+            ])
+            ->values();
+
+        // One option per form; prefer the filtered session, otherwise newest offering.
+        $unique = [];
+        foreach ($rows as $row) {
+            $sectionId = (int) $row->class_section_id;
+            if (isset($unique[$sectionId])) {
+                continue;
+            }
+            $unique[$sectionId] = [
+                'id' => $row->id,
+                'label' => $row->classSection?->name ?? 'Form',
+                'form' => $row->classSection?->name,
+                'class_section_id' => $row->class_section_id,
+                'school_class_id' => $row->classSection?->school_class_id,
+                'academic_session_id' => $row->academic_session_id,
+                'academic_session' => $row->academicSession?->name,
+            ];
+        }
+
+        return array_values($unique);
     }
 
     public function storeSubject(Request $request): JsonResponse

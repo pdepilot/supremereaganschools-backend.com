@@ -255,6 +255,89 @@
     });
   };
 
+  const reloadLookupsForSession = function (sessionName, preserve) {
+    const query = sessionName ? ("?academic_session=" + encodeURIComponent(sessionName)) : "";
+    return request("/api/v1/cbt/admin/lookups" + query).then(function (result) {
+      if (!result.ok || !result.body.data) return result;
+      lookups = result.body.data;
+      populateLookups();
+      if (preserve) {
+        if (preserve.academic_session) {
+          document.querySelectorAll('[name="academic_session"]').forEach(function (el) {
+            el.value = preserve.academic_session;
+          });
+        }
+        if (preserve.term_id) {
+          document.querySelectorAll('[name="term_id"]').forEach(function (el) {
+            el.value = String(preserve.term_id);
+          });
+        }
+        if (preserve.class_section_id || preserve.offering_id) {
+          document.querySelectorAll('[name="class_section_offering_id"]').forEach(function (el) {
+            if (preserve.offering_id) {
+              el.value = String(preserve.offering_id);
+              if (el.value) return;
+            }
+            if (preserve.class_section_id) {
+              const match = (lookups.offerings || []).find(function (row) {
+                return String(row.class_section_id) === String(preserve.class_section_id);
+              });
+              if (match) el.value = String(match.id);
+            }
+          });
+        }
+        document.querySelectorAll("form").forEach(function (form) {
+          if (form.querySelector('[name="academic_session"]')) refreshTermsForScope(form);
+        });
+      }
+      return result;
+    });
+  };
+
+  const syncAcademicSession = function (sessionEl) {
+    if (!sessionEl || !capabilities.manage) return Promise.resolve(null);
+    const name = String(sessionEl.value || "").trim();
+    if (!name) return Promise.resolve(null);
+
+    const form = sessionEl.closest("form");
+    const offeringEl = form && form.querySelector('[name="class_section_offering_id"]');
+    const termEl = form && form.querySelector('[name="term_id"]');
+    const selectedOffering = offeringEl && offeringEl.value
+      ? (lookups.offerings || []).find(function (row) { return String(row.id) === String(offeringEl.value); })
+      : null;
+
+    return request("/api/v1/cbt/admin/academic-sessions/ensure", {
+      method: "POST",
+      body: JSON.stringify({ name: name })
+    }).then(function (result) {
+      if (!result.ok) {
+        showAlert(firstError(result.body));
+        return null;
+      }
+      const terms = (result.body.data && result.body.data.terms) || [];
+      const preferredTerm = termEl && termEl.value
+        ? terms.find(function (term) { return String(term.id) === String(termEl.value); })
+        : null;
+      const mappedTerm = preferredTerm
+        || (termEl && termEl.selectedOptions && termEl.selectedOptions[0]
+          ? terms.find(function (term) {
+            return String(term.name).toLowerCase() === String(termEl.selectedOptions[0].textContent || "").toLowerCase();
+          })
+          : null)
+        || terms[0];
+
+      return reloadLookupsForSession(name, {
+        academic_session: name,
+        term_id: mappedTerm ? mappedTerm.id : "",
+        class_section_id: selectedOffering ? selectedOffering.class_section_id : null,
+        offering_id: null
+      }).then(function () {
+        showAlert("Academic session synced for school forms.", "info");
+        return result.body.data;
+      });
+    });
+  };
+
   const bindAcademicSessionHelpers = function () {
     document.querySelectorAll('[name="class_section_offering_id"]').forEach(function (el) {
       if (el.dataset.sessionBound === "1") return;
@@ -263,11 +346,12 @@
         const form = el.closest("form");
         if (!form) return;
         const sessionEl = form.querySelector('[name="academic_session"]');
-        if (sessionEl && el.value) {
+        // Keep manually typed session; only fill session when it is still blank.
+        if (sessionEl && el.value && !String(sessionEl.value || "").trim()) {
           const name = sessionNameForOffering(el.value);
           if (name) sessionEl.value = name;
-          refreshTermsForScope(form);
         }
+        refreshTermsForScope(form);
       });
     });
 
@@ -278,7 +362,7 @@
         refreshTermsForScope(el.closest("form") || document);
       });
       el.addEventListener("blur", function () {
-        refreshTermsForScope(el.closest("form") || document);
+        syncAcademicSession(el);
       });
     });
   };

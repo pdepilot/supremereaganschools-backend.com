@@ -48,6 +48,7 @@ Route::middleware(['web', 'auth', 'cbt.desk'])->prefix('cbt')->name('cbt.')->gro
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [CbtAdminController::class, 'entry'])->name('entry');
         Route::get('lookups', [CbtAdminController::class, 'lookups'])->name('lookups');
+        Route::post('academic-sessions/ensure', [CbtAdminController::class, 'ensureAcademicSession'])->name('academic-sessions.ensure');
         Route::post('subjects', [CbtAdminController::class, 'storeSubject'])->name('subjects.store');
         Route::get('students', [CbtAdminController::class, 'students'])->name('students');
         Route::get('results', [CbtAdminController::class, 'results'])->name('results');

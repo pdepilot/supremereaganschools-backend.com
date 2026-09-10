@@ -2,27 +2,24 @@
 
 namespace App\Http\Controllers\Api\V1\Cbt;
 
-use App\Enums\SessionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Cbt\CbtAdminExamResource;
-use App\Models\AcademicSession;
 use App\Models\CbtExam;
 use App\Models\CbtExamAssignment;
 use App\Models\CbtExamQuestion;
 use App\Models\CbtQuestion;
 use App\Models\ClassSectionOffering;
 use App\Models\StudentProfile;
-use App\Models\SubjectOffering;
 use App\Models\Term;
 use App\Services\Cbt\CbtAccessService;
 use App\Services\Cbt\CbtExamAssignmentService;
 use App\Services\Cbt\CbtExamPublishService;
 use App\Services\Cbt\CbtExamService;
 use App\Services\Cbt\CbtExamSnapshotService;
+use App\Services\SchoolBookSessionSync;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -34,6 +31,7 @@ class CbtAdminExamController extends Controller
         private readonly CbtExamSnapshotService $snapshots,
         private readonly CbtExamPublishService $publish,
         private readonly CbtExamAssignmentService $assignments,
+        private readonly SchoolBookSessionSync $sessionSync,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -259,7 +257,8 @@ class CbtAdminExamController extends Controller
         if (array_key_exists('academic_session', $data) || array_key_exists('academic_session_id', $data)) {
             $sessionName = isset($data['academic_session']) ? trim((string) $data['academic_session']) : '';
             if ($sessionName !== '') {
-                $data['academic_session_id'] = $this->resolveAcademicSessionId($sessionName);
+                $session = $this->sessionSync->ensure($sessionName, $request->user()?->id);
+                $data['academic_session_id'] = (int) $session->id;
             } elseif (! empty($data['academic_session_id'])) {
                 $data['academic_session_id'] = (int) $data['academic_session_id'];
             } elseif (! $updating) {
@@ -275,69 +274,18 @@ class CbtAdminExamController extends Controller
         }
 
         if (! empty($data['academic_session_id']) && ! empty($data['class_section_offering_id'])) {
-            $data['class_section_offering_id'] = $this->alignOfferingToSession(
-                (int) $data['class_section_offering_id'],
-                (int) $data['academic_session_id'],
-            );
+            $offering = ClassSectionOffering::query()->find((int) $data['class_section_offering_id']);
+            if ($offering === null) {
+                throw ValidationException::withMessages([
+                    'class_section_offering_id' => 'A valid class section offering is required.',
+                ]);
+            }
+            $data['class_section_offering_id'] = (int) $this->sessionSync
+                ->alignOfferingToSession($offering, (int) $data['academic_session_id'])
+                ->id;
         }
 
         return $data;
-    }
-
-    private function resolveAcademicSessionId(string $name): int
-    {
-        $existing = AcademicSession::query()
-            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
-            ->first();
-
-        if ($existing) {
-            return (int) $existing->id;
-        }
-
-        [$startsOn, $endsOn] = $this->inferSessionDates($name);
-
-        $session = AcademicSession::query()->create([
-            'name' => $name,
-            'starts_on' => $startsOn,
-            'ends_on' => $endsOn,
-            'term_count' => 3,
-            'status' => SessionStatus::Planned,
-            'created_by' => request()->user()?->id,
-        ]);
-
-        foreach ([1 => 'First Term', 2 => 'Second Term', 3 => 'Third Term'] as $number => $termName) {
-            Term::query()->create([
-                'academic_session_id' => $session->id,
-                'name' => $termName,
-                'term_number' => $number,
-                'status' => SessionStatus::Planned,
-            ]);
-        }
-
-        return (int) $session->id;
-    }
-
-    /**
-     * @return array{0: string, 1: string}
-     */
-    private function inferSessionDates(string $name): array
-    {
-        if (preg_match('/(\d{4})\s*[\/\-]\s*(\d{4})/', $name, $matches) === 1) {
-            $startYear = (int) $matches[1];
-            $endYear = (int) $matches[2];
-
-            return [
-                sprintf('%04d-09-01', $startYear),
-                sprintf('%04d-07-31', $endYear),
-            ];
-        }
-
-        $year = (int) Carbon::now()->year;
-
-        return [
-            sprintf('%04d-09-01', $year),
-            sprintf('%04d-07-31', $year + 1),
-        ];
     }
 
     private function resolveTermIdForSession(int $termId, int $sessionId): int
@@ -369,46 +317,5 @@ class CbtAdminExamController extends Controller
         throw ValidationException::withMessages([
             'term_id' => 'Choose a term that matches the academic session (First, Second, or Third Term).',
         ]);
-    }
-
-    private function alignOfferingToSession(int $offeringId, int $sessionId): int
-    {
-        $offering = ClassSectionOffering::query()->with('subjectOfferings')->find($offeringId);
-        if ($offering === null) {
-            throw ValidationException::withMessages([
-                'class_section_offering_id' => 'A valid class section offering is required.',
-            ]);
-        }
-
-        if ((int) $offering->academic_session_id === $sessionId) {
-            return (int) $offering->id;
-        }
-
-        $aligned = ClassSectionOffering::query()->firstOrCreate(
-            [
-                'class_section_id' => $offering->class_section_id,
-                'academic_session_id' => $sessionId,
-            ],
-            [
-                'campus_id' => $offering->campus_id,
-                'capacity' => $offering->capacity,
-                'is_active' => true,
-            ],
-        );
-
-        if ($aligned->wasRecentlyCreated || ! $aligned->subjectOfferings()->exists()) {
-            foreach ($offering->subjectOfferings as $subjectOffering) {
-                SubjectOffering::query()->firstOrCreate([
-                    'class_section_offering_id' => $aligned->id,
-                    'subject_id' => $subjectOffering->subject_id,
-                ]);
-            }
-        }
-
-        if (! $aligned->is_active) {
-            $aligned->update(['is_active' => true]);
-        }
-
-        return (int) $aligned->id;
     }
 }

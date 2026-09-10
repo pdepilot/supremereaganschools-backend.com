@@ -137,6 +137,37 @@ class CbtAdminApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_manager_can_ensure_academic_session_syncs_book_offerings(): void
+    {
+        $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
+        $session = $this->academicSession(['name' => 'SRC-'.random_int(10000, 99999)]);
+        $level = $this->level(['name' => 'Nursery', 'slug' => 'nursery', 'sort_order' => 2]);
+        $class = $this->schoolClass($level, ['name' => 'Nursery 2', 'short_code' => 'N2']);
+        $section = $this->section($class, ['arm' => 'Awesome', 'name' => 'Nursery 2 – Awesome']);
+        $this->offering($section, $session);
+
+        $newName = '2101/2102';
+        $ensure = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/academic-sessions/ensure', [
+            'name' => $newName,
+        ])->assertOk()
+            ->assertJsonPath('data.academic_session.name', $newName);
+
+        $newSessionId = (int) $ensure->json('data.academic_session.id');
+        $this->assertDatabaseHas('class_section_offerings', [
+            'class_section_id' => $section->id,
+            'academic_session_id' => $newSessionId,
+            'is_active' => 1,
+        ]);
+
+        $lookups = $this->actingAsCbt($manager)
+            ->getJson('/api/v1/cbt/admin/lookups?academic_session='.urlencode($newName))
+            ->assertOk();
+
+        $labels = collect($lookups->json('data.offerings'))->pluck('label');
+        $this->assertTrue($labels->contains('Nursery 2 – Awesome'));
+        $this->assertFalse($labels->contains(fn ($label) => str_contains((string) $label, '2101/2102')));
+    }
+
     public function test_manager_can_create_exam_with_typed_academic_session(): void
     {
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
