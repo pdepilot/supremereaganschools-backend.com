@@ -36,6 +36,8 @@ class NewsDiscoveryTest extends TestCase
             ->assertDontSee($draft->slug, false)
             ->assertDontSee('/portal', false)
             ->assertDontSee('/login', false)
+            ->assertDontSee('/pta', false)
+            ->assertDontSee(url('/events'), false)
             ->assertDontSee('q=', false);
 
         $this->get('/feed')
@@ -49,9 +51,11 @@ class NewsDiscoveryTest extends TestCase
         $this->get('/robots.txt')
             ->assertOk()
             ->assertSee('Allow: /news', false)
+            ->assertSee('Allow: /resources', false)
             ->assertSee('Disallow: /portal', false)
             ->assertSee('Disallow: /student', false)
-            ->assertSee('Disallow: /news/preview', false);
+            ->assertSee('Disallow: /news/preview', false)
+            ->assertSee('Disallow: /pta', false);
 
         $this->get($live->publicUrl())
             ->assertSee('"@type":"Article"', false)

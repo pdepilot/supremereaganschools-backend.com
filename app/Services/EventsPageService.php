@@ -74,6 +74,15 @@ class EventsPageService
             ->get();
     }
 
+    public function hasUpcomingPublished(): bool
+    {
+        if (! Schema::hasTable('events')) {
+            return false;
+        }
+
+        return Event::query()->published()->upcoming()->exists();
+    }
+
     private function featuredHtml(Event $event): string
     {
         $image = $event->coverImageUrl() ?: '/site/Image/school_view2.jpg';

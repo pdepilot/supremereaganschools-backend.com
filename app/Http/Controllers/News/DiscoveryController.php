@@ -8,13 +8,22 @@ use App\Models\PublishingSetting;
 use App\Services\News\PostService;
 use App\Services\News\SitemapService;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
+use Throwable;
 
 class DiscoveryController extends Controller
 {
     public function sitemap(SitemapService $sitemap): Response
     {
+        try {
+            $urls = $sitemap->urls();
+        } catch (Throwable $e) {
+            report($e);
+            $urls = $this->fallbackSitemapUrls();
+        }
+
         return response()
-            ->view('site.discovery.sitemap', ['urls' => $sitemap->urls()])
+            ->view('site.discovery.sitemap', ['urls' => $urls])
             ->header('Content-Type', 'application/xml; charset=UTF-8');
     }
 
@@ -63,6 +72,7 @@ class DiscoveryController extends Controller
             'Disallow: /login',
             'Disallow: /api',
             'Disallow: /news/preview',
+            'Disallow: /pta',
             '',
             'Sitemap: '.url('/sitemap.xml'),
             '',
@@ -71,5 +81,30 @@ class DiscoveryController extends Controller
         return response($body, 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
         ]);
+    }
+
+    /**
+     * Minimal public URLs if the full sitemap builder fails in production.
+     *
+     * @return list<array{loc: string, lastmod: string, changefreq: string, priority: string}>
+     */
+    private function fallbackSitemapUrls(): array
+    {
+        $now = Carbon::now()->toAtomString();
+
+        return collect([
+            '/' => '1.0',
+            '/about' => '0.8',
+            '/admissions' => '0.8',
+            '/contact' => '0.7',
+            '/news' => '0.8',
+            '/privacy' => '0.3',
+            '/terms' => '0.3',
+        ])->map(fn (string $priority, string $path) => [
+            'loc' => url($path),
+            'lastmod' => $now,
+            'changefreq' => 'weekly',
+            'priority' => $priority,
+        ])->values()->all();
     }
 }

@@ -82,7 +82,14 @@ class FrontendRoutingTest extends TestCase
             ->assertSee('Upcoming events', false)
             ->assertSee('href="/events"', false)
             ->assertSee('href="/site/CSS/events.css', false)
+            ->assertSee('name="robots" content="noindex,follow"', false)
+            ->assertHeader('X-Robots-Tag', 'noindex,follow')
             ->assertDontSee('href="./events.html"', false);
+
+        $this->get('/pta')
+            ->assertOk()
+            ->assertSee('name="robots" content="noindex,follow"', false)
+            ->assertHeader('X-Robots-Tag', 'noindex,follow');
     }
 
     public function test_home_hero_images_are_rewritten_to_site_assets(): void

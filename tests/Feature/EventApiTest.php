@@ -124,7 +124,13 @@ class EventApiTest extends TestCase
             ->assertOk()
             ->assertSee('Visible Open Day', false)
             ->assertSee('Families welcome on campus.', false)
-            ->assertDontSee('Hidden Draft Gathering', false);
+            ->assertDontSee('Hidden Draft Gathering', false)
+            ->assertDontSee('name="robots" content="noindex,follow"', false)
+            ->assertHeaderMissing('X-Robots-Tag');
+
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee(url('/events'), false);
 
         $this->get('/')
             ->assertOk()

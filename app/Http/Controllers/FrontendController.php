@@ -27,16 +27,27 @@ class FrontendController extends Controller
     public function publicPage(string $page): Response
     {
         $replacements = [];
+        $robots = null;
+
+        if ($page === 'pta') {
+            // No verified PTA content yet — keep the route, but keep crawlers out.
+            $robots = 'noindex,follow';
+        }
 
         if ($page === 'events') {
-            $fragments = app(EventsPageService::class)->pageFragments();
+            $events = app(EventsPageService::class);
+            $fragments = $events->pageFragments();
             $replacements = [
                 '<!--EVENTS_FEATURED-->' => $fragments['featured'],
                 '<!--EVENTS_TIMELINE-->' => $fragments['timeline'],
             ];
+
+            if (! $events->hasUpcomingPublished()) {
+                $robots = 'noindex,follow';
+            }
         }
 
-        return $this->frontend->response('public/'.$page.'.html', $replacements, 'public');
+        return $this->frontend->response('public/'.$page.'.html', $replacements, 'public', $robots);
     }
 
     public function portalPage(string $page = 'dashboard'): Response|RedirectResponse

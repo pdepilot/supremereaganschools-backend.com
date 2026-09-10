@@ -17,7 +17,7 @@ class FrontendPage
      * @param  array<string, string>  $replacements
      * @param  'public'|'admin'|'staff'|'parent'|'student'|'auth'  $area
      */
-    public function html(string $relativePath, array $replacements = [], string $area = 'public'): string
+    public function html(string $relativePath, array $replacements = [], string $area = 'public', ?string $robots = null): string
     {
         abort_unless(preg_match('/^[A-Za-z0-9_\-]+(?:\/[A-Za-z0-9_\-]+)*\.html$/', $relativePath) === 1, 404);
 
@@ -32,6 +32,10 @@ class FrontendPage
 
         $html = $this->linker->rewrite($this->withFavicon($html), $area);
 
+        if ($robots !== null && $robots !== '') {
+            $html = $this->withRobotsMeta($html, $robots);
+        }
+
         if ($area === 'public') {
             $html = $this->withPublicAnalytics($html);
         }
@@ -43,9 +47,9 @@ class FrontendPage
      * @param  array<string, string>  $replacements
      * @param  'public'|'admin'|'staff'|'parent'|'student'|'auth'  $area
      */
-    public function response(string $relativePath, array $replacements = [], string $area = 'public'): Response
+    public function response(string $relativePath, array $replacements = [], string $area = 'public', ?string $robots = null): Response
     {
-        return $this->htmlResponse($this->html($relativePath, $replacements, $area));
+        return $this->htmlResponse($this->html($relativePath, $replacements, $area, $robots), $robots);
     }
 
     /**
@@ -165,11 +169,36 @@ HTML;
         return is_string($updated) ? $updated : $html;
     }
 
-    private function htmlResponse(string $html): Response
+    private function withRobotsMeta(string $html, string $directives): string
     {
-        return response($html, 200, [
+        $tag = '<meta name="robots" content="'.e($directives).'">';
+
+        if (preg_match('/<meta\s+name=["\']robots["\'][^>]*>/i', $html) === 1) {
+            $updated = preg_replace('/<meta\s+name=["\']robots["\'][^>]*>/i', $tag, $html, 1);
+
+            return is_string($updated) ? $updated : $html;
+        }
+
+        if (str_contains($html, '</head>')) {
+            $updated = preg_replace('/<\/head>/i', '  '.$tag."\n</head>", $html, 1);
+
+            return is_string($updated) ? $updated : $html;
+        }
+
+        return $html;
+    }
+
+    private function htmlResponse(string $html, ?string $robots = null): Response
+    {
+        $headers = [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-store, private',
-        ]);
+        ];
+
+        if ($robots !== null && $robots !== '') {
+            $headers['X-Robots-Tag'] = $robots;
+        }
+
+        return response($html, 200, $headers);
     }
 }
