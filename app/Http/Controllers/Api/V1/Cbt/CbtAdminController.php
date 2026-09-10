@@ -18,6 +18,7 @@ use App\Models\ClassSectionOffering;
 use App\Models\SchoolClass;
 use App\Models\StudentProfile;
 use App\Models\Subject;
+use App\Models\SubjectOffering;
 use App\Models\Term;
 use App\Services\Cbt\CbtAccessService;
 use App\Services\Cbt\CbtOperationalReportingService;
@@ -68,8 +69,70 @@ class CbtAdminController extends Controller
             403,
         );
 
+        $activeOfferingQuery = function ($q): void {
+            $q->where('is_active', true)
+                ->whereHas('classSection', fn ($s) => $s->where('is_active', true))
+                ->whereHas('classSection.schoolClass', fn ($c) => $c->where('is_active', true));
+        };
+
+        $bookSubjectIds = SubjectOffering::query()
+            ->whereHas('classSectionOffering', $activeOfferingQuery)
+            ->pluck('subject_id')
+            ->unique()
+            ->values();
+
+        $subjects = Subject::query()
+            ->where('is_active', true)
+            ->whereIn('id', $bookSubjectIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+
+        $subjectsByClass = [];
+        SchoolClass::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->each(function (SchoolClass $class) use (&$subjectsByClass, $activeOfferingQuery): void {
+                $ids = SubjectOffering::query()
+                    ->whereHas('classSectionOffering', function ($q) use ($class, $activeOfferingQuery): void {
+                        $activeOfferingQuery($q);
+                        $q->whereHas('classSection', fn ($s) => $s->where('school_class_id', $class->id));
+                    })
+                    ->pluck('subject_id')
+                    ->unique()
+                    ->all();
+
+                $subjectsByClass[(string) $class->id] = Subject::query()
+                    ->where('is_active', true)
+                    ->whereIn('id', $ids)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'code'])
+                    ->values()
+                    ->all();
+            });
+
+        $subjectsByOffering = [];
+        ClassSectionOffering::query()
+            ->where('is_active', true)
+            ->whereHas('classSection', fn ($s) => $s->where('is_active', true))
+            ->whereHas('classSection.schoolClass', fn ($c) => $c->where('is_active', true))
+            ->with(['subjects' => fn ($q) => $q->where('subjects.is_active', true)->orderBy('name')])
+            ->each(function (ClassSectionOffering $offering) use (&$subjectsByOffering): void {
+                $subjectsByOffering[(string) $offering->id] = $offering->subjects
+                    ->map(fn (Subject $subject) => [
+                        'id' => $subject->id,
+                        'name' => $subject->name,
+                        'code' => $subject->code,
+                    ])
+                    ->values()
+                    ->all();
+            });
+
         return ApiResponse::success('CBT admin lookups.', [
-            'subjects' => Subject::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
+            // School-book subjects only (offered on active forms).
+            'subjects' => $subjects,
+            'subjects_by_school_class' => $subjectsByClass,
+            'subjects_by_offering' => $subjectsByOffering,
             // School year-group for question bank (e.g. Nursery 2, Basic 1).
             'classes' => SchoolClass::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             // The 18 named form groups (e.g. Nursery 2 – Awesome).
@@ -111,7 +174,7 @@ class CbtAdminController extends Controller
                     'id' => $row->id,
                     'label' => trim(
                         ($row->classSection?->name ?? 'Form')
-                        .( $row->academicSession?->name ? ' · '.$row->academicSession->name : '')
+                        .($row->academicSession?->name ? ' · '.$row->academicSession->name : '')
                     ),
                     'form' => $row->classSection?->name,
                     'class_section_id' => $row->class_section_id,
@@ -123,6 +186,84 @@ class CbtAdminController extends Controller
             'question_types' => array_map(fn (CbtQuestionType $case) => $case->value, CbtQuestionType::cases()),
             'exam_statuses' => array_map(fn (CbtExamStatus $case) => $case->value, CbtExamStatus::cases()),
         ]);
+    }
+
+    public function storeSubject(Request $request): JsonResponse
+    {
+        abort_unless($this->access->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'code' => ['nullable', 'string', 'max:20'],
+            'school_class_id' => ['nullable', 'required_without:class_section_offering_id', 'integer', 'exists:school_classes,id'],
+            'class_section_offering_id' => ['nullable', 'required_without:school_class_id', 'integer', 'exists:class_section_offerings,id'],
+        ]);
+
+        $name = trim($data['name']);
+        $preferredCode = isset($data['code']) && trim((string) $data['code']) !== ''
+            ? strtoupper(trim((string) $data['code']))
+            : null;
+
+        $subject = Subject::query()
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        if (! $subject && $preferredCode) {
+            $subject = Subject::query()->where('code', $preferredCode)->first();
+        }
+
+        $created = false;
+        if ($subject) {
+            $subject->fill([
+                'name' => $name,
+                'is_active' => true,
+            ]);
+            if ($preferredCode && ! Subject::query()->where('code', $preferredCode)->whereKeyNot($subject->id)->exists()) {
+                $subject->code = $preferredCode;
+            }
+            $subject->save();
+        } else {
+            $subject = Subject::query()->create([
+                'name' => $name,
+                'code' => $this->uniqueSubjectCode($name, $preferredCode),
+                'is_active' => true,
+            ]);
+            $created = true;
+        }
+
+        $offeringIds = [];
+        if (! empty($data['class_section_offering_id'])) {
+            $offeringIds[] = (int) $data['class_section_offering_id'];
+        } elseif (! empty($data['school_class_id'])) {
+            $offeringIds = ClassSectionOffering::query()
+                ->where('is_active', true)
+                ->whereHas('classSection', function ($q) use ($data): void {
+                    $q->where('school_class_id', (int) $data['school_class_id'])
+                        ->where('is_active', true);
+                })
+                ->pluck('id')
+                ->all();
+        }
+
+        foreach ($offeringIds as $offeringId) {
+            SubjectOffering::query()->firstOrCreate([
+                'class_section_offering_id' => $offeringId,
+                'subject_id' => $subject->id,
+            ]);
+        }
+
+        return ApiResponse::success(
+            $created ? 'Subject created for CBT.' : 'Subject ready for CBT.',
+            [
+                'subject' => [
+                    'id' => $subject->id,
+                    'name' => $subject->name,
+                    'code' => $subject->code,
+                ],
+                'attached_offering_ids' => array_values(array_map('intval', $offeringIds)),
+            ],
+            $created ? 201 : 200,
+        );
     }
 
     public function students(Request $request): JsonResponse
@@ -211,5 +352,21 @@ class CbtAdminController extends Controller
                 'total' => $rows->total(),
             ],
         ]);
+    }
+
+    private function uniqueSubjectCode(string $name, ?string $preferred = null): string
+    {
+        $base = $preferred
+            ?: strtoupper(substr(preg_replace('/[^A-Za-z0-9]+/', '', $name) ?: 'SUB', 0, 8));
+        $base = substr($base !== '' ? $base : 'SUB', 0, 16);
+
+        $candidate = $base;
+        $suffix = 2;
+        while (Subject::query()->where('code', $candidate)->exists()) {
+            $candidate = substr($base, 0, 12).$suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 }

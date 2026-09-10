@@ -153,11 +153,44 @@
     if (current) select.value = current;
   };
 
+  const subjectsForSelect = function (select) {
+    if (!lookups) return [];
+    const scope = select.closest("form") || select.closest("[data-q-filters], [data-exam-filters], [data-bank-filters]") || document;
+    const offeringEl = scope.querySelector('[name="class_section_offering_id"]');
+    const classEl = scope.querySelector('[name="school_class_id"]');
+    if (offeringEl && offeringEl.value && lookups.subjects_by_offering) {
+      return lookups.subjects_by_offering[String(offeringEl.value)] || [];
+    }
+    if (classEl && classEl.value && lookups.subjects_by_school_class) {
+      return lookups.subjects_by_school_class[String(classEl.value)] || [];
+    }
+    return lookups.subjects || [];
+  };
+
+  const fillSubjectSelect = function (select) {
+    if (!select) return;
+    const includeBlank = select.querySelector('option[value=""]') != null || !select.required;
+    fillSelect(select, subjectsForSelect(select), "id", "name", includeBlank);
+  };
+
+  const refreshSubjectSelects = function (scope) {
+    const root = scope || document;
+    root.querySelectorAll('[data-lookup="subjects"]').forEach(fillSubjectSelect);
+  };
+
+  const bindSubjectContextFilters = function () {
+    document.querySelectorAll('[name="school_class_id"], [name="class_section_offering_id"]').forEach(function (el) {
+      if (el.dataset.subjectsBound === "1") return;
+      el.dataset.subjectsBound = "1";
+      el.addEventListener("change", function () {
+        const scope = el.closest("form") || el.closest("[data-q-filters], [data-exam-filters], [data-bank-filters]") || document;
+        refreshSubjectSelects(scope);
+      });
+    });
+  };
+
   const populateLookups = function () {
     if (!lookups) return;
-    document.querySelectorAll('[data-lookup="subjects"]').forEach(function (el) {
-      fillSelect(el, lookups.subjects, "id", "name", el.querySelector('option[value=""]') != null || !el.required);
-    });
     document.querySelectorAll('[data-lookup="classes"]').forEach(function (el) {
       fillSelect(el, lookups.classes, "id", "name", el.querySelector('option[value=""]') != null || !el.required);
     });
@@ -181,6 +214,148 @@
     });
     document.querySelectorAll('[data-lookup="exam_statuses"]').forEach(function (el) {
       fillSelect(el, lookups.exam_statuses, null, null, true);
+    });
+    refreshSubjectSelects();
+    bindSubjectContextFilters();
+    ensureAddSubjectControls();
+    applyCapabilityGates();
+  };
+
+  let addSubjectTargetSelect = null;
+
+  const ensureAddSubjectModal = function () {
+    let modal = document.querySelector("[data-add-subject-modal]");
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.className = "cbt-modal";
+    modal.setAttribute("data-add-subject-modal", "1");
+    modal.innerHTML = ''
+      + '<div class="cbt-modal-card">'
+      + '<h2>Add subject</h2>'
+      + '<p class="cbt-muted">Type a new subject name (or an existing catalogue name). Select a class or offering first so it is attached and appears in the dropdown.</p>'
+      + '<form data-add-subject-form>'
+      + '<p class="cbt-alert" data-add-subject-alert hidden></p>'
+      + '<div class="cbt-form-grid">'
+      + '<label class="cbt-full">Subject name'
+      + '<input type="text" name="name" required maxlength="100" placeholder="e.g. Handwriting">'
+      + '</label>'
+      + '<label>Code (optional)'
+      + '<input type="text" name="code" maxlength="20" placeholder="Auto if blank">'
+      + '</label>'
+      + '</div>'
+      + '<div class="cbt-actions">'
+      + '<button type="button" class="cbt-btn cbt-btn-ghost" data-add-subject-cancel>Cancel</button>'
+      + '<button type="submit" class="cbt-btn cbt-btn-primary">Save subject</button>'
+      + '</div>'
+      + '</form>'
+      + '</div>';
+    document.body.appendChild(modal);
+
+    modal.querySelector("[data-add-subject-cancel]")?.addEventListener("click", function () {
+      closeModal(modal);
+      addSubjectTargetSelect = null;
+    });
+
+    modal.querySelector("[data-add-subject-form]")?.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const alertEl = form.querySelector("[data-add-subject-alert]");
+      const scope = addSubjectTargetSelect
+        ? (addSubjectTargetSelect.closest("form") || addSubjectTargetSelect.closest("[data-q-filters], [data-exam-filters], [data-bank-filters]") || document)
+        : document;
+      const classEl = scope.querySelector('[name="school_class_id"]');
+      const offeringEl = scope.querySelector('[name="class_section_offering_id"]');
+      const payload = {
+        name: String(form.name.value || "").trim(),
+        code: String(form.code.value || "").trim() || null,
+        school_class_id: classEl && classEl.value ? Number(classEl.value) : null,
+        class_section_offering_id: offeringEl && offeringEl.value ? Number(offeringEl.value) : null
+      };
+
+      if (!payload.name) {
+        if (alertEl) {
+          alertEl.hidden = false;
+          alertEl.classList.add("is-visible");
+          alertEl.textContent = "Enter a subject name.";
+        }
+        return;
+      }
+
+      if (!payload.school_class_id && !payload.class_section_offering_id) {
+        if (alertEl) {
+          alertEl.hidden = false;
+          alertEl.classList.add("is-visible");
+          alertEl.textContent = "Select a class or offering first, then add the subject.";
+        }
+        return;
+      }
+
+      request("/api/v1/cbt/admin/subjects", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      }).then(function (result) {
+        if (!result.ok) {
+          if (alertEl) {
+            alertEl.hidden = false;
+            alertEl.classList.add("is-visible");
+            alertEl.textContent = firstError(result.body);
+          }
+          showAlert(firstError(result.body));
+          return;
+        }
+
+        const subject = result.body.data && result.body.data.subject;
+        return request("/api/v1/cbt/admin/lookups").then(function (lookResult) {
+          if (lookResult.ok && lookResult.body.data) {
+            lookups = lookResult.body.data;
+            populateLookups();
+          }
+          if (addSubjectTargetSelect && subject) {
+            refreshSubjectSelects(scope);
+            addSubjectTargetSelect.value = String(subject.id);
+          }
+          closeModal(modal);
+          addSubjectTargetSelect = null;
+          showAlert(result.body.message || "Subject saved.", "info");
+        });
+      });
+    });
+
+    return modal;
+  };
+
+  const openAddSubjectModal = function (select) {
+    if (!capabilities.manage) return;
+    addSubjectTargetSelect = select || null;
+    const modal = ensureAddSubjectModal();
+    const form = modal.querySelector("[data-add-subject-form]");
+    const alertEl = form && form.querySelector("[data-add-subject-alert]");
+    if (form) form.reset();
+    if (alertEl) {
+      alertEl.hidden = true;
+      alertEl.classList.remove("is-visible");
+      alertEl.textContent = "";
+    }
+    openModal(modal);
+    form?.querySelector('[name="name"]')?.focus();
+  };
+
+  const ensureAddSubjectControls = function () {
+    if (!capabilities.manage) return;
+    document.querySelectorAll('[data-lookup="subjects"]').forEach(function (select) {
+      if (select.dataset.addSubjectWired === "1") return;
+      select.dataset.addSubjectWired = "1";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cbt-btn cbt-btn-ghost";
+      btn.setAttribute("data-manage-only", "1");
+      btn.textContent = "Add subject";
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        openAddSubjectModal(select);
+      });
+      select.insertAdjacentElement("afterend", btn);
     });
   };
 
@@ -580,6 +755,7 @@
     setFieldValue(form, "id", question ? question.id : "");
     if (question) {
       setFieldValue(form, "school_class_id", question.school_class_id);
+      refreshSubjectSelects(form);
       setFieldValue(form, "subject_id", question.subject_id);
       setFieldValue(form, "topic", question.topic || "");
       setFieldValue(form, "difficulty", question.difficulty || "");
@@ -590,6 +766,8 @@
       setFieldValue(form, "is_active", !!question.is_active);
       optionsHost.innerHTML = (question.options || []).map(optionRowHtml).join("") || optionRowHtml({ is_correct: true }) + optionRowHtml({});
     } else {
+      setFieldValue(form, "school_class_id", "");
+      refreshSubjectSelects(form);
       setFieldValue(form, "type", "mcq");
       setFieldValue(form, "difficulty", "medium");
       setFieldValue(form, "marks", "1");
@@ -868,8 +1046,9 @@
     const form = document.querySelector("[data-exam-config-form]");
     if (form) {
       form.title.value = exam.title || "";
-      form.subject_id.value = exam.subject_id || "";
       form.class_section_offering_id.value = exam.class_section_offering_id || "";
+      refreshSubjectSelects(form);
+      form.subject_id.value = exam.subject_id || "";
       form.academic_session_id.value = exam.academic_session_id || "";
       form.term_id.value = exam.term_id || "";
       form.duration_minutes.value = exam.duration_minutes || "";

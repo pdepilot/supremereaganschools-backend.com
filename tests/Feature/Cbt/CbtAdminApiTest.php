@@ -352,6 +352,54 @@ class CbtAdminApiTest extends TestCase
         $this->assertCount(0, $theirs);
     }
 
+    public function test_manager_can_add_subject_and_attach_to_class_offerings(): void
+    {
+        $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
+        $offering = $this->offering();
+        $classId = $offering->classSection->school_class_id;
+
+        $create = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/subjects', [
+            'name' => 'Handwriting Practice',
+            'code' => 'HWP'.random_int(10, 99),
+            'school_class_id' => $classId,
+        ])->assertCreated()
+            ->assertJsonPath('data.subject.name', 'Handwriting Practice');
+
+        $subjectId = $create->json('data.subject.id');
+        $this->assertDatabaseHas('subject_offerings', [
+            'class_section_offering_id' => $offering->id,
+            'subject_id' => $subjectId,
+        ]);
+
+        $lookups = $this->actingAsCbt($manager)->getJson('/api/v1/cbt/admin/lookups')->assertOk();
+        $this->assertTrue(collect($lookups->json('data.subjects'))->pluck('id')->contains($subjectId));
+        $this->assertTrue(collect($lookups->json('data.subjects_by_school_class.'.$classId))->pluck('id')->contains($subjectId));
+    }
+
+    public function test_admin_lookups_list_only_subjects_offered_on_active_forms(): void
+    {
+        $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
+        $offering = $this->offering();
+        $bookSubject = $this->subject(['name' => 'Discover Numeracy', 'code' => 'DN'.random_int(100, 999)]);
+        $orphan = $this->subject(['name' => 'Biology Leftover', 'code' => 'BIO'.random_int(100, 999)]);
+        $this->subjectOffering($offering, $bookSubject);
+
+        $response = $this->actingAsCbt($manager)->getJson('/api/v1/cbt/admin/lookups')->assertOk();
+
+        $names = collect($response->json('data.subjects'))->pluck('name');
+        $this->assertTrue($names->contains('Discover Numeracy'));
+        $this->assertFalse($names->contains('Biology Leftover'));
+
+        $byOffering = $response->json('data.subjects_by_offering.'.$offering->id);
+        $this->assertNotEmpty($byOffering);
+        $this->assertTrue(collect($byOffering)->pluck('name')->contains('Discover Numeracy'));
+
+        $classId = $offering->classSection->school_class_id;
+        $byClass = $response->json('data.subjects_by_school_class.'.$classId);
+        $this->assertTrue(collect($byClass)->pluck('name')->contains('Discover Numeracy'));
+        $this->assertNotNull($orphan->id);
+    }
+
     public function test_admin_pages_require_cbt_staff_permissions(): void
     {
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
