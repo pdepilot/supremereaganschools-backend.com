@@ -9,6 +9,7 @@ use App\Models\ClassSection;
 use App\Models\ClassSectionOffering;
 use App\Models\Subject;
 use App\Models\SubjectOffering;
+use App\Support\SchoolBookStructure;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
@@ -25,6 +26,8 @@ class ClassSectionOfferingSeeder extends Seeder
         if ($session === null || $campus === null) {
             return;
         }
+
+        $bookFormNames = SchoolBookStructure::formNames();
 
         $basicLowerSubjects = $this->subjectIds([
             'Mathematics',
@@ -118,17 +121,20 @@ class ClassSectionOfferingSeeder extends Seeder
             'nursery-3' => $nursery3Subjects,
             'basic-1-3' => $basicLowerSubjects,
             'basic-4-5' => $basicUpperSubjects,
-            'jss' => $this->subjectIds(['Mathematics', 'English', 'Basic Science', 'Basic Technology', 'Social Studies', 'Civic Education', 'Computer']),
-            'ss' => $this->subjectIds(['Mathematics', 'English', 'Biology', 'Chemistry', 'Physics', 'Government', 'Literature in English']),
         ];
 
         ClassSection::query()
             ->where('is_active', true)
+            ->whereIn('name', $bookFormNames)
             ->with('schoolClass.level')
             ->orderBy('id')
             ->each(function (ClassSection $section) use ($session, $campus, $byForm): void {
                 $class = $section->schoolClass;
                 if ($class === null || $class->is_active === false) {
+                    return;
+                }
+
+                if (! in_array($class->level?->slug, SchoolBookStructure::LEVEL_SLUGS, true)) {
                     return;
                 }
 
@@ -162,6 +168,16 @@ class ClassSectionOfferingSeeder extends Seeder
                     );
                 }
             });
+
+        // Hide offerings that are not part of the 18-form school book.
+        ClassSectionOffering::query()
+            ->where(function ($q) use ($bookFormNames): void {
+                $q->whereHas('classSection', fn ($s) => $s->whereNotIn('name', $bookFormNames))
+                    ->orWhereHas('classSection', fn ($s) => $s->where('is_active', false))
+                    ->orWhereHas('classSection.schoolClass', fn ($c) => $c->where('is_active', false))
+                    ->orWhereHas('classSection.schoolClass.level', fn ($l) => $l->whereNotIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+            })
+            ->update(['is_active' => false]);
     }
 
     /**

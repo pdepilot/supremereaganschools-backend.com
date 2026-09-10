@@ -5,34 +5,16 @@ namespace Database\Seeders;
 use App\Models\ClassSection;
 use App\Models\Level;
 use App\Models\SchoolClass;
+use App\Support\SchoolBookStructure;
 use Illuminate\Database\Seeder;
 
 class SchoolClassSeeder extends Seeder
 {
     public function run(): void
     {
-        $structure = [
-            'activity' => [
-                ['name' => 'Activity 1', 'short_code' => 'A1', 'arms' => ['']],
-                ['name' => 'Activity 2', 'short_code' => 'A2', 'arms' => ['Blossom', 'Excel']],
-            ],
-            'nursery' => [
-                ['name' => 'Nursery 1', 'short_code' => 'N1', 'arms' => ['Achiever', 'Fabulous']],
-                ['name' => 'Nursery 2', 'short_code' => 'N2', 'arms' => ['Awesome', 'Amazing']],
-                ['name' => 'Nursery 3', 'short_code' => 'N3', 'arms' => ['Gold', 'Fruitful']],
-            ],
-            'primary' => [
-                ['name' => 'Basic 1', 'short_code' => 'B1', 'arms' => ['Amazing', 'Excellent']],
-                ['name' => 'Basic 2', 'short_code' => 'B2', 'arms' => ['Elegant', 'Pacesetters']],
-                ['name' => 'Basic 3', 'short_code' => 'B3', 'arms' => ['Zion', 'Rising Stars']],
-                ['name' => 'Basic 4', 'short_code' => 'B4', 'arms' => ['Brilliant', 'Victorious']],
-                ['name' => 'Basic 5', 'short_code' => 'B5', 'arms' => ['Diamonds']],
-            ],
-        ];
-
         $keptClassIds = [];
 
-        foreach ($structure as $slug => $classes) {
+        foreach (SchoolBookStructure::classesByLevel() as $slug => $classes) {
             $level = Level::query()->where('slug', $slug)->first();
 
             if ($level === null) {
@@ -74,7 +56,7 @@ class SchoolClassSeeder extends Seeder
 
         // Retire superseded class names that are no longer on the book (keep rows for FK history).
         SchoolClass::query()
-            ->whereHas('level', fn ($query) => $query->whereIn('slug', ['activity', 'nursery', 'primary']))
+            ->whereHas('level', fn ($query) => $query->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS))
             ->whereNotIn('id', $keptClassIds)
             ->each(function (SchoolClass $class): void {
                 $class->update(['is_active' => false]);
@@ -88,5 +70,10 @@ class SchoolClassSeeder extends Seeder
                 $class->update(['is_active' => false]);
                 $class->sections()->update(['is_active' => false]);
             });
+
+        // Any section not on the 18-form book must stay inactive.
+        ClassSection::query()
+            ->whereNotIn('name', SchoolBookStructure::formNames())
+            ->update(['is_active' => false]);
     }
 }

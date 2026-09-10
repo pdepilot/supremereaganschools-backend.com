@@ -386,7 +386,10 @@ class CbtAdminApiTest extends TestCase
     public function test_manager_can_add_subject_and_attach_to_class_offerings(): void
     {
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
-        $offering = $this->offering();
+        $level = $this->level(['name' => 'Primary', 'slug' => 'primary', 'sort_order' => 3]);
+        $class = $this->schoolClass($level, ['name' => 'Basic 1', 'short_code' => 'B1']);
+        $section = $this->section($class, ['arm' => 'Amazing', 'name' => 'Basic 1 – Amazing']);
+        $offering = $this->offering($section);
         $classId = $offering->classSection->school_class_id;
 
         $create = $this->actingAsCbt($manager)->postJson('/api/v1/cbt/admin/subjects', [
@@ -410,7 +413,10 @@ class CbtAdminApiTest extends TestCase
     public function test_admin_lookups_list_only_subjects_offered_on_active_forms(): void
     {
         $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
-        $offering = $this->offering();
+        $level = $this->level(['name' => 'Nursery', 'slug' => 'nursery', 'sort_order' => 2]);
+        $class = $this->schoolClass($level, ['name' => 'Nursery 2', 'short_code' => 'N2']);
+        $section = $this->section($class, ['arm' => 'Awesome', 'name' => 'Nursery 2 – Awesome']);
+        $offering = $this->offering($section);
         $bookSubject = $this->subject(['name' => 'Discover Numeracy', 'code' => 'DN'.random_int(100, 999)]);
         $orphan = $this->subject(['name' => 'Biology Leftover', 'code' => 'BIO'.random_int(100, 999)]);
         $this->subjectOffering($offering, $bookSubject);
@@ -429,6 +435,36 @@ class CbtAdminApiTest extends TestCase
         $byClass = $response->json('data.subjects_by_school_class.'.$classId);
         $this->assertTrue(collect($byClass)->pluck('name')->contains('Discover Numeracy'));
         $this->assertNotNull($orphan->id);
+    }
+
+    public function test_admin_lookups_hide_forms_outside_school_book(): void
+    {
+        $manager = $this->userWithRole(RoleSlug::ExaminationOfficer);
+        $session = $this->academicSession(['name' => 'BOOK-'.random_int(10000, 99999)]);
+        $campus = $this->campus();
+
+        $bookLevel = $this->level(['name' => 'Nursery', 'slug' => 'nursery', 'sort_order' => 2]);
+        $bookClass = $this->schoolClass($bookLevel, ['name' => 'Nursery 2', 'short_code' => 'N2']);
+        $bookSection = $this->section($bookClass, ['arm' => 'Awesome', 'name' => 'Nursery 2 – Awesome']);
+        $bookOffering = $this->offering($bookSection, $session, $campus);
+
+        $jssLevel = $this->level(['name' => 'Junior Secondary', 'slug' => 'jss', 'sort_order' => 9]);
+        $jssClass = $this->schoolClass($jssLevel, ['name' => 'JSS 1', 'short_code' => 'J1', 'is_active' => true]);
+        $jssSection = $this->section($jssClass, ['arm' => 'A', 'name' => 'JSS 1 A', 'is_active' => true]);
+        $jssOffering = $this->offering($jssSection, $session, $campus, ['is_active' => true]);
+
+        $response = $this->actingAsCbt($manager)->getJson('/api/v1/cbt/admin/lookups')->assertOk();
+
+        $offeringForms = collect($response->json('data.offerings'))->pluck('form');
+        $this->assertTrue($offeringForms->contains('Nursery 2 – Awesome'));
+        $this->assertFalse($offeringForms->contains('JSS 1 A'));
+
+        $classNames = collect($response->json('data.classes'))->pluck('name');
+        $this->assertTrue($classNames->contains('Nursery 2'));
+        $this->assertFalse($classNames->contains('JSS 1'));
+
+        $this->assertNotNull($bookOffering->id);
+        $this->assertNotNull($jssOffering->id);
     }
 
     public function test_admin_pages_require_cbt_staff_permissions(): void

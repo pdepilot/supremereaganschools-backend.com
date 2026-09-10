@@ -23,6 +23,7 @@ use App\Models\Term;
 use App\Services\Cbt\CbtAccessService;
 use App\Services\Cbt\CbtOperationalReportingService;
 use App\Support\ApiResponse;
+use App\Support\SchoolBookStructure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -71,8 +72,15 @@ class CbtAdminController extends Controller
 
         $activeOfferingQuery = function ($q): void {
             $q->where('is_active', true)
-                ->whereHas('classSection', fn ($s) => $s->where('is_active', true))
-                ->whereHas('classSection.schoolClass', fn ($c) => $c->where('is_active', true));
+                ->whereHas('classSection', function ($s): void {
+                    $s->where('is_active', true)
+                        ->whereIn('name', SchoolBookStructure::formNames());
+                })
+                ->whereHas('classSection.schoolClass', function ($c): void {
+                    $c->where('is_active', true)
+                        ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                        ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+                });
         };
 
         $bookSubjectIds = SubjectOffering::query()
@@ -90,6 +98,8 @@ class CbtAdminController extends Controller
         $subjectsByClass = [];
         SchoolClass::query()
             ->where('is_active', true)
+            ->whereIn('name', SchoolBookStructure::schoolClassNames())
+            ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS))
             ->orderBy('sort_order')
             ->orderBy('name')
             ->each(function (SchoolClass $class) use (&$subjectsByClass, $activeOfferingQuery): void {
@@ -114,8 +124,14 @@ class CbtAdminController extends Controller
         $subjectsByOffering = [];
         ClassSectionOffering::query()
             ->where('is_active', true)
-            ->whereHas('classSection', fn ($s) => $s->where('is_active', true))
-            ->whereHas('classSection.schoolClass', fn ($c) => $c->where('is_active', true))
+            ->whereHas('classSection', function ($s): void {
+                $s->where('is_active', true)->whereIn('name', SchoolBookStructure::formNames());
+            })
+            ->whereHas('classSection.schoolClass', function ($c): void {
+                $c->where('is_active', true)
+                    ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                    ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+            })
             ->with(['subjects' => fn ($q) => $q->where('subjects.is_active', true)->orderBy('name')])
             ->each(function (ClassSectionOffering $offering) use (&$subjectsByOffering): void {
                 $subjectsByOffering[(string) $offering->id] = $offering->subjects
@@ -134,11 +150,22 @@ class CbtAdminController extends Controller
             'subjects_by_school_class' => $subjectsByClass,
             'subjects_by_offering' => $subjectsByOffering,
             // School year-group for question bank (e.g. Nursery 2, Basic 1).
-            'classes' => SchoolClass::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            'classes' => SchoolClass::query()
+                ->where('is_active', true)
+                ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS))
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name']),
             // The 18 named form groups (e.g. Nursery 2 – Awesome).
             'forms' => ClassSection::query()
                 ->where('is_active', true)
-                ->whereHas('schoolClass', fn ($q) => $q->where('is_active', true))
+                ->whereIn('name', SchoolBookStructure::formNames())
+                ->whereHas('schoolClass', function ($q): void {
+                    $q->where('is_active', true)
+                        ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                        ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+                })
                 ->with('schoolClass:id,name,sort_order')
                 ->get()
                 ->sortBy([
@@ -161,8 +188,14 @@ class CbtAdminController extends Controller
             'offerings' => ClassSectionOffering::query()
                 ->where('is_active', true)
                 ->with(['classSection.schoolClass', 'academicSession'])
-                ->whereHas('classSection', fn ($q) => $q->where('is_active', true))
-                ->whereHas('classSection.schoolClass', fn ($q) => $q->where('is_active', true))
+                ->whereHas('classSection', function ($q): void {
+                    $q->where('is_active', true)->whereIn('name', SchoolBookStructure::formNames());
+                })
+                ->whereHas('classSection.schoolClass', function ($q): void {
+                    $q->where('is_active', true)
+                        ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                        ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+                })
                 ->get()
                 ->sortBy([
                     fn (ClassSectionOffering $row) => (int) ($row->classSection?->schoolClass?->sort_order ?? 0),
