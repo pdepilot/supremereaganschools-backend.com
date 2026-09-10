@@ -25,6 +25,12 @@ class FrontendRoutingTest extends TestCase
         $this->get('/about')
             ->assertOk()
             ->assertSee('About Us', false)
+            ->assertSee('<title>About Us | Supreme Reagan Schools</title>', false)
+            ->assertSee('rel="canonical" href="'.url('/about').'"', false)
+            ->assertSee('name="description"', false)
+            ->assertSee('property="og:title"', false)
+            ->assertSee('name="twitter:card"', false)
+            ->assertSee('"@type":"EducationalOrganization"', false)
             ->assertSee('Who We Are', false)
             ->assertSee('href="/about"', false)
             ->assertSee('href="/news"', false)
@@ -37,15 +43,27 @@ class FrontendRoutingTest extends TestCase
             ->assertSee('classic-menu-wing', false)
             ->assertSee('classic-menu-house-trigger', false)
             ->assertSee('classic-menu-panel', false)
-            ->assertDontSee('href="./about.html"', false);
+            ->assertDontSee('href="./about.html"', false)
+            ->assertDontSee('500+', false)
+            ->assertSee('<strong>Alumni</strong>', false);
 
-        $this->get('/admissions')->assertOk()->assertSee('Admissions', false);
-        $this->get('/contact')->assertOk();
+        $this->get('/admissions')
+            ->assertOk()
+            ->assertSee('Admissions', false)
+            ->assertSee('<title>Admissions | Supreme Reagan Schools</title>', false)
+            ->assertSee('rel="canonical" href="'.url('/admissions').'"', false);
+
+        $this->get('/contact')
+            ->assertOk()
+            ->assertSee('<title>Contact | Supreme Reagan Schools</title>', false)
+            ->assertSee('rel="canonical" href="'.url('/contact').'"', false);
 
         $this->get('/nursery')
             ->assertOk()
             ->assertSee('Early Years', false)
             ->assertSee('Nursery School', false)
+            ->assertSee('<title>Nursery School | Supreme Reagan Schools</title>', false)
+            ->assertSee('rel="canonical" href="'.url('/nursery').'"', false)
             ->assertSee('href="/site/CSS/wings.css"', false)
             ->assertDontSee('href="./nursery.html"', false);
 
@@ -53,18 +71,22 @@ class FrontendRoutingTest extends TestCase
             ->assertOk()
             ->assertSee('Primary School', false)
             ->assertSee('What We Build', false)
+            ->assertSee('<title>Primary School | Supreme Reagan Schools</title>', false)
             ->assertSee('href="/site/CSS/wings.css"', false);
 
         $this->get('/secondary')
             ->assertOk()
             ->assertSee('Secondary School', false)
             ->assertSee('Coding and Robotics', false)
+            ->assertSee('<title>Secondary School | Supreme Reagan Schools</title>', false)
             ->assertSee('href="/site/CSS/wings.css"', false);
 
         $this->get('/branches')
             ->assertOk()
             ->assertSee('Our Schools', false)
             ->assertSee('15 Spibat Road', false)
+            ->assertSee('<title>Our Campus | Supreme Reagan Schools</title>', false)
+            ->assertSee('rel="canonical" href="'.url('/branches').'"', false)
             ->assertSee('href="/site/CSS/branches.css"', false)
             ->assertSee('href="/student/login"', false)
             ->assertDontSee('href="./branches.html"', false);
@@ -73,8 +95,11 @@ class FrontendRoutingTest extends TestCase
             ->assertOk()
             ->assertSee('Alumni', false)
             ->assertSee('href="/alumni"', false)
+            ->assertSee('<title>Alumni | Supreme Reagan Schools</title>', false)
+            ->assertSee('rel="canonical" href="'.url('/alumni').'"', false)
             ->assertDontSee('href="./pta.html"', false)
-            ->assertDontSee('href="/pta"', false);
+            ->assertDontSee('href="/pta"', false)
+            ->assertDontSee('500+', false);
 
         $this->get('/events')
             ->assertOk()
@@ -96,6 +121,11 @@ class FrontendRoutingTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
+            ->assertSee('<title>Supreme Reagan Schools | Knowledge · Character · Excellence</title>', false)
+            ->assertSee('rel="canonical" href="'.url('/').'"', false)
+            ->assertSee('name="description"', false)
+            ->assertSee('property="og:url"', false)
+            ->assertSee('"@type":"EducationalOrganization"', false)
             ->assertSee('src="/site/Image/index_library_pupils.jpg', false)
             ->assertSee('href="/staff/login"', false)
             ->assertDontSee('href="/portal/login"', false)
@@ -116,7 +146,9 @@ class FrontendRoutingTest extends TestCase
             ->assertSee('/site/JS/hero-slideshow.js', false)
             ->assertSee('/site/CSS/index.css', false)
             ->assertDontSee('src="Image/', false)
-            ->assertDontSee('src="./Image/', false);
+            ->assertDontSee('src="./Image/', false)
+            ->assertDontSee('500+', false)
+            ->assertSee('<strong>Alumni</strong>', false);
     }
 
     public function test_cookie_banner_is_a_fixed_dock_not_a_footer_strip(): void

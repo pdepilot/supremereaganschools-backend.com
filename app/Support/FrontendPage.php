@@ -37,6 +37,7 @@ class FrontendPage
         }
 
         if ($area === 'public') {
+            $html = $this->withMarketingSeo($html, $relativePath);
             $html = $this->withPublicAnalytics($html);
         }
 
@@ -153,6 +154,39 @@ HTML;
             $updated = preg_replace('/<\/body>/i', $banner."\n</body>", $html, 1);
 
             return is_string($updated) ? $updated : $html;
+        }
+
+        return $html;
+    }
+
+    private function withMarketingSeo(string $html, string $relativePath): string
+    {
+        $page = MarketingSeo::forPublicFile($relativePath);
+
+        if ($page === null) {
+            return $html;
+        }
+
+        $block = MarketingSeo::headTags($page);
+
+        // Replace an existing title; strip a lone description so we inject one source of truth.
+        $html = preg_replace('/<title\b[^>]*>.*?<\/title>/is', '', $html, 1) ?? $html;
+        $html = preg_replace('/<meta\s+name=["\']description["\'][^>]*>\s*/i', '', $html, 1) ?? $html;
+        $html = preg_replace('/<link\s+rel=["\']canonical["\'][^>]*>\s*/i', '', $html, 1) ?? $html;
+        $html = preg_replace('/<meta\s+property=["\']og:[^"\']+["\'][^>]*>\s*/i', '', $html) ?? $html;
+        $html = preg_replace('/<meta\s+name=["\']twitter:[^"\']+["\'][^>]*>\s*/i', '', $html) ?? $html;
+
+        if (str_contains($html, '</head>')) {
+            $updated = preg_replace('/<\/head>/i', "  {$block}\n</head>", $html, 1);
+            $html = is_string($updated) ? $updated : $html;
+        }
+
+        if (! str_contains($html, 'application/ld+json')) {
+            $jsonLd = MarketingSeo::organizationJsonLd();
+            if (str_contains($html, '</body>')) {
+                $updated = preg_replace('/<\/body>/i', $jsonLd."\n</body>", $html, 1);
+                $html = is_string($updated) ? $updated : $html;
+            }
         }
 
         return $html;
