@@ -83,13 +83,16 @@ class FrontendRoutingTest extends TestCase
 
         $this->get('/branches')
             ->assertOk()
-            ->assertSee('Our Schools', false)
+            ->assertSee('Our Campus', false)
+            ->assertSee('One campus at Amakohia-Akwakuma', false)
             ->assertSee('15 Spibat Road', false)
             ->assertSee('<title>Our Campus | Supreme Reagan Schools</title>', false)
             ->assertSee('rel="canonical" href="'.url('/branches').'"', false)
             ->assertSee('href="/site/CSS/branches.css"', false)
             ->assertSee('href="/student/login"', false)
-            ->assertDontSee('href="./branches.html"', false);
+            ->assertDontSee('href="./branches.html"', false)
+            ->assertDontSee('Our Branches', false)
+            ->assertDontSee('Visible academic results', false);
 
         $this->get('/alumni')
             ->assertOk()
@@ -109,12 +112,61 @@ class FrontendRoutingTest extends TestCase
             ->assertSee('href="/site/CSS/events.css', false)
             ->assertSee('name="robots" content="noindex,follow"', false)
             ->assertHeader('X-Robots-Tag', 'noindex,follow')
-            ->assertDontSee('href="./events.html"', false);
+            ->assertDontSee('href="./events.html"', false)
+            ->assertSee('mailto:supremereagansch@gmail.com', false)
+            ->assertDontSee('mailto:support@supremereaganschools.com', false);
 
         $this->get('/pta')
             ->assertOk()
             ->assertSee('name="robots" content="noindex,follow"', false)
             ->assertHeader('X-Robots-Tag', 'noindex,follow');
+    }
+
+    public function test_p1c_content_trust_and_internal_links(): void
+    {
+        $home = $this->get('/')
+            ->assertOk()
+            ->assertDontSee('aria-label="Facebook"', false)
+            ->assertDontSee('aria-label="Instagram"', false)
+            ->assertDontSee('aria-label="YouTube"', false)
+            ->assertDontSee('bi-facebook', false)
+            ->assertDontSee('bi-instagram', false)
+            ->assertDontSee('bi-youtube', false)
+            ->assertSee('aria-label="WhatsApp"', false)
+            ->assertDontSee('well-equipped', false)
+            ->assertDontSee('Well-Stocked', false)
+            ->assertDontSee('Experienced teachers', false)
+            ->assertDontSee('Visible academic results', false)
+            ->assertDontSee('Our Branches', false)
+            ->assertSee('Our Campus', false)
+            ->assertSee('"@type":"EducationalOrganization"', false);
+
+        $this->assertStringNotContainsString('href="#"', $home->getContent());
+
+        $this->get('/admissions')
+            ->assertOk()
+            ->assertSee('Learn more about our', false)
+            ->assertSee('href="/nursery"', false)
+            ->assertSee('href="/primary"', false)
+            ->assertSee('href="/secondary"', false)
+            ->assertSee('<title>Admissions | Supreme Reagan Schools</title>', false)
+            ->assertSee('"@type":"EducationalOrganization"', false);
+
+        $this->get('/alumni')
+            ->assertOk()
+            ->assertSee('Read News', false)
+            ->assertSee('href="/news"', false)
+            ->assertSee('href="/contact"', false)
+            ->assertSee('<title>Alumni | Supreme Reagan Schools</title>', false)
+            ->assertDontSee('500+', false);
+
+        foreach (['/about', '/contact', '/nursery', '/primary', '/secondary', '/branches', '/alumni', '/admissions'] as $path) {
+            $this->get($path)
+                ->assertOk()
+                ->assertDontSee('Our Branches', false)
+                ->assertDontSee('Visible academic results', false)
+                ->assertSee('Our Campus', false);
+        }
     }
 
     public function test_home_hero_images_are_rewritten_to_site_assets(): void
