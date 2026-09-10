@@ -69,12 +69,15 @@ class PeopleSeeder extends Seeder
             'phone' => '08030000035',
         ]);
 
+        $photoBase64 = $this->testStudentPhoto();
+
         $chiamaka = $this->pupil($students, [
             'admission_number' => 'SRS/2025/0142',
             'surname' => 'Okafor',
             'first_name' => 'Chiamaka',
             'gender' => Gender::Female->value,
             'form' => 'JSS 2 A',
+            'photo_base64' => $photoBase64,
         ]);
 
         $daniel = $this->pupil($students, [
@@ -83,6 +86,7 @@ class PeopleSeeder extends Seeder
             'first_name' => 'Daniel',
             'gender' => Gender::Male->value,
             'form' => 'Primary 4 B',
+            'photo_base64' => $photoBase64,
         ]);
 
         $adaeze = $this->pupil($students, [
@@ -91,6 +95,7 @@ class PeopleSeeder extends Seeder
             'first_name' => 'Adaeze',
             'gender' => Gender::Female->value,
             'form' => 'SS 1 B',
+            'photo_base64' => $photoBase64,
         ]);
 
         $this->guardian($guardians, [
@@ -194,7 +199,24 @@ class PeopleSeeder extends Seeder
             'gender' => $data['gender'],
             'status' => StudentStatus::Active->value,
             'admitted_on' => '2025-09-08',
+            'photo_base64' => $data['photo_base64'] ?? null,
         ]);
+    }
+
+    /**
+     * Staging/test placeholder photo — school campus image, not a real pupil photograph.
+     */
+    private function testStudentPhoto(): ?string
+    {
+        $path = base_path('public/site/Image/school_view.jpg');
+
+        if (! is_readable($path)) {
+            return null;
+        }
+
+        $contents = file_get_contents($path);
+
+        return $contents === false ? null : base64_encode($contents);
     }
 
     /**
