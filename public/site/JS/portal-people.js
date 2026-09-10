@@ -884,7 +884,7 @@
       let method = "DELETE";
       let alertOptions = {
         title: "Remove from the roll",
-        copy: name + " will leave the live roll. Enrollment and fee history remain sealed on the ledger.",
+        copy: name + " will be removed. Parent email and phone are cleared so they can be reused. A sealed audit copy is kept; enrollment and fee history stay on the ledger.",
         confirmLabel: "Remove pupil",
         cancelLabel: "Keep them",
         danger: true

@@ -174,11 +174,12 @@ class StudentController extends Controller
         );
     }
 
-    public function destroy(StudentProfile $studentProfile): JsonResponse
+    public function destroy(Request $request, StudentProfile $studentProfile): JsonResponse
     {
         $this->authorize('delete', $studentProfile);
-        $this->students->delete($studentProfile);
+        abort_unless($request->user() instanceof \App\Models\User, 403);
+        $this->students->delete($studentProfile, $request->user());
 
-        return ApiResponse::success('Pupil removed.');
+        return ApiResponse::success('Pupil removed. Contact details were cleared for reuse and sealed in the audit log.');
     }
 }

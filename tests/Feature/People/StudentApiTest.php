@@ -431,20 +431,59 @@ class StudentApiTest extends TestCase
     public function test_admin_can_remove_a_pupil_from_the_roll(): void
     {
         $admin = $this->admin();
-        $student = $this->student();
-        $userId = $student->user_id;
+        $parentUser = $this->userWithRole(RoleSlug::Parent, ['email' => 'reuse.parent@example.test']);
+        $studentUser = $this->userWithRole(RoleSlug::Student, ['email' => 'reuse.pupil@example.test']);
+        $student = $this->student($studentUser, [
+            'admission_number' => 'SRS/2025/7788',
+            'phone' => '08031112222',
+            'email' => 'pupil.contact@example.test',
+        ]);
+        $guardian = $this->guardian($parentUser, [
+            'phone' => '08039998888',
+            'email' => 'reuse.parent@example.test',
+        ]);
+        $this->linkGuardian($guardian, $student);
 
         $this->actingAs($admin)
             ->deleteJson('/api/v1/students/'.$student->id)
             ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Pupil removed.');
+            ->assertJsonPath('success', true);
 
         $this->assertSoftDeleted('student_profiles', ['id' => $student->id]);
-        $this->assertDatabaseHas('users', [
-            'id' => $userId,
-            'status' => UserStatus::Inactive->value,
+        $this->assertSoftDeleted('guardian_profiles', ['id' => $guardian->id]);
+
+        $archived = StudentProfile::withTrashed()->findOrFail($student->id);
+        $this->assertNull($archived->phone);
+        $this->assertNull($archived->email);
+        $this->assertNull($archived->user_id);
+        $this->assertNotSame('SRS/2025/7788', $archived->admission_number);
+
+        $this->assertDatabaseMissing('users', ['email' => 'reuse.pupil@example.test']);
+        $this->assertDatabaseMissing('users', ['email' => 'reuse.parent@example.test']);
+
+        $this->assertDatabaseHas('rbac_audit_logs', [
+            'actor_id' => $admin->id,
+            'action' => 'pupil.deleted',
+            'subject_type' => StudentProfile::class,
+            'subject_id' => $student->id,
         ]);
+
+        $audit = \App\Models\RbacAuditLog::query()
+            ->where('action', 'pupil.deleted')
+            ->where('subject_id', $student->id)
+            ->firstOrFail();
+        $this->assertSame('SRS/2025/7788', $audit->meta['admission_number'] ?? null);
+        $this->assertSame('08039998888', $audit->meta['guardians'][0]['phone'] ?? null);
+        $this->assertSame('reuse.parent@example.test', $audit->meta['guardians'][0]['email'] ?? null);
+
+        // Same email/phone/admission number can be registered again.
+        $replacementUser = $this->userWithRole(RoleSlug::Student, ['email' => 'reuse.pupil@example.test']);
+        $replacement = $this->student($replacementUser, [
+            'admission_number' => 'SRS/2025/7788',
+            'phone' => '08031112222',
+            'email' => 'pupil.contact@example.test',
+        ]);
+        $this->assertNotNull($replacement->id);
 
         $this->actingAs($admin)
             ->getJson('/api/v1/students')
@@ -460,14 +499,46 @@ class StudentApiTest extends TestCase
 
         $this->actingAs($admin)
             ->deleteJson('/api/v1/students/'.$student->id)
-            ->assertOk()
-            ->assertJsonPath('message', 'Pupil removed.');
+            ->assertOk();
 
         $this->assertSoftDeleted('student_profiles', ['id' => $student->id]);
         $this->assertDatabaseHas('enrollments', [
             'id' => $enrollment->id,
             'student_profile_id' => $student->id,
             'status' => EnrollmentStatus::Withdrawn->value,
+        ]);
+    }
+
+    public function test_deleting_one_pupil_keeps_shared_guardian_contacts(): void
+    {
+        $admin = $this->admin();
+        $parentUser = $this->userWithRole(RoleSlug::Parent, ['email' => 'shared.parent@example.test']);
+        $guardian = $this->guardian($parentUser, [
+            'phone' => '08035556666',
+            'email' => 'shared.parent@example.test',
+        ]);
+
+        $first = $this->student($this->userWithRole(RoleSlug::Student, ['email' => 'child.one@example.test']));
+        $second = $this->student($this->userWithRole(RoleSlug::Student, ['email' => 'child.two@example.test']));
+        $this->linkGuardian($guardian, $first);
+        $this->linkGuardian($guardian, $second, ['is_primary' => false]);
+
+        $this->actingAs($admin)->deleteJson('/api/v1/students/'.$first->id)->assertOk();
+
+        $this->assertSoftDeleted('student_profiles', ['id' => $first->id]);
+        $this->assertNotSoftDeleted('guardian_profiles', ['id' => $guardian->id]);
+        $this->assertDatabaseHas('guardian_profiles', [
+            'id' => $guardian->id,
+            'phone' => '08035556666',
+            'email' => 'shared.parent@example.test',
+        ]);
+        $this->assertDatabaseHas('users', [
+            'id' => $parentUser->id,
+            'email' => 'shared.parent@example.test',
+        ]);
+        $this->assertDatabaseHas('guardian_student', [
+            'guardian_profile_id' => $guardian->id,
+            'student_profile_id' => $second->id,
         ]);
     }
 

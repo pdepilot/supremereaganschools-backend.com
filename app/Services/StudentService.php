@@ -8,12 +8,14 @@ use App\Enums\RoleSlug;
 use App\Enums\StudentStatus;
 use App\Enums\UserStatus;
 use App\Models\Enrollment;
+use App\Models\GuardianProfile;
 use App\Models\GuardianStudent;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Support\ImageUpload;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +27,7 @@ class StudentService
         private readonly EnrollmentService $enrollments,
         private readonly GuardianService $guardians,
         private readonly PupilRegistrationMailer $registrationMailer,
+        private readonly RbacService $rbac,
     ) {}
 
     /**
@@ -239,9 +242,18 @@ class StudentService
         }
     }
 
-    public function delete(StudentProfile $student): void
+    public function delete(StudentProfile $student, User $actor): void
     {
-        DB::transaction(function () use ($student) {
+        DB::transaction(function () use ($student, $actor) {
+            $student->load([
+                'user',
+                'guardians.user',
+                'guardianLinks',
+                'enrollments',
+            ]);
+
+            $this->rbac->audit($actor, 'pupil.deleted', $student, $this->deletionAuditMeta($student));
+
             Enrollment::query()
                 ->where('student_profile_id', $student->id)
                 ->where('status', EnrollmentStatus::Active)
@@ -250,11 +262,166 @@ class StudentService
                     'left_on' => now()->toDateString(),
                 ]);
 
-            $student->user?->update(['status' => UserStatus::Inactive]);
-            $student->update(['status' => StudentStatus::Withdrawn]);
+            $guardians = $student->guardians->all();
+            GuardianStudent::query()->where('student_profile_id', $student->id)->delete();
+
+            foreach ($guardians as $guardian) {
+                $this->releaseOrphanGuardian($guardian);
+            }
+
             $this->forgetPhoto($student->photo_path);
-            $student->delete();
+            $this->scrubAndArchivePupil($student);
         });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function deletionAuditMeta(StudentProfile $student): array
+    {
+        return [
+            'admission_number' => $student->admission_number,
+            'surname' => $student->surname,
+            'first_name' => $student->first_name,
+            'other_names' => $student->other_names,
+            'gender' => $student->gender?->value ?? $student->gender,
+            'date_of_birth' => optional($student->date_of_birth)?->toDateString(),
+            'phone' => $student->phone,
+            'email' => $student->email,
+            'home_address' => $student->home_address,
+            'status' => $student->status?->value ?? $student->status,
+            'user' => $student->user ? [
+                'id' => $student->user->id,
+                'email' => $student->user->email,
+                'name' => $student->user->name,
+            ] : null,
+            'guardians' => $student->guardians->map(fn (GuardianProfile $guardian) => [
+                'id' => $guardian->id,
+                'full_name' => $guardian->full_name,
+                'phone' => $guardian->phone,
+                'alternate_phone' => $guardian->alternate_phone,
+                'email' => $guardian->email,
+                'occupation' => $guardian->occupation,
+                'address' => $guardian->address,
+                'relationship' => $guardian->pivot?->relationship instanceof \BackedEnum
+                    ? $guardian->pivot->relationship->value
+                    : $guardian->pivot?->relationship,
+                'is_primary' => (bool) ($guardian->pivot?->is_primary),
+                'user' => $guardian->user ? [
+                    'id' => $guardian->user->id,
+                    'email' => $guardian->user->email,
+                    'name' => $guardian->user->name,
+                ] : null,
+            ])->values()->all(),
+            'enrollment_ids' => $student->enrollments->pluck('id')->values()->all(),
+        ];
+    }
+
+    private function scrubAndArchivePupil(StudentProfile $student): void
+    {
+        $user = $student->user;
+        $originalAdmission = (string) $student->admission_number;
+        $freedAdmission = $this->freedAdmissionNumber($student->id, $originalAdmission);
+
+        $student->forceFill([
+            'user_id' => null,
+            'admission_number' => $freedAdmission,
+            'surname' => 'Removed',
+            'first_name' => 'Pupil',
+            'other_names' => null,
+            'date_of_birth' => null,
+            'nationality' => null,
+            'state_of_origin' => null,
+            'lga' => null,
+            'home_address' => null,
+            'phone' => null,
+            'email' => null,
+            'blood_group' => null,
+            'genotype' => null,
+            'medical_notes' => null,
+            'interests' => null,
+            'previous_school' => null,
+            'photo_path' => null,
+            'passphrase_set_at' => null,
+            'status' => StudentStatus::Withdrawn,
+        ])->save();
+
+        $student->delete();
+
+        if ($user) {
+            $this->releaseLoginAccount($user, 'pupil');
+        }
+    }
+
+    private function releaseOrphanGuardian(GuardianProfile $guardian): void
+    {
+        $stillLinked = GuardianStudent::query()
+            ->where('guardian_profile_id', $guardian->id)
+            ->whereHas('student', fn ($q) => $q->whereNull('deleted_at'))
+            ->exists();
+
+        if ($stillLinked) {
+            return;
+        }
+
+        $user = $guardian->user;
+
+        $guardian->forceFill([
+            'user_id' => null,
+            'full_name' => 'Removed guardian',
+            'phone' => null,
+            'alternate_phone' => null,
+            'email' => null,
+            'occupation' => null,
+            'address' => null,
+        ])->save();
+
+        $guardian->delete();
+
+        if ($user) {
+            $this->releaseLoginAccount($user, 'guardian');
+        }
+    }
+
+    private function releaseLoginAccount(User $user, string $kind): void
+    {
+        $this->invalidateSessions($user);
+        $user->roles()->detach();
+
+        $user->forceFill([
+            'status' => UserStatus::Inactive,
+            'email' => sprintf('deleted+%s-%d-%s@removed.local', $kind, $user->id, Str::lower(Str::random(8))),
+            'name' => 'Removed '.$kind,
+            'password' => Str::password(32),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        try {
+            $user->delete();
+        } catch (\Throwable) {
+            // Keep the tombstoned row when historical records still reference the user.
+        }
+    }
+
+    private function freedAdmissionNumber(int $studentId, string $original): string
+    {
+        $stamp = 'DEL-'.$studentId.'-';
+        $remaining = max(1, 255 - strlen($stamp));
+
+        return $stamp.substr($original, 0, $remaining);
+    }
+
+    private function invalidateSessions(User $user): void
+    {
+        $user->forceFill([
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        if (config('session.driver') === 'database' && Schema::hasTable(config('session.table', 'sessions'))) {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $user->id)
+                ->delete();
+        }
     }
 
     public function suspend(StudentProfile $student): StudentProfile

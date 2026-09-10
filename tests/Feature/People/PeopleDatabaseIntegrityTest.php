@@ -69,8 +69,7 @@ class PeopleDatabaseIntegrityTest extends TestCase
         $enrollment = $this->enroll($student);
 
         $this->actingAs($this->admin())->deleteJson('/api/v1/students/'.$student->id)
-            ->assertOk()
-            ->assertJsonPath('message', 'Pupil removed.');
+            ->assertOk();
 
         $this->assertSoftDeleted('student_profiles', ['id' => $student->id]);
         $this->assertDatabaseHas('enrollments', [
