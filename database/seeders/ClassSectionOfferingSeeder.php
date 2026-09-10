@@ -114,6 +114,25 @@ class ClassSectionOfferingSeeder extends Seeder
             'Colour Me',
         ]);
 
+        $jssSubjects = $this->subjectIds([
+            'Mathematics',
+            'English Studies',
+            'Intermediate Science',
+            'Digital Technology',
+            'Physical and Health Education',
+            'Social and Citizenship Studies',
+            'Solar PV',
+            'Fashion Design',
+            'Business Studies',
+            'Cultural and Creative Arts',
+            'Nigerian History',
+            'Igbo',
+            'Cambridge Science',
+            'French',
+            'Christian Religious Studies',
+            'Coding and Robotics',
+        ]);
+
         $byForm = [
             'activity' => $this->subjectIds(['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music']),
             'nursery' => $this->subjectIds(['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music', 'Diction']),
@@ -121,6 +140,7 @@ class ClassSectionOfferingSeeder extends Seeder
             'nursery-3' => $nursery3Subjects,
             'basic-1-3' => $basicLowerSubjects,
             'basic-4-5' => $basicUpperSubjects,
+            'jss' => $jssSubjects,
         ];
 
         ClassSection::query()
@@ -169,7 +189,7 @@ class ClassSectionOfferingSeeder extends Seeder
                 }
             });
 
-        // Hide offerings that are not part of the 18-form school book.
+        // Hide offerings that are not part of the school-book forms.
         ClassSectionOffering::query()
             ->where(function ($q) use ($bookFormNames): void {
                 $q->whereHas('classSection', fn ($s) => $s->whereNotIn('name', $bookFormNames))
@@ -200,6 +220,10 @@ class ClassSectionOfferingSeeder extends Seeder
 
         if (preg_match('/^Basic\s+[45]\b/i', $className) === 1) {
             return $byForm['basic-4-5'];
+        }
+
+        if (preg_match('/^JSS\s+1\b/i', $className) === 1) {
+            return $byForm['jss'];
         }
 
         return $byForm[$levelSlug] ?? collect();

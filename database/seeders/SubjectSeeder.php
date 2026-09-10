@@ -63,6 +63,18 @@ class SubjectSeeder extends Seeder
             ['name' => 'Physics', 'code' => 'PHY', 'department' => 'Sciences'],
             ['name' => 'Government', 'code' => 'GOV', 'department' => 'Arts'],
             ['name' => 'Literature in English', 'code' => 'LITENG', 'department' => 'Languages'],
+
+            // JSS 1 book
+            ['name' => 'English Studies', 'code' => 'ENS', 'department' => 'Languages'],
+            ['name' => 'Intermediate Science', 'code' => 'ISCI', 'department' => 'Sciences'],
+            ['name' => 'Digital Technology', 'code' => 'DTEC', 'department' => 'ICT'],
+            ['name' => 'Social and Citizenship Studies', 'code' => 'SCS', 'department' => 'Arts'],
+            ['name' => 'Solar PV', 'code' => 'SPV', 'department' => 'Vocational'],
+            ['name' => 'Fashion Design', 'code' => 'FDES', 'department' => 'Vocational'],
+            ['name' => 'Business Studies', 'code' => 'BUS', 'department' => 'Vocational'],
+            ['name' => 'Nigerian History', 'code' => 'NHIS', 'department' => 'Arts'],
+            ['name' => 'Cambridge Science', 'code' => 'CAMS', 'department' => 'Sciences'],
+            ['name' => 'Coding and Robotics', 'code' => 'CORT', 'department' => 'ICT'],
         ];
 
         foreach ($subjects as $subject) {

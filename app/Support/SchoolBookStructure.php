@@ -8,7 +8,7 @@ namespace App\Support;
 final class SchoolBookStructure
 {
     /** @var list<string> */
-    public const LEVEL_SLUGS = ['activity', 'nursery', 'primary'];
+    public const LEVEL_SLUGS = ['activity', 'nursery', 'primary', 'jss'];
 
     /**
      * @return array<string, list<array{name: string, short_code: string, arms: list<string>}>>
@@ -31,6 +31,9 @@ final class SchoolBookStructure
                 ['name' => 'Basic 3', 'short_code' => 'B3', 'arms' => ['Zion', 'Rising Stars']],
                 ['name' => 'Basic 4', 'short_code' => 'B4', 'arms' => ['Brilliant', 'Victorious']],
                 ['name' => 'Basic 5', 'short_code' => 'B5', 'arms' => ['Diamonds']],
+            ],
+            'jss' => [
+                ['name' => 'JSS 1', 'short_code' => 'J1', 'arms' => ['Reagan', 'Diamond']],
             ],
         ];
     }
