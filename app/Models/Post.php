@@ -190,9 +190,17 @@ class Post extends Model
 
     public function authorRole(): string
     {
-        $title = trim((string) $this->author?->staffProfile?->job_title);
+        $publicRole = trim((string) ($this->author?->authorProfile?->public_role ?? ''));
+        if ($publicRole !== '') {
+            return $publicRole;
+        }
 
-        return $title !== '' ? $title : 'Supreme Reagan Schools Editorial Team';
+        $jobTitle = trim((string) ($this->author?->staffProfile?->job_title ?? ''));
+        if ($jobTitle !== '') {
+            return $jobTitle;
+        }
+
+        return 'Supreme Reagan Schools Editorial Team';
     }
 
     public function wasMateriallyUpdated(): bool

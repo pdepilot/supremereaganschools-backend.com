@@ -176,22 +176,38 @@
         'url' => \App\Support\SchoolIdentity::logoUrl(),
       ],
     ];
+    $authorNode = [
+      '@type' => 'Person',
+      'name' => $article->authorName(),
+    ];
+    if ($article->authorPublicUrl()) {
+        $authorNode['url'] = $article->authorPublicUrl();
+    }
     $schema = [
       '@context' => 'https://schema.org',
       '@type' => 'Article',
       'headline' => $article->title,
       'description' => $article->meta_description ?: $article->excerpt,
-      'author' => [
-        '@type' => 'Person',
-        'name' => $article->authorName(),
-      ],
+      'author' => $authorNode,
       'publisher' => $publisher,
       'datePublished' => $article->published_at?->toIso8601String(),
       'dateModified' => $article->updated_at?->toIso8601String(),
       'mainEntityOfPage' => $article->canonicalUrlResolved(),
     ];
+    if ($article->category && filled($article->category->name)) {
+        $schema['articleSection'] = $article->category->name;
+    }
+    $keywords = $article->tags
+        ->pluck('name')
+        ->map(fn ($name) => trim((string) $name))
+        ->filter()
+        ->values()
+        ->all();
+    if ($keywords !== []) {
+        $schema['keywords'] = implode(', ', $keywords);
+    }
     if ($article->ogImageResolved()) {
-      $schema['image'] = [$article->ogImageResolved()];
+        $schema['image'] = [$article->ogImageResolved()];
     }
     $crumbs = [
       '@context' => 'https://schema.org',

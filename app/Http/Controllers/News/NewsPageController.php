@@ -24,7 +24,7 @@ class NewsPageController extends Controller
     {
         $this->posts->releaseScheduled();
 
-        $query = Post::query()->publiclyVisible()->with(['category', 'author.staffProfile', 'tags']);
+        $query = Post::query()->publiclyVisible()->with(['category', 'author.staffProfile', 'author.authorProfile', 'tags']);
         $searching = $request->filled('q') || $request->filled('tag') || $request->filled('type');
 
         if ($request->filled('q')) {
@@ -79,7 +79,7 @@ class NewsPageController extends Controller
 
         $articles = Post::query()
             ->publiclyVisible()
-            ->with(['category', 'author.staffProfile', 'tags'])
+            ->with(['category', 'author.staffProfile', 'author.authorProfile', 'tags'])
             ->where('category_id', $row->id)
             ->orderByDesc('is_pinned')
             ->orderByDesc('published_at')
@@ -100,7 +100,7 @@ class NewsPageController extends Controller
         $this->posts->releaseScheduled();
 
         $post = Post::query()
-            ->with(['category', 'author.staffProfile', 'tags'])
+            ->with(['category', 'author.staffProfile', 'author.authorProfile', 'tags'])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -153,7 +153,7 @@ class NewsPageController extends Controller
     {
         $this->authorize('view', $post);
 
-        $post->load(['category', 'author.staffProfile', 'tags']);
+        $post->load(['category', 'author.staffProfile', 'author.authorProfile', 'tags']);
         request()->attributes->set('article', $post);
 
         $prepared = $this->posts->withTableOfContents((string) $post->content);

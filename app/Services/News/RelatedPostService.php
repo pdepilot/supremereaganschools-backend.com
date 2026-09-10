@@ -16,7 +16,7 @@ class RelatedPostService
 
         $candidates = Post::query()
             ->publiclyVisible()
-            ->with(['category', 'author', 'tags'])
+            ->with(['category', 'author', 'author.staffProfile', 'author.authorProfile', 'tags'])
             ->where('id', '!=', $post->id)
             ->where(function ($query) use ($post, $tagIds) {
                 $query->where('category_id', $post->category_id);

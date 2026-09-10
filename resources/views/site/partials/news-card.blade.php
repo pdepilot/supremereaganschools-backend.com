@@ -10,7 +10,12 @@
       {{ $article->published_at?->timezone('Africa/Lagos')->format('M j, Y') }}
       · {{ max(1, (int) $article->reading_time) }} min read
       · {{ $article->viewsCount() }} {{ \Illuminate\Support\Str::plural('view', $article->viewsCount()) }}
-      · {{ $article->authorName() }}
+      ·
+      @if($article->authorPublicUrl())
+        <a href="{{ $article->authorPublicUrl() }}">{{ $article->authorName() }}</a>
+      @else
+        {{ $article->authorName() }}
+      @endif
     </p>
     <h3 class="blog-card-title">
       <a href="{{ $article->publicUrl() }}">{{ $article->title }}</a>

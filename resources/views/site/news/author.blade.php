@@ -1,15 +1,25 @@
 @extends('site.layout')
 
 @php
-  $role = trim((string) ($author->authorProfile?->public_role ?: $author->staffProfile?->job_title));
+  $publicRole = trim((string) ($author->authorProfile?->public_role ?? ''));
+  $profileBio = trim((string) ($author->authorProfile?->biography ?? ''));
+  $profilePhoto = $author->authorProfile?->photoUrl();
+  $staffPhoto = filled($author->staffProfile?->photo_path) ? url($author->staffProfile->photo_path) : null;
+  $photo = $profilePhoto ?: $staffPhoto;
+
+  $role = $publicRole !== ''
+      ? $publicRole
+      : trim((string) ($author->staffProfile?->job_title ?? ''));
   if ($role === '') {
       $role = 'Supreme Reagan Schools Editorial Team';
   }
-  $bio = trim((string) ($author->authorProfile?->biography ?? ''));
-  if ($bio === '') {
-      $bio = 'Writing from the Supreme Reagan Schools editorial desk. This page names the author of published public notes. It does not invent qualifications.';
-  }
-  $photo = $author->authorProfile?->photoUrl() ?: (filled($author->staffProfile?->photo_path) ? url($author->staffProfile->photo_path) : null);
+
+  $bio = $profileBio !== ''
+      ? $profileBio
+      : 'Writing from the Supreme Reagan Schools editorial desk. This page names the author of published public notes. It does not invent qualifications.';
+
+  // Person schema only when the profile holds school-supplied facts beyond fallbacks.
+  $hasFactualPersonSchema = $publicRole !== '' || $profileBio !== '' || filled($profilePhoto);
 @endphp
 
 @section('title', $author->name)
@@ -50,3 +60,26 @@
     </div>
   </div>
 @endsection
+
+@push('jsonld')
+  @if($hasFactualPersonSchema)
+    @php
+      $person = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Person',
+        'name' => $author->name,
+        'url' => url('/news/authors/'.$author->id),
+      ];
+      if ($publicRole !== '') {
+          $person['jobTitle'] = $publicRole;
+      }
+      if ($profileBio !== '') {
+          $person['description'] = $profileBio;
+      }
+      if (filled($profilePhoto)) {
+          $person['image'] = $profilePhoto;
+      }
+    @endphp
+    <script type="application/ld+json">@json($person, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)</script>
+  @endif
+@endpush
