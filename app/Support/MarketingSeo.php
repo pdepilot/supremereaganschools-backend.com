@@ -75,7 +75,7 @@ class MarketingSeo
             ],
             'secondary' => [
                 'title' => 'Secondary School | Supreme Reagan Schools',
-                'description' => 'Secondary School at Supreme Reagan Schools — rigorous academics, coding and robotics, arts and music, and preparation for further education.',
+                'description' => 'Secondary School at Supreme Reagan Schools — academic development, coding and robotics, arts and music, and character formation on our Owerri campus.',
                 'path' => '/secondary',
                 'image' => '/site/Image/logo_main.png',
             ],
@@ -144,6 +144,7 @@ class MarketingSeo
                 'addressCountry' => 'NG',
             ],
             'motto' => SchoolIdentity::motto(),
+            'foundingDate' => '2010-09-13',
         ];
 
         return '<script type="application/ld+json">'.json_encode(

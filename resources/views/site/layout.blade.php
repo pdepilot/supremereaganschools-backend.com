@@ -101,7 +101,7 @@
             <div class="house-panel" id="housePanel">
               <a href="/nursery"><strong>Nursery</strong><span>First rooms of wonder</span></a>
               <a href="/primary"><strong>Primary</strong><span>Literacy, numeracy and character</span></a>
-              <a href="/secondary"><strong>Secondary</strong><span>Rigour and a future-ready mind</span></a>
+              <a href="/secondary"><strong>Secondary</strong><span>Academics, skills and character</span></a>
               <a href="/branches"><strong>Campus</strong><span>Amakohia-Akwakuma, Owerri</span></a>
               <a href="/resources"><strong>Resources</strong><span>Parent guidance and study notes</span></a>
             </div>
@@ -138,7 +138,7 @@
           <div class="classic-menu-panel" id="classicHousePanel">
             <a href="/nursery" @class(['is-current' => request()->is('nursery')])><strong>Nursery</strong><span>First rooms of wonder</span></a>
             <a href="/primary" @class(['is-current' => request()->is('primary')])><strong>Primary</strong><span>Literacy, numeracy and character</span></a>
-            <a href="/secondary" @class(['is-current' => request()->is('secondary')])><strong>Secondary</strong><span>Rigour and a future-ready mind</span></a>
+            <a href="/secondary" @class(['is-current' => request()->is('secondary')])><strong>Secondary</strong><span>Academics, skills and character</span></a>
             <a href="/branches" @class(['is-current' => request()->is('branches')])><strong>Campus</strong><span>Amakohia-Akwakuma, Owerri</span></a>
             <a href="/resources" @class(['is-current' => request()->is('resources*')])><strong>Resources</strong><span>Parent guidance and study notes</span></a>
           </div>

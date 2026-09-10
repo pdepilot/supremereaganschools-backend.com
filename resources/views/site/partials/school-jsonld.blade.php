@@ -13,6 +13,7 @@
       'addressCountry' => 'NG',
     ],
     'motto' => \App\Support\SchoolIdentity::motto(),
+    'foundingDate' => '2010-09-13',
   ];
 @endphp
 <script type="application/ld+json">@json($school, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)</script>

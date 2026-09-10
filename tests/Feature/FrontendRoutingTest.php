@@ -196,6 +196,57 @@ class FrontendRoutingTest extends TestCase
         }
     }
 
+    public function test_p1e_homepage_structure_claims_and_schema(): void
+    {
+        $home = $this->get('/')->assertOk();
+        $html = $home->getContent();
+
+        $this->assertSame(1, preg_match_all('/<h1\b/i', $html));
+        $home->assertSee('<h1 class="display-4 fw-bold mb-3 text-shadow">KNOWLEDGE · CHARACTER · EXCELLENCE</h1>', false)
+            ->assertSee('id="heroSlideshow"', false)
+            ->assertDontSee('RAISING FUTURE-READY LEADERS', false)
+            ->assertDontSee('rigorous academics', false)
+            ->assertDontSee('local and global opportunities', false)
+            ->assertDontSee('Rigour and a future-ready mind', false)
+            ->assertSee('Academics, skills and character', false)
+            ->assertSee('"foundingDate":"2010-09-13"', false)
+            ->assertSee('"@type":"EducationalOrganization"', false);
+        $this->assertStringNotContainsString('href="#"', $html);
+        $this->assertSame(1, substr_count($html, '"@type":"EducationalOrganization"'));
+
+        $this->get('/secondary')
+            ->assertOk()
+            ->assertSee('academic development, coding and robotics, arts and music, and character formation', false)
+            ->assertDontSee('rigorous academics', false)
+            ->assertDontSee('preparation for further education', false)
+            ->assertDontSee('Rigour and a future-ready mind', false)
+            ->assertSee('Academics, skills and character', false)
+            ->assertSee('alt="Nursery School"', false)
+            ->assertSee('alt="Primary School"', false)
+            ->assertSee('alt="Secondary School"', false);
+
+        $this->get('/branches')
+            ->assertOk()
+            ->assertDontSee('future-ready leaders', false)
+            ->assertDontSee('rigorous academics', false)
+            ->assertSee('academic development, practical skills and character formation', false);
+
+        $this->get('/nursery')
+            ->assertOk()
+            ->assertDontSee('Rigour and a future-ready mind', false)
+            ->assertSee('alt="Nursery School"', false);
+
+        $this->get('/pta')
+            ->assertOk()
+            ->assertSee('name="robots" content="noindex,follow"', false)
+            ->assertHeader('X-Robots-Tag', 'noindex,follow');
+
+        $this->get('/events')
+            ->assertOk()
+            ->assertSee('name="robots" content="noindex,follow"', false)
+            ->assertHeader('X-Robots-Tag', 'noindex,follow');
+    }
+
     public function test_home_hero_images_are_rewritten_to_site_assets(): void
     {
         $this->get('/')

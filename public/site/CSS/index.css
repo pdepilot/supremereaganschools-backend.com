@@ -1171,11 +1171,12 @@ body.menu-open .scroll-top {
   opacity: 0;
 }
 
-.carousel-item.active .hero-content h1 {
+.carousel-item.active .hero-content h1,
+.carousel-item.active .hero-content p.display-4 {
   animation: heroTextReveal 0.85s ease-out both;
 }
 
-.carousel-item.active .hero-content p {
+.carousel-item.active .hero-content p:not(.display-4) {
   animation: heroTextReveal 0.85s ease-out 0.12s both;
 }
 
