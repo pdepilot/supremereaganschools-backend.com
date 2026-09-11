@@ -240,11 +240,29 @@ class AcademicSessionApiTest extends TestCase
         ]);
     }
 
-    public function test_a_session_with_forms_cannot_be_deleted(): void
+    public function test_a_session_with_empty_forms_can_be_deleted(): void
     {
         $admin = $this->admin();
         $session = $this->academicSession();
-        $this->offering(session: $session);
+        $offering = $this->offering(session: $session);
+        $subject = $this->subject(['name' => 'Mathematics', 'code' => 'MTH']);
+        $this->subjectOffering($offering, $subject);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('class_section_offerings', ['id' => $offering->id]);
+    }
+
+    public function test_a_session_with_enrolled_forms_cannot_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $offering = $this->offering(session: $session);
+        $this->enroll($this->student(), $offering);
 
         $this->actingAs($admin)
             ->deleteJson('/api/v1/academic-sessions/'.$session->id)
@@ -253,6 +271,7 @@ class AcademicSessionApiTest extends TestCase
             ->assertJsonStructure(['errors' => ['session']]);
 
         $this->assertDatabaseHas('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseHas('class_section_offerings', ['id' => $offering->id]);
     }
 
     public function test_missing_session_returns_not_found_envelope(): void

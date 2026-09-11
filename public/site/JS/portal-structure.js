@@ -702,7 +702,7 @@
           method = "DELETE";
           alertOptions = {
             title: "Delete this year",
-            copy: name + " will be removed from the calendar. This only works if no forms, fees, or pupils are tied to it.",
+            copy: name + " will be removed from the calendar. Empty forms (subjects only) are cleared with it. Years with pupils, fees, or sealed work must be archived instead.",
             confirmLabel: "Delete year",
             cancelLabel: "Keep it",
             danger: true

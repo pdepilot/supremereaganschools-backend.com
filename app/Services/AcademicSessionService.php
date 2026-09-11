@@ -4,11 +4,17 @@ namespace App\Services;
 
 use App\Enums\SessionStatus;
 use App\Models\AcademicSession;
+use App\Models\Assignment;
+use App\Models\AttendanceRecord;
 use App\Models\CbtExam;
+use App\Models\CbtExamAssignment;
+use App\Models\ClassSectionOffering;
 use App\Models\Enrollment;
+use App\Models\LearningMaterial;
 use App\Models\Promotion;
 use App\Models\SchoolSetting;
 use App\Models\Term;
+use App\Models\TimetableSlot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -107,12 +113,6 @@ class AcademicSessionService
     public function delete(AcademicSession $session): void
     {
         DB::transaction(function () use ($session) {
-            if ($session->classSectionOfferings()->exists()) {
-                throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because forms are still open on it. Remove those forms first, or archive the year.',
-                ]);
-            }
-
             if ($session->invoices()->exists() || $session->feeStructures()->exists()) {
                 throw ValidationException::withMessages([
                     'session' => 'This academic session cannot be deleted because fee records exist. Archive it instead.',
@@ -137,6 +137,8 @@ class AcademicSessionService
                 ]);
             }
 
+            $this->removeEmptyOfferings($session);
+
             $settings = SchoolSetting::query()->first();
 
             if ($settings?->current_academic_session_id === $session->id) {
@@ -155,6 +157,47 @@ class AcademicSessionService
             $session->terms()->delete();
             $session->delete();
         });
+    }
+
+    /**
+     * Drop book forms that only carry catalogue subjects / teacher appointments.
+     * Forms with sealed school work must stay — archive the year instead.
+     */
+    private function removeEmptyOfferings(AcademicSession $session): void
+    {
+        $offerings = ClassSectionOffering::query()
+            ->where('academic_session_id', $session->id)
+            ->with(['subjectOfferings.teacherAssignments'])
+            ->get();
+
+        foreach ($offerings as $offering) {
+            if ($this->offeringHasSealedWork($offering)) {
+                throw ValidationException::withMessages([
+                    'session' => 'This academic session cannot be deleted because forms still have attendance, timetables, assignments, or other sealed work. Archive the year instead.',
+                ]);
+            }
+
+            foreach ($offering->subjectOfferings as $subjectOffering) {
+                $subjectOffering->teacherAssignments()->delete();
+                $subjectOffering->delete();
+            }
+
+            $offering->classTeacherAssignments()->delete();
+            $offering->delete();
+        }
+    }
+
+    private function offeringHasSealedWork(ClassSectionOffering $offering): bool
+    {
+        $id = $offering->id;
+
+        return $offering->enrollments()->exists()
+            || AttendanceRecord::query()->where('class_section_offering_id', $id)->exists()
+            || TimetableSlot::query()->where('class_section_offering_id', $id)->exists()
+            || Assignment::query()->where('class_section_offering_id', $id)->exists()
+            || LearningMaterial::query()->where('class_section_offering_id', $id)->exists()
+            || CbtExam::query()->where('class_section_offering_id', $id)->exists()
+            || CbtExamAssignment::query()->where('class_section_offering_id', $id)->exists();
     }
 
     private function seedTerms(AcademicSession $session): void
