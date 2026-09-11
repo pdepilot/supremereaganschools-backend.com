@@ -705,7 +705,7 @@
           method = "DELETE";
           alertOptions = {
             title: "Delete this year",
-            copy: name + " will be removed from the calendar. Empty forms and fee-book rows are cleared with it. Years with pupils, invoices, or sealed work must be archived instead.",
+            copy: name + " will be removed from the calendar. Empty forms, fee-book rows, invoices, and receipts for that year are cleared with it. Years with pupils or sealed class work must be archived instead.",
             confirmLabel: "Delete year",
             cancelLabel: "Keep it",
             danger: true

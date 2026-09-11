@@ -10,7 +10,10 @@ use App\Models\CbtExam;
 use App\Models\CbtExamAssignment;
 use App\Models\ClassSectionOffering;
 use App\Models\Enrollment;
+use App\Models\Invoice;
 use App\Models\LearningMaterial;
+use App\Models\Payment;
+use App\Models\PaymentAllocation;
 use App\Models\Promotion;
 use App\Models\SchoolSetting;
 use App\Models\Term;
@@ -113,12 +116,6 @@ class AcademicSessionService
     public function delete(AcademicSession $session): void
     {
         DB::transaction(function () use ($session) {
-            if ($session->invoices()->exists()) {
-                throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because invoices exist. Archive it instead.',
-                ]);
-            }
-
             if (Enrollment::query()->where('academic_session_id', $session->id)->exists()) {
                 throw ValidationException::withMessages([
                     'session' => 'This academic session cannot be deleted because pupils are enrolled on it. Archive it instead.',
@@ -137,7 +134,9 @@ class AcademicSessionService
                 ]);
             }
 
-            // Drop fee-book rows for this year (no invoices remain to protect).
+            $this->removeSessionInvoices($session);
+
+            // Drop fee-book rows for this year.
             $session->feeStructures()->delete();
 
             $this->removeEmptyOfferings($session);
@@ -160,6 +159,34 @@ class AcademicSessionService
             $session->terms()->delete();
             $session->delete();
         });
+    }
+
+    /**
+     * Remove invoices, line items, payments, and allocations for this year.
+     */
+    private function removeSessionInvoices(AcademicSession $session): void
+    {
+        $invoiceIds = Invoice::query()
+            ->where('academic_session_id', $session->id)
+            ->pluck('id');
+
+        if ($invoiceIds->isEmpty()) {
+            return;
+        }
+
+        $paymentIds = Payment::query()
+            ->whereIn('invoice_id', $invoiceIds)
+            ->pluck('id');
+
+        if ($paymentIds->isNotEmpty()) {
+            PaymentAllocation::query()->whereIn('payment_id', $paymentIds)->delete();
+            Payment::query()->whereIn('id', $paymentIds)->delete();
+        }
+
+        foreach (Invoice::query()->whereIn('id', $invoiceIds)->with('items')->get() as $invoice) {
+            $invoice->items()->delete();
+            $invoice->delete();
+        }
     }
 
     /**

@@ -290,30 +290,58 @@ class AcademicSessionApiTest extends TestCase
         $this->assertDatabaseHas('class_section_offerings', ['id' => $offering->id]);
     }
 
-    public function test_a_session_with_invoices_cannot_be_deleted(): void
+    public function test_a_session_with_invoices_can_be_deleted(): void
     {
         $admin = $this->admin();
         $session = $this->academicSession();
         $term = $this->termFor($session);
         $student = $this->student();
+        $type = $this->feeType();
 
-        \App\Models\Invoice::query()->create([
+        $invoice = \App\Models\Invoice::query()->create([
             'number' => 'INV-TEST-001',
             'student_profile_id' => $student->id,
             'academic_session_id' => $session->id,
             'term_id' => $term->id,
-            'status' => \App\Enums\InvoiceStatus::Unpaid,
+            'status' => \App\Enums\InvoiceStatus::Partial,
             'total_kobo' => 10000000,
-            'paid_kobo' => 0,
+            'paid_kobo' => 2500000,
+        ]);
+
+        $item = \App\Models\InvoiceItem::query()->create([
+            'invoice_id' => $invoice->id,
+            'fee_type_id' => $type->id,
+            'description' => 'Tuition',
+            'amount_kobo' => 10000000,
+            'paid_kobo' => 2500000,
+        ]);
+
+        $payment = \App\Models\Payment::query()->create([
+            'reference' => 'FEE-TEST-001',
+            'student_profile_id' => $student->id,
+            'invoice_id' => $invoice->id,
+            'amount_kobo' => 2500000,
+            'channel' => 'transfer',
+            'paid_at' => now('Africa/Lagos'),
+            'status' => \App\Enums\PaymentStatus::Posted,
+            'recorded_by' => $admin->id,
+        ]);
+
+        \App\Models\PaymentAllocation::query()->create([
+            'payment_id' => $payment->id,
+            'invoice_item_id' => $item->id,
+            'amount_kobo' => 2500000,
         ]);
 
         $this->actingAs($admin)
             ->deleteJson('/api/v1/academic-sessions/'.$session->id)
-            ->assertUnprocessable()
-            ->assertJsonPath('success', false)
-            ->assertJsonStructure(['errors' => ['session']]);
+            ->assertOk()
+            ->assertJsonPath('success', true);
 
-        $this->assertDatabaseHas('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('invoices', ['id' => $invoice->id]);
+        $this->assertDatabaseMissing('invoice_items', ['id' => $item->id]);
+        $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
     }
 
     public function test_missing_session_returns_not_found_envelope(): void
