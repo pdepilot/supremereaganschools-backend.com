@@ -257,6 +257,22 @@ class AcademicSessionApiTest extends TestCase
         $this->assertDatabaseMissing('class_section_offerings', ['id' => $offering->id]);
     }
 
+    public function test_a_session_with_empty_fee_book_can_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $term = $this->termFor($session);
+        $structure = $this->feeStructure($this->feeType(), $session, $term, ['amount_kobo' => 15000000]);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('fee_structures', ['id' => $structure->id]);
+    }
+
     public function test_a_session_with_enrolled_forms_cannot_be_deleted(): void
     {
         $admin = $this->admin();
@@ -272,6 +288,32 @@ class AcademicSessionApiTest extends TestCase
 
         $this->assertDatabaseHas('academic_sessions', ['id' => $session->id]);
         $this->assertDatabaseHas('class_section_offerings', ['id' => $offering->id]);
+    }
+
+    public function test_a_session_with_invoices_cannot_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $term = $this->termFor($session);
+        $student = $this->student();
+
+        \App\Models\Invoice::query()->create([
+            'number' => 'INV-TEST-001',
+            'student_profile_id' => $student->id,
+            'academic_session_id' => $session->id,
+            'term_id' => $term->id,
+            'status' => \App\Enums\InvoiceStatus::Unpaid,
+            'total_kobo' => 10000000,
+            'paid_kobo' => 0,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonStructure(['errors' => ['session']]);
+
+        $this->assertDatabaseHas('academic_sessions', ['id' => $session->id]);
     }
 
     public function test_missing_session_returns_not_found_envelope(): void

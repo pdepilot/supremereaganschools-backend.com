@@ -620,18 +620,21 @@
         }
         actions.push('<button class="ghost-btn" type="button" data-delete-session="' + row.id
           + '" data-name="' + escapeHtml(row.name) + '">Delete</button>');
-        (row.terms || []).forEach(function (term) {
-          const sealed = Number(term.id) === Number(settings.current_term_id) && term.status === "active";
-          if (sealed) return;
-          actions.push('<button class="ghost-btn" type="button" data-seal-term="' + term.id
-            + '" data-name="' + escapeHtml(term.name) + '" data-year="' + escapeHtml(row.name) + '">Seal '
-            + escapeHtml(term.name) + "</button>");
-        });
+        // Seal terms only on live/planned years — archived cards stay Make live + Delete.
+        if (row.status !== "archived") {
+          (row.terms || []).forEach(function (term) {
+            const sealed = Number(term.id) === Number(settings.current_term_id) && term.status === "active";
+            if (sealed) return;
+            actions.push('<button class="ghost-btn" type="button" data-seal-term="' + term.id
+              + '" data-name="' + escapeHtml(term.name) + '" data-year="' + escapeHtml(row.name) + '">Seal '
+              + escapeHtml(term.name) + "</button>");
+          });
+        }
         return '<article class="ticket">'
           + '<div class="ticket-code">' + escapeHtml(row.name) + "</div>"
           + "<div><h3>" + title + "</h3><p>" + escapeHtml(copyLine) + "</p></div>"
           + '<span class="badge ' + badgeClass(row.status) + '">' + statusLabel(row.status) + "</span>"
-          + (actions.length ? '<div class="row-actions">' + actions.join("") + "</div>" : "")
+          + (actions.length ? '<div class="row-actions">' + actions.join(" ") + "</div>" : "")
           + "</article>";
       }).join("");
     };
@@ -702,7 +705,7 @@
           method = "DELETE";
           alertOptions = {
             title: "Delete this year",
-            copy: name + " will be removed from the calendar. Empty forms (subjects only) are cleared with it. Years with pupils, fees, or sealed work must be archived instead.",
+            copy: name + " will be removed from the calendar. Empty forms and fee-book rows are cleared with it. Years with pupils, invoices, or sealed work must be archived instead.",
             confirmLabel: "Delete year",
             cancelLabel: "Keep it",
             danger: true

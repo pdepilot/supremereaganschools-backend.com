@@ -113,9 +113,9 @@ class AcademicSessionService
     public function delete(AcademicSession $session): void
     {
         DB::transaction(function () use ($session) {
-            if ($session->invoices()->exists() || $session->feeStructures()->exists()) {
+            if ($session->invoices()->exists()) {
                 throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because fee records exist. Archive it instead.',
+                    'session' => 'This academic session cannot be deleted because invoices exist. Archive it instead.',
                 ]);
             }
 
@@ -136,6 +136,9 @@ class AcademicSessionService
                     'session' => 'This academic session cannot be deleted because CBT exams reference it. Archive it instead.',
                 ]);
             }
+
+            // Drop fee-book rows for this year (no invoices remain to protect).
+            $session->feeStructures()->delete();
 
             $this->removeEmptyOfferings($session);
 
