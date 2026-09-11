@@ -849,14 +849,17 @@
       };
     };
 
-    const fillOptions = function (select, rows, placeholder, extra) {
+    const BOOK_LEVEL_SLUGS = ["activity", "nursery", "primary", "jss"];
+
+    const fillOptions = function (select, rows, placeholder, extra, labelFn) {
       if (!select) return;
       const current = select.value;
       const extras = extra || [];
+      const labelOf = labelFn || function (row) { return row.name; };
       select.innerHTML = '<option value="">' + placeholder + "</option>" + extras.map(function (item) {
         return '<option value="' + escapeHtml(item.value) + '">' + escapeHtml(item.label) + "</option>";
       }).join("") + (rows || []).map(function (row) {
-        return '<option value="' + row.id + '">' + escapeHtml(row.name) + "</option>";
+        return '<option value="' + row.id + '">' + escapeHtml(labelOf(row)) + "</option>";
       }).join("");
       if (current && Array.from(select.options).some(function (option) { return option.value === current; })) {
         select.value = current;
@@ -893,7 +896,7 @@
 
       if (offering) {
         if (title) title.textContent = "Subjects on " + formName(offering);
-        if (copyNode) copyNode.textContent = "Offer a sealed subject onto this form, or seal a new one below.";
+        if (copyNode) copyNode.textContent = "Subjects for the selected level, class, and arm. Offer more from the catalogue or seal a new one below.";
         if (offerBox) offerBox.hidden = false;
         const offered = offering.subjects || [];
         const offeredIds = offered.map(function (row) { return Number(row.id); });
@@ -913,8 +916,9 @@
         }), "Select a subject");
       } else {
         if (title) title.textContent = "The subjects";
-        if (copyNode) copyNode.textContent = "Seal a subject into the school, then offer it on a form.";
+        if (copyNode) copyNode.textContent = "Select a level, class, and arm above to see that form’s subjects, or open Subjects on a row.";
         if (offerBox) offerBox.hidden = true;
+        if (offeredBox) offeredBox.innerHTML = "";
       }
 
       if (catalogue) {
@@ -928,6 +932,22 @@
             }).join("")
           : "<p>No subjects on the books yet.</p>";
       }
+    };
+
+    const findOfferingForSelection = function () {
+      const sessionId = Number((document.getElementById("formSession") || {}).value || 0);
+      const armId = (document.getElementById("formArm") || {}).value || "";
+      if (!sessionId || !armId || armId === "new") return null;
+      return offerings.find(function (row) {
+        return Number(row.academic_session_id) === sessionId
+          && Number(row.class_section_id) === Number(armId);
+      }) || null;
+    };
+
+    const previewSelectedFormSubjects = function () {
+      const match = findOfferingForSelection();
+      selectedOfferingId = match ? Number(match.id) : 0;
+      renderSubjects();
     };
 
     const classesForLevel = function (levelId) {
@@ -961,9 +981,16 @@
       const sections = (klass && klass.sections) || [];
       fillOptions(armSelect, sections, "Select an arm", [
         { value: "new", label: "New arm…" }
-      ]);
+      ], function (row) {
+        const arm = (row.arm || "").trim();
+        return arm || row.name || "Main";
+      });
       if (classId === "new" && armSelect) armSelect.value = "new";
+      if (armSelect && classId && classId !== "new" && sections.length === 1) {
+        armSelect.value = String(sections[0].id);
+      }
       if (newArmField) newArmField.hidden = (armSelect && armSelect.value) !== "new";
+      previewSelectedFormSubjects();
     };
 
     const visibleRows = function () {
@@ -1066,7 +1093,6 @@
 
     const load = function () {
       return Promise.all([
-        request("/api/v1/class-section-offerings?book_only=1"),
         request("/api/v1/levels"),
         request("/api/v1/academic-sessions"),
         request("/api/v1/campuses"),
@@ -1075,25 +1101,20 @@
         request("/api/v1/subjects"),
         request("/api/v1/departments")
       ]).then(function (results) {
-        if (!results[0].ok) {
-          table.innerHTML = "<tr><td colspan=\"7\">" + escapeHtml(firstError(results[0].body)) + "</td></tr>";
-          return;
-        }
-
-        offerings = results[0].body.data || [];
-        levels = (results[1].ok && results[1].body.data) || [];
-        sessions = (results[2].ok && results[2].body.data) || [];
-        campuses = (results[3].ok && results[3].body.data) || [];
-        staff = (results[4].ok && results[4].body.data) || [];
-        const settings = (results[5].ok && results[5].body.data) || {};
-        subjects = (results[6].ok && results[6].body.data) || [];
-        departments = (results[7].ok && results[7].body.data) || [];
+        levels = (results[0].ok && results[0].body.data) || [];
+        sessions = (results[1].ok && results[1].body.data) || [];
+        campuses = (results[2].ok && results[2].body.data) || [];
+        staff = (results[3].ok && results[3].body.data) || [];
+        const settings = (results[4].ok && results[4].body.data) || {};
+        subjects = (results[5].ok && results[5].body.data) || [];
+        departments = (results[6].ok && results[6].body.data) || [];
 
         if (statusFilter && !statusFilter.value) {
           statusFilter.value = "active";
         }
 
         const levelsWithActiveClasses = levels.filter(function (row) {
+          if (BOOK_LEVEL_SLUGS.indexOf(row.slug) === -1) return false;
           return (row.classes || []).some(function (klass) { return klass.is_active !== false; });
         });
 
@@ -1120,16 +1141,43 @@
           document.getElementById("formCampus").value = String(campus.id);
         }
 
-        apply();
-        renderSubjects();
+        const ensureSessionId = Number((sessionFilter && sessionFilter.value) || currentSessionId || 0);
+        const offeringsUrl = ensureSessionId
+          ? "/api/v1/class-section-offerings?book_only=1&ensure_book=1&ensure_session_id=" + ensureSessionId
+          : "/api/v1/class-section-offerings?book_only=1";
+
+        return request(offeringsUrl).then(function (offeringResult) {
+          if (!offeringResult.ok) {
+            table.innerHTML = "<tr><td colspan=\"7\">" + escapeHtml(firstError(offeringResult.body)) + "</td></tr>";
+            return;
+          }
+          offerings = offeringResult.body.data || [];
+          apply();
+          previewSelectedFormSubjects();
+        });
       });
     };
 
-    [search, levelFilter, sessionFilter, statusFilter].forEach(function (node) {
+    [search, levelFilter, statusFilter].forEach(function (node) {
       if (!node) return;
       node.addEventListener("input", function () { page = 1; apply(); });
       node.addEventListener("change", function () { page = 1; apply(); });
     });
+
+    if (sessionFilter) {
+      sessionFilter.addEventListener("change", function () {
+        page = 1;
+        const sid = Number(sessionFilter.value || 0);
+        const url = sid
+          ? "/api/v1/class-section-offerings?book_only=1&ensure_book=1&ensure_session_id=" + sid
+          : "/api/v1/class-section-offerings?book_only=1";
+        request(url).then(function (result) {
+          if (result.ok) offerings = result.body.data || [];
+          apply();
+          previewSelectedFormSubjects();
+        });
+      });
+    }
 
     if (pages) {
       pages.addEventListener("click", function (event) {
@@ -1143,11 +1191,14 @@
     const formLevel = document.getElementById("formLevel");
     const formClass = document.getElementById("formClass");
     const formArm = document.getElementById("formArm");
+    const formSession = document.getElementById("formSession");
     if (formLevel) formLevel.addEventListener("change", syncClassOptions);
     if (formClass) formClass.addEventListener("change", syncArmOptions);
     if (formArm) formArm.addEventListener("change", function () {
       if (newArmField) newArmField.hidden = formArm.value !== "new";
+      previewSelectedFormSubjects();
     });
+    if (formSession) formSession.addEventListener("change", previewSelectedFormSubjects);
 
     root.addEventListener("click", function (event) {
       const button = event.target.closest("[data-delete-form], [data-close-form], [data-reopen-form], [data-appoint-form]");

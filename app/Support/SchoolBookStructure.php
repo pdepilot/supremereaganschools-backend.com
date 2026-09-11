@@ -73,4 +73,132 @@ final class SchoolBookStructure
 
         return $names;
     }
+
+    /**
+     * Default subject catalogue names for a school-book class.
+     *
+     * @return list<string>
+     */
+    public static function defaultSubjectNames(string $className, ?string $levelSlug = null): array
+    {
+        if (preg_match('/^Nursery\s+2\b/i', $className) === 1) {
+            return [
+                'Discover Numeracy',
+                'Discover Literacy',
+                'Discover Me',
+                'Numeracy Thinking',
+                'Literacy Thinking',
+                'Computer',
+                'Christian Religious Studies',
+                'Igbo',
+                'Health Habit',
+                'Social Habit',
+                'Calligraphy',
+                'Colouring',
+                'Diction',
+                'Literature',
+                'Writing',
+            ];
+        }
+
+        if (preg_match('/^Nursery\s+3\b/i', $className) === 1) {
+            return [
+                'Discover Numeracy',
+                'Discover Literacy',
+                'Numeracy Thinking',
+                'Literacy Thinking',
+                'Calligraphy',
+                'Writing',
+                'Health Habit',
+                'Social Habit',
+                'Discovery Science',
+                'Computer Science',
+                'Christian Religious Studies',
+                'Phonics',
+                'Literature',
+                'Igbo',
+                'Diction',
+                'Colour Me',
+            ];
+        }
+
+        if (preg_match('/^Basic\s+[123]\b/i', $className) === 1) {
+            return [
+                'Mathematics',
+                'English',
+                'Diction',
+                'Abacus',
+                'Social Studies',
+                'French',
+                'Basic Science',
+                'Christian Religious Studies',
+                'Physical and Health Education',
+                'Computer',
+                'Home Economics',
+                'Vocational Aptitude',
+                'Cultural and Creative Arts',
+                'Writing',
+                'Music',
+                'Agricultural Science',
+                'Quantitative Reasoning',
+                'Verbal Reasoning',
+                'Literature',
+                'Coding',
+                'Civic Education',
+                'Igbo',
+            ];
+        }
+
+        if (preg_match('/^Basic\s+[45]\b/i', $className) === 1) {
+            return [
+                'Mathematics',
+                'English',
+                'Diction',
+                'Abacus',
+                'Social Studies',
+                'French',
+                'Basic Science',
+                'Christian Religious Studies',
+                'Physical and Health Education',
+                'Computer',
+                'Home Economics',
+                'Cultural and Creative Arts',
+                'Music',
+                'Agricultural Science',
+                'Quantitative Reasoning',
+                'Verbal Reasoning',
+                'Literature',
+                'Coding',
+                'Civic Education',
+                'Igbo',
+            ];
+        }
+
+        if (preg_match('/^JSS\s+1\b/i', $className) === 1 || $levelSlug === 'jss') {
+            return [
+                'Mathematics',
+                'English Studies',
+                'Intermediate Science',
+                'Digital Technology',
+                'Physical and Health Education',
+                'Social and Citizenship Studies',
+                'Solar PV',
+                'Fashion Design',
+                'Business Studies',
+                'Cultural and Creative Arts',
+                'Nigerian History',
+                'Igbo',
+                'Cambridge Science',
+                'French',
+                'Christian Religious Studies',
+                'Coding and Robotics',
+            ];
+        }
+
+        return match ($levelSlug) {
+            'activity' => ['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music'],
+            'nursery' => ['English', 'Mathematics', 'Quantitative Reasoning', 'Writing', 'Music', 'Diction'],
+            default => [],
+        };
+    }
 }

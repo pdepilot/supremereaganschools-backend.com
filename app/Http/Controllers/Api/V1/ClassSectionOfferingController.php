@@ -11,6 +11,7 @@ use App\Models\ClassSectionOffering;
 use App\Models\StudentProfile;
 use App\Models\SubjectOffering;
 use App\Services\ClassTeacherAssignmentService;
+use App\Services\SchoolBookSessionSync;
 use App\Support\ApiResponse;
 use App\Support\SchoolBookStructure;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -21,7 +22,10 @@ use Illuminate\Validation\ValidationException;
 
 class ClassSectionOfferingController extends Controller
 {
-    public function __construct(private readonly ClassTeacherAssignmentService $teachers) {}
+    public function __construct(
+        private readonly ClassTeacherAssignmentService $teachers,
+        private readonly SchoolBookSessionSync $schoolBook,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -31,6 +35,13 @@ class ClassSectionOfferingController extends Controller
 
         if (! $canViewStructure && ! $canRegisterPupils) {
             throw new AuthorizationException;
+        }
+
+        if ($request->boolean('ensure_book') && ($user?->can('create', ClassSectionOffering::class) ?? false)) {
+            $sessionId = $request->integer('ensure_session_id') ?: $request->integer('academic_session_id');
+            if ($sessionId > 0) {
+                $this->schoolBook->ensureBookForSession($sessionId);
+            }
         }
 
         $offerings = ClassSectionOffering::query()
@@ -50,19 +61,62 @@ class ClassSectionOfferingController extends Controller
                 $forms = SchoolBookStructure::formNames();
                 $classNames = SchoolBookStructure::schoolClassNames();
                 $slugs = SchoolBookStructure::LEVEL_SLUGS;
+                $formKeys = collect($forms)
+                    ->map(fn (string $name) => mb_strtolower(str_replace(['–', '—', '−'], '-', $name)))
+                    ->all();
 
-                $query->whereHas('classSection', function ($section) use ($forms, $classNames, $slugs) {
-                    $section->whereIn('name', $forms)
-                        ->whereHas('schoolClass', function ($class) use ($classNames, $slugs) {
-                            $class->whereIn('name', $classNames)
-                                ->whereHas('level', fn ($level) => $level->whereIn('slug', $slugs));
-                        });
+                $query->whereHas('classSection', function ($section) use ($forms, $formKeys, $classNames, $slugs) {
+                    $section->where(function ($nameQuery) use ($forms, $formKeys) {
+                        $nameQuery->whereIn('name', $forms)
+                            ->orWhereIn(
+                                DB::raw("LOWER(REPLACE(REPLACE(REPLACE(name, '–', '-'), '—', '-'), '−', '-'))"),
+                                $formKeys,
+                            );
+                    })->whereHas('schoolClass', function ($class) use ($classNames, $slugs) {
+                        $class->whereIn('name', $classNames)
+                            ->whereHas('level', fn ($level) => $level->whereIn('slug', $slugs));
+                    });
                 });
             })
             ->orderBy('id')
             ->get();
 
         return ApiResponse::success('Class offerings retrieved.', ClassSectionOfferingResource::collection($offerings)->resolve());
+    }
+
+    public function ensureBook(Request $request): JsonResponse
+    {
+        $this->authorize('create', ClassSectionOffering::class);
+
+        $data = $request->validate([
+            'academic_session_id' => ['required', 'integer', 'exists:academic_sessions,id'],
+        ]);
+
+        $this->schoolBook->ensureBookForSession((int) $data['academic_session_id']);
+
+        $offerings = ClassSectionOffering::query()
+            ->with($this->defaultRelations())
+            ->withCount([
+                'enrollments as enrollments_count' => fn ($query) => $query->where('status', EnrollmentStatus::Active),
+            ])
+            ->where('academic_session_id', (int) $data['academic_session_id'])
+            ->whereHas('classSection', function ($section) {
+                $forms = SchoolBookStructure::formNames();
+                $classNames = SchoolBookStructure::schoolClassNames();
+                $slugs = SchoolBookStructure::LEVEL_SLUGS;
+                $section->whereIn('name', $forms)
+                    ->whereHas('schoolClass', function ($class) use ($classNames, $slugs) {
+                        $class->whereIn('name', $classNames)
+                            ->whereHas('level', fn ($level) => $level->whereIn('slug', $slugs));
+                    });
+            })
+            ->orderBy('id')
+            ->get();
+
+        return ApiResponse::success(
+            'School-book forms are ready for this session.',
+            ClassSectionOfferingResource::collection($offerings)->resolve(),
+        );
     }
 
     public function store(StoreClassSectionOfferingRequest $request): JsonResponse

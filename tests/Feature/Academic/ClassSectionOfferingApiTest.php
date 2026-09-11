@@ -82,6 +82,40 @@ class ClassSectionOfferingApiTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    public function test_ensure_book_creates_activity_forms_for_the_session(): void
+    {
+        $this->seed(\Database\Seeders\LevelSeeder::class);
+        $this->seed(\Database\Seeders\SubjectSeeder::class);
+        $session = $this->academicSession(['status' => SessionStatus::Active]);
+        $this->campus(['name' => 'Owerri']);
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/v1/class-section-offerings/ensure-book', [
+                'academic_session_id' => $session->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $forms = collect(
+            $this->actingAs($this->admin())
+                ->getJson('/api/v1/class-section-offerings?book_only=1&academic_session_id='.$session->id)
+                ->assertOk()
+                ->json('data')
+        )->pluck('form');
+
+        $this->assertTrue($forms->contains('Activity 1'));
+        $this->assertTrue($forms->contains('Activity 2 – Blossom'));
+        $this->assertTrue($forms->contains('Activity 2 – Excel'));
+
+        $activity = collect(
+            $this->actingAs($this->admin())
+                ->getJson('/api/v1/class-section-offerings?book_only=1&academic_session_id='.$session->id)
+                ->json('data')
+        )->firstWhere('form', 'Activity 1');
+
+        $this->assertNotEmpty($activity['subjects'] ?? []);
+    }
+
     public function test_forms_include_offered_subjects(): void
     {
         $offering = $this->offering();

@@ -7,9 +7,13 @@ use App\Models\AcademicSession;
 use App\Models\Campus;
 use App\Models\ClassSection;
 use App\Models\ClassSectionOffering;
+use App\Models\Subject;
 use App\Models\SubjectOffering;
 use App\Models\Term;
 use App\Support\SchoolBookStructure;
+use Database\Seeders\LevelSeeder;
+use Database\Seeders\SchoolClassSeeder;
+use Database\Seeders\SubjectSeeder;
 use Illuminate\Support\Carbon;
 
 class SchoolBookSessionSync
@@ -54,6 +58,31 @@ class SchoolBookSessionSync
         return $session->fresh(['terms']) ?? $session;
     }
 
+    /**
+     * Ensure school-book classes/sections exist, then open offerings for the session.
+     */
+    public function ensureBookForSession(int $sessionId): void
+    {
+        $expectedForms = count(SchoolBookStructure::formNames());
+        $activeForms = ClassSection::query()
+            ->where('is_active', true)
+            ->whereIn('name', SchoolBookStructure::formNames())
+            ->whereHas('schoolClass', function ($q): void {
+                $q->where('is_active', true)
+                    ->whereIn('name', SchoolBookStructure::schoolClassNames())
+                    ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
+            })
+            ->count();
+
+        if ($activeForms < $expectedForms) {
+            app(LevelSeeder::class)->run();
+            app(SubjectSeeder::class)->run();
+            app(SchoolClassSeeder::class)->run();
+        }
+
+        $this->syncBookOfferings($sessionId);
+    }
+
     public function syncBookOfferings(int $sessionId): void
     {
         $campusId = Campus::query()->where('name', 'Owerri')->value('id')
@@ -63,6 +92,7 @@ class SchoolBookSessionSync
         ClassSection::query()
             ->where('is_active', true)
             ->whereIn('name', SchoolBookStructure::formNames())
+            ->with('schoolClass.level')
             ->whereHas('schoolClass', function ($q): void {
                 $q->where('is_active', true)
                     ->whereIn('name', SchoolBookStructure::schoolClassNames())
@@ -71,6 +101,7 @@ class SchoolBookSessionSync
             ->each(function (ClassSection $section) use ($sessionId, $campusId): void {
                 $template = ClassSectionOffering::query()
                     ->where('class_section_id', $section->id)
+                    ->where('academic_session_id', '!=', $sessionId)
                     ->with('subjectOfferings')
                     ->orderByDesc('id')
                     ->first();
@@ -91,13 +122,38 @@ class SchoolBookSessionSync
                     $offering->update(['is_active' => true]);
                 }
 
-                if ($template && ($offering->wasRecentlyCreated || ! $offering->subjectOfferings()->exists())) {
+                if ($offering->subjectOfferings()->exists()) {
+                    return;
+                }
+
+                if ($template && $template->subjectOfferings->isNotEmpty()) {
                     foreach ($template->subjectOfferings as $subjectOffering) {
                         SubjectOffering::query()->firstOrCreate([
                             'class_section_offering_id' => $offering->id,
                             'subject_id' => $subjectOffering->subject_id,
                         ]);
                     }
+
+                    return;
+                }
+
+                $className = $section->schoolClass?->name ?? $section->name;
+                $levelSlug = $section->schoolClass?->level?->slug;
+                $names = SchoolBookStructure::defaultSubjectNames($className, $levelSlug);
+                if ($names === []) {
+                    return;
+                }
+
+                $subjectIds = Subject::query()
+                    ->whereIn('name', $names)
+                    ->where('is_active', true)
+                    ->pluck('id');
+
+                foreach ($subjectIds as $subjectId) {
+                    SubjectOffering::query()->firstOrCreate([
+                        'class_section_offering_id' => $offering->id,
+                        'subject_id' => (int) $subjectId,
+                    ]);
                 }
             });
     }

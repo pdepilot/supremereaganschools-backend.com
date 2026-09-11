@@ -53,6 +53,7 @@ Route::middleware(['web', 'auth', 'role:portal'])->group(function () {
     Route::delete('sections/{class_section}', [ClassSectionController::class, 'destroy']);
 
     Route::apiResource('subjects', SubjectController::class)->except(['show']);
+    Route::post('class-section-offerings/ensure-book', [ClassSectionOfferingController::class, 'ensureBook']);
     Route::apiResource('class-section-offerings', ClassSectionOfferingController::class)->except(['show']);
     Route::apiResource('subject-offerings', SubjectOfferingController::class)->except(['show', 'update']);
 });
