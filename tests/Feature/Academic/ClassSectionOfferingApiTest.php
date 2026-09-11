@@ -48,6 +48,40 @@ class ClassSectionOfferingApiTest extends TestCase
             ->assertJsonPath('data.0.subjects', []);
     }
 
+    public function test_book_only_hides_forms_outside_the_school_book(): void
+    {
+        $level = $this->level();
+        $session = $this->academicSession();
+        $campus = $this->campus();
+
+        $bookClass = $this->schoolClass($level, ['name' => 'JSS 1', 'short_code' => 'J1']);
+        $bookSection = $this->section($bookClass, [
+            'arm' => 'Reagan',
+            'name' => 'JSS 1 – Reagan',
+        ]);
+        $bookOffering = $this->offering($bookSection, $session, $campus);
+
+        $legacyClass = $this->schoolClass($level, ['name' => 'JSS 2', 'short_code' => 'J2', 'sort_order' => 2]);
+        $legacySection = $this->section($legacyClass, [
+            'arm' => 'A',
+            'name' => 'JSS 2 A',
+        ]);
+        $this->offering($legacySection, $session, $campus);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/v1/class-section-offerings?book_only=1')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $bookOffering->id)
+            ->assertJsonPath('data.0.form', 'JSS 1 – Reagan');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/v1/class-section-offerings')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
+
     public function test_forms_include_offered_subjects(): void
     {
         $offering = $this->offering();

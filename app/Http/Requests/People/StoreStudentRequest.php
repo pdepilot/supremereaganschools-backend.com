@@ -68,8 +68,11 @@ class StoreStudentRequest extends FormRequest
                 'nullable',
                 'email',
                 'max:255',
-                $this->filled('guardian.password') ? 'required' : null,
-                $this->filled('guardian.email') ? Rule::unique('users', 'email') : null,
+                // Password is only required when opening a brand-new parent login.
+                // Existing parents may register more children with the same email.
+                $this->filled('guardian.password') && ! $this->guardianEmailAlreadyRegistered()
+                    ? 'required'
+                    : null,
             ]),
             'guardian.password' => ['nullable', 'string', 'min:8'],
             'password' => ['nullable', 'string', 'min:8'],
@@ -78,6 +81,21 @@ class StoreStudentRequest extends FormRequest
             'guardian.alternate_phone' => ['nullable', 'string', 'max:30'],
             'guardian.relationship' => ['nullable', Rule::enum(GuardianRelationship::class)],
         ];
+    }
+
+    private function guardianEmailAlreadyRegistered(): bool
+    {
+        $email = strtolower(trim((string) $this->input('guardian.email')));
+        if ($email === '') {
+            return false;
+        }
+
+        return \App\Models\User::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->exists()
+            || \App\Models\GuardianProfile::query()
+                ->whereRaw('LOWER(email) = ?', [$email])
+                ->exists();
     }
 
     /**
@@ -92,6 +110,7 @@ class StoreStudentRequest extends FormRequest
             'photo.image' => 'The pupil photograph must be an image.',
             'date_of_birth.required' => 'A date of birth is required.',
             'date_of_birth.before' => 'The date of birth must be before today.',
+            'guardian.email.required' => 'A parent email is required to open a login for this guardian.',
         ];
     }
 }

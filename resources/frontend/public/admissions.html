@@ -129,13 +129,13 @@
     <div class="container" style="max-width: 920px;">
       <div class="admission-intro">
         <h2>Application</h2>
-        <p>Our application process is simple and designed to give parents a smooth experience. Complete the form below to begin admission into Nursery, Primary or Secondary. After submission, the candidate will sit for an entry examination to determine placement and readiness.</p>
+        <p>Our application process is simple and designed to give parents a smooth experience. Complete the form below, pay the application fee securely with Paystack, and the admissions office will review your file. After payment, the candidate will sit for an entry examination to determine placement and readiness.</p>
         <p>Learn more about our <a href="./nursery.html">Nursery</a>, <a href="./primary.html">Primary</a> and <a href="./secondary.html">Secondary</a> programmes before you apply.</p>
         <h2>Required Documents</h2>
         <ul>
           <li>A recent passport photograph</li>
           <li>A copy of the candidate's birth certificate</li>
-          <li>Receipt of examination fee payment</li>
+          <li>Online application fee payment via Paystack (<span data-admission-fee>see amount on the form</span>)</li>
         </ul>
         <p>Admission enquiries: Mrs. Ezinne Ibeaja &nbsp;|&nbsp; <a href="tel:09065641343">09065641343</a> &nbsp;|&nbsp; <a href="mailto:ibeajaezinne@gmail.com">ibeajaezinne@gmail.com</a></p>
       </div>
@@ -163,7 +163,7 @@
           <div class="admission-grid">
             <div class="admission-field">
               <label for="session">Academic session</label>
-              <input type="text" id="session" name="session" placeholder="e.g. 2026/2027" required>
+              <input type="text" id="session" name="session" placeholder="e.g. YYYY/YYYY" required>
             </div>
             <div class="admission-field">
               <label for="level">Level applied for</label>
@@ -317,7 +317,7 @@
               <input type="file" id="birthCert" name="birthCert" accept=".pdf,image/*">
             </div>
             <div class="admission-field full">
-              <label for="examReceipt">Examination fee receipt</label>
+              <label for="examReceipt">Examination fee receipt (optional)</label>
               <input type="file" id="examReceipt" name="examReceipt" accept=".pdf,image/*">
             </div>
           </div>
@@ -332,9 +332,9 @@
         </div>
 
         <div class="admission-actions">
-          <button type="submit" class="btn nav-btn text-white fw-bolder rounded-pill px-5 py-2">Submit Application</button>
+          <button type="submit" class="btn nav-btn text-white fw-bolder rounded-pill px-5 py-2">Pay &amp; Submit Application</button>
           <button type="button" class="btn btn-outline-dark rounded-pill px-4 py-2" onclick="window.print()">Print Form</button>
-          <p class="admission-note">The form is sent to the admissions office. Attached documents are stored privately with your application.</p>
+          <p class="admission-note">You will be redirected to Paystack to pay the application fee (<strong data-admission-fee>…</strong>). After a successful payment, your application is submitted and a confirmation email is sent to the parent email address.</p>
         </div>
       </form>
     </div>

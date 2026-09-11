@@ -10,6 +10,7 @@ use App\Models\AdmissionApplication;
 use App\Models\ContactEnquiry;
 use App\Models\ContactEnquiryReply;
 use App\Models\OutboundMail;
+use App\Services\ApplicationService;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -69,27 +70,25 @@ class PortalContactDeskTest extends TestCase
         $this->level(['name' => 'Junior Secondary', 'slug' => 'jss']);
         $this->academicSession(['name' => '2025/2026']);
 
-        $this->post('/api/v1/admission-applications', [
-            'session' => '2025/2026',
+        $application = app(ApplicationService::class)->submit([
+            'session_name' => '2025/2026',
             'level' => 'Junior Secondary',
-            'classApplied' => 'JSS 1',
-            'entryTerm' => 'First Term',
+            'class_applied' => 'JSS 1',
+            'entry_term' => 'First Term',
             'surname' => 'Okafor',
-            'firstName' => 'Chiamaka',
-            'gender' => 'Female',
-            'dob' => '2014-05-12',
+            'first_name' => 'Chiamaka',
+            'gender' => 'female',
+            'date_of_birth' => '2014-05-12',
             'nationality' => 'Nigerian',
-            'stateOfOrigin' => 'Imo',
-            'homeAddress' => '12 Wetheral Road, Owerri',
-            'parentName' => 'Mrs. Okafor',
+            'state_of_origin' => 'Imo',
+            'home_address' => '12 Wetheral Road, Owerri',
+            'parent_name' => 'Mrs. Okafor',
             'relationship' => 'mother',
-            'parentPhone' => '08031112233',
-            'parentEmail' => 'okafor.parent@school.test',
-        ], ['Accept' => 'application/json'])
-            ->assertCreated()
-            ->assertJsonPath('data.status', 'submitted');
+            'parent_phone' => '08031112233',
+            'parent_email' => 'okafor.parent@school.test',
+        ]);
 
-        $application = AdmissionApplication::query()->firstOrFail();
+        $this->assertSame(ApplicationStatus::Submitted, $application->status);
 
         $this->actingAs($admin)->getJson('/api/v1/admission-applications')
             ->assertOk()

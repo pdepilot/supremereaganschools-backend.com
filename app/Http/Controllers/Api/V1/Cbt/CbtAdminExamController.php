@@ -263,7 +263,7 @@ class CbtAdminExamController extends Controller
                 $data['academic_session_id'] = (int) $data['academic_session_id'];
             } elseif (! $updating) {
                 throw ValidationException::withMessages([
-                    'academic_session' => 'Enter an academic session (e.g. 2025/2026).',
+                    'academic_session' => 'Enter an academic session (e.g. YYYY/YYYY).',
                 ]);
             }
             unset($data['academic_session']);

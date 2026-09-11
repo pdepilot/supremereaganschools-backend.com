@@ -12,6 +12,7 @@ use App\Models\StudentProfile;
 use App\Models\SubjectOffering;
 use App\Services\ClassTeacherAssignmentService;
 use App\Support\ApiResponse;
+use App\Support\SchoolBookStructure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,6 +45,19 @@ class ClassSectionOfferingController extends Controller
             ->when($request->filled('campus_id'), fn ($query) => $query->where('campus_id', $request->integer('campus_id')))
             ->when($request->has('is_active') && $request->string('is_active')->isNotEmpty(), function ($query) use ($request) {
                 $query->where('is_active', $request->boolean('is_active'));
+            })
+            ->when($request->boolean('book_only'), function ($query) {
+                $forms = SchoolBookStructure::formNames();
+                $classNames = SchoolBookStructure::schoolClassNames();
+                $slugs = SchoolBookStructure::LEVEL_SLUGS;
+
+                $query->whereHas('classSection', function ($section) use ($forms, $classNames, $slugs) {
+                    $section->whereIn('name', $forms)
+                        ->whereHas('schoolClass', function ($class) use ($classNames, $slugs) {
+                            $class->whereIn('name', $classNames)
+                                ->whereHas('level', fn ($level) => $level->whereIn('slug', $slugs));
+                        });
+                });
             })
             ->orderBy('id')
             ->get();

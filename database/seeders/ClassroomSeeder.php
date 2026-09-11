@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\AnnouncementAudience;
 use App\Enums\AnnouncementCategory;
 use App\Enums\AnnouncementStatus;
+use App\Enums\SessionStatus;
 use App\Models\Announcement;
 use App\Models\Assignment;
 use App\Models\ClassSection;
@@ -70,8 +71,12 @@ class ClassroomSeeder extends Seeder
 
         $term = Term::query()
             ->where('name', 'First Term')
-            ->whereHas('academicSession', fn ($query) => $query->where('name', '2025/2026'))
-            ->first();
+            ->whereHas('academicSession', fn ($query) => $query->where('status', SessionStatus::Active))
+            ->first()
+            ?? Term::query()
+                ->where('name', 'First Term')
+                ->orderByDesc('id')
+                ->first();
 
         if ($offering && $ezeStaff && ! TimetableSlot::query()->where('class_section_offering_id', $offering->id)->exists()) {
             $this->slot($offering, $term, 1, '08:00', '08:40', $math, $ezeStaff);

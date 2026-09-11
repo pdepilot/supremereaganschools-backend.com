@@ -2,18 +2,28 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\ApplicationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admissions\StoreAdmissionApplicationRequest;
 use App\Http\Requests\Admissions\UpdateAdmissionApplicationRequest;
 use App\Http\Resources\Admissions\AdmissionApplicationResource;
 use App\Models\AdmissionApplication;
+use App\Services\Admissions\AdmissionCheckoutService;
 use App\Services\ApplicationService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class AdmissionApplicationController extends Controller
 {
-    public function __construct(private readonly ApplicationService $applications) {}
+    public function __construct(
+        private readonly ApplicationService $applications,
+        private readonly AdmissionCheckoutService $checkout,
+    ) {}
+
+    public function fee(): JsonResponse
+    {
+        return ApiResponse::success('Admission application fee retrieved.', $this->checkout->pricing());
+    }
 
     public function index(): JsonResponse
     {
@@ -21,6 +31,7 @@ class AdmissionApplicationController extends Controller
 
         $rows = AdmissionApplication::query()
             ->with(['documents', 'level', 'academicSession'])
+            ->where('status', '!=', ApplicationStatus::PendingPayment)
             ->orderByDesc('created_at')
             ->get();
 
@@ -32,7 +43,7 @@ class AdmissionApplicationController extends Controller
 
     public function store(StoreAdmissionApplicationRequest $request): JsonResponse
     {
-        $application = $this->applications->submit($request->safe()->except([
+        $result = $this->checkout->beginCheckout($request->safe()->except([
             'passport_photo',
             'passportPhoto',
             'birth_certificate',
@@ -42,8 +53,14 @@ class AdmissionApplicationController extends Controller
         ]), $request->attachments());
 
         return ApiResponse::success(
-            'Application received.',
-            (new AdmissionApplicationResource($application))->resolve(),
+            'Continue to Paystack to complete your application.',
+            [
+                ...(new AdmissionApplicationResource($result['application']))->resolve(),
+                'authorization_url' => $result['authorization_url'],
+                'payment_reference' => $result['payment']->reference,
+                'amount_kobo' => $result['payment']->amount_kobo,
+                'amount_label' => $this->checkout->amountLabel(),
+            ],
             201,
         );
     }

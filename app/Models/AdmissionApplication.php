@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 #[Fillable([
     'reference',
@@ -75,6 +76,16 @@ class AdmissionApplication extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function onlinePayments(): MorphMany
+    {
+        return $this->morphMany(OnlinePayment::class, 'payable');
+    }
+
+    public function latestOnlinePayment(): MorphOne
+    {
+        return $this->morphOne(OnlinePayment::class, 'payable')->latestOfMany();
     }
 
     public function fullName(): string

@@ -49,5 +49,7 @@
         <env name="PAYSTACK_TEST_PAYMENTS_ENABLED" value="true"/>
         <env name="CBT_RESULT_CHECKER_AMOUNT_KOBO" value="50000"/>
         <env name="CBT_RESULT_CHECKER_CURRENCY" value="NGN"/>
+        <env name="ADMISSION_APPLICATION_FEE_KOBO" value="500000"/>
+        <env name="ADMISSION_APPLICATION_FEE_CURRENCY" value="NGN"/>
     </php>
 </phpunit>

@@ -12,6 +12,7 @@ use App\Enums\UserStatus;
 use App\Mail\SchoolCircularMail;
 use App\Models\Invoice;
 use App\Models\StudentProfile;
+use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -82,6 +83,66 @@ class StudentApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'inactive')
             ->assertJsonPath('data.other_names', 'Ada');
+    }
+
+    public function test_auto_admission_numbers_are_unique_per_wing(): void
+    {
+        $year = (int) now('Africa/Lagos')->year;
+        $session = $this->academicSession(['name' => $year.'/'.($year + 1)]);
+        $campus = $this->campus();
+
+        $nursery = $this->level(['name' => 'Nursery', 'slug' => 'nursery', 'sort_order' => 2]);
+        $primary = $this->level(['name' => 'Primary', 'slug' => 'primary', 'sort_order' => 3]);
+        $jss = $this->level(['name' => 'Junior Secondary', 'slug' => 'jss', 'sort_order' => 4]);
+
+        $nurserySection = $this->section(
+            $this->schoolClass($nursery, ['name' => 'Nursery 1', 'short_code' => 'N1']),
+            ['arm' => 'A', 'name' => 'Nursery 1 A'],
+        );
+        $primarySection = $this->section(
+            $this->schoolClass($primary, ['name' => 'Basic 1', 'short_code' => 'B1']),
+            ['arm' => 'A', 'name' => 'Basic 1 A'],
+        );
+        $jssSection = $this->section(
+            $this->schoolClass($jss, ['name' => 'JSS 1', 'short_code' => 'J1']),
+            ['arm' => 'Reagan', 'name' => 'JSS 1 Reagan'],
+        );
+
+        $nurseryOffering = $this->offering($nurserySection, $session, $campus);
+        $primaryOffering = $this->offering($primarySection, $session, $campus);
+        $jssOffering = $this->offering($jssSection, $session, $campus);
+
+        $this->registerPupil([
+            'surname' => 'Nursery',
+            'first_name' => 'One',
+            'gender' => Gender::Female->value,
+            'class_section_id' => $nurseryOffering->class_section_id,
+            'academic_session_id' => $nurseryOffering->academic_session_id,
+        ])->assertCreated()->assertJsonPath('data.admission_number', 'SRS/NUR/'.$year.'/0001');
+
+        $this->registerPupil([
+            'surname' => 'Primary',
+            'first_name' => 'One',
+            'gender' => Gender::Male->value,
+            'class_section_id' => $primaryOffering->class_section_id,
+            'academic_session_id' => $primaryOffering->academic_session_id,
+        ])->assertCreated()->assertJsonPath('data.admission_number', 'SRS/PRI/'.$year.'/0001');
+
+        $this->registerPupil([
+            'surname' => 'Secondary',
+            'first_name' => 'One',
+            'gender' => Gender::Female->value,
+            'class_section_id' => $jssOffering->class_section_id,
+            'academic_session_id' => $jssOffering->academic_session_id,
+        ])->assertCreated()->assertJsonPath('data.admission_number', 'SRS/SEC/'.$year.'/0001');
+
+        $this->registerPupil([
+            'surname' => 'Nursery',
+            'first_name' => 'Two',
+            'gender' => Gender::Male->value,
+            'class_section_id' => $nurseryOffering->class_section_id,
+            'academic_session_id' => $nurseryOffering->academic_session_id,
+        ])->assertCreated()->assertJsonPath('data.admission_number', 'SRS/NUR/'.$year.'/0002');
     }
 
     public function test_admin_can_register_a_pupil_with_a_primary_guardian(): void
@@ -165,6 +226,56 @@ class StudentApiTest extends TestCase
         ])->assertCreated();
 
         Mail::assertNothingSent();
+    }
+
+    public function test_same_guardian_email_can_register_multiple_pupils(): void
+    {
+        Mail::fake();
+
+        $first = $this->registerPupil([
+            'admission_number' => 'SRS/PRI/2026/0101',
+            'surname' => 'Okafor',
+            'first_name' => 'Chiamaka',
+            'gender' => Gender::Female->value,
+            'guardian' => [
+                'full_name' => 'Mrs. Okafor',
+                'relationship' => 'mother',
+                'phone' => '08031112233',
+                'email' => 'okafor.family@school.test',
+                'password' => 'parent-pass-1',
+            ],
+        ])->assertCreated();
+
+        $second = $this->registerPupil([
+            'admission_number' => 'SRS/PRI/2026/0102',
+            'surname' => 'Okafor',
+            'first_name' => 'Daniel',
+            'gender' => Gender::Male->value,
+            'guardian' => [
+                'full_name' => 'Mrs. Okafor',
+                'relationship' => 'mother',
+                'phone' => '08031112233',
+                'email' => 'okafor.family@school.test',
+            ],
+        ])->assertCreated();
+
+        $firstId = (int) $first->json('data.id');
+        $secondId = (int) $second->json('data.id');
+        $guardianId = (int) $first->json('data.guardians.0.id');
+
+        $this->assertSame($guardianId, (int) $second->json('data.guardians.0.id'));
+        $this->assertDatabaseCount('guardian_profiles', 1);
+        $this->assertSame(1, User::query()->where('email', 'okafor.family@school.test')->count());
+        $this->assertDatabaseHas('guardian_student', [
+            'guardian_profile_id' => $guardianId,
+            'student_profile_id' => $firstId,
+            'is_primary' => 1,
+        ]);
+        $this->assertDatabaseHas('guardian_student', [
+            'guardian_profile_id' => $guardianId,
+            'student_profile_id' => $secondId,
+            'is_primary' => 1,
+        ]);
     }
 
     public function test_admin_can_register_pupil_into_class_arm_without_preopened_form(): void

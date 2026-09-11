@@ -34,6 +34,10 @@ class InboxService
         }
 
         foreach ($applications as $application) {
+            if ($application->status === ApplicationStatus::PendingPayment) {
+                continue;
+            }
+
             $item = $this->applicationItem($application);
             if (in_array($application->status, [
                 ApplicationStatus::Admitted,

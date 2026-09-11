@@ -252,7 +252,25 @@ class AttendanceService
 
         $records = $query->orderBy('marked_on')->get();
 
+        $enrollment = null;
+        if ($enrollmentId) {
+            $enrollment = Enrollment::query()->with('academicSession')->find($enrollmentId);
+        } elseif ($studentId) {
+            $enrollment = Enrollment::query()
+                ->with('academicSession')
+                ->where('student_profile_id', $studentId)
+                ->orderByDesc('enrolled_on')
+                ->first();
+        } elseif ($this->access->isStudent($actor)) {
+            $enrollment = Enrollment::query()
+                ->with('academicSession')
+                ->where('student_profile_id', $actor->studentProfile?->id)
+                ->orderByDesc('enrolled_on')
+                ->first();
+        }
+
         return [
+            'session_name' => $enrollment?->academicSession?->name,
             'summary' => $this->summarize($records, $records->count()),
             'records' => $records,
         ];

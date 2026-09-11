@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AssessmentKind;
+use App\Enums\SessionStatus;
 use App\Models\AssessmentScore;
 use App\Models\AssessmentType;
 use App\Models\GradeScale;
@@ -48,8 +49,12 @@ class AssessmentSeeder extends Seeder
 
         $term = Term::query()
             ->where('name', 'First Term')
-            ->whereHas('academicSession', fn ($query) => $query->where('name', '2025/2026'))
-            ->first();
+            ->whereHas('academicSession', fn ($query) => $query->where('status', SessionStatus::Active))
+            ->first()
+            ?? Term::query()
+                ->where('name', 'First Term')
+                ->orderByDesc('id')
+                ->first();
 
         if ($term === null) {
             return;

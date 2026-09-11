@@ -26,7 +26,6 @@ class ParentDeskService
         $children = $guardian === null
             ? collect()
             : $guardian->students()
-                ->wherePivot('can_login', true)
                 ->with([
                     'enrollments' => fn ($enrollment) => $enrollment
                         ->where('status', EnrollmentStatus::Active)

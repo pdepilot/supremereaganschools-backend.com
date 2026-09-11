@@ -14,6 +14,39 @@ use Illuminate\Validation\ValidationException;
 
 class GuardianService
 {
+    public function findExisting(?string $email = null, ?string $phone = null): ?GuardianProfile
+    {
+        $email = strtolower(trim((string) $email));
+        $phone = trim((string) $phone);
+
+        if ($email !== '') {
+            $byEmail = GuardianProfile::query()
+                ->whereRaw('LOWER(email) = ?', [$email])
+                ->orderBy('id')
+                ->first();
+            if ($byEmail) {
+                return $byEmail;
+            }
+
+            $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+            if ($user) {
+                $byUser = GuardianProfile::query()->where('user_id', $user->id)->orderBy('id')->first();
+                if ($byUser) {
+                    return $byUser;
+                }
+            }
+        }
+
+        if ($phone !== '') {
+            return GuardianProfile::query()
+                ->where('phone', $phone)
+                ->orderBy('id')
+                ->first();
+        }
+
+        return null;
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -21,15 +54,25 @@ class GuardianService
     {
         return DB::transaction(function () use ($attributes) {
             $userId = null;
+            $email = isset($attributes['email']) ? strtolower(trim((string) $attributes['email'])) : null;
 
-            if (! empty($attributes['password']) && ! empty($attributes['email'])) {
-                $user = User::query()->create([
-                    'name' => $attributes['full_name'],
-                    'email' => $attributes['email'],
-                    'password' => $attributes['password'],
-                    'status' => UserStatus::Active,
-                ]);
-                $user->assignRole(RoleSlug::Parent);
+            if (! empty($attributes['password']) && filled($email)) {
+                $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+                if ($user === null) {
+                    $user = User::query()->create([
+                        'name' => $attributes['full_name'],
+                        'email' => $email,
+                        'password' => $attributes['password'],
+                        'status' => UserStatus::Active,
+                    ]);
+                    $user->assignRole(RoleSlug::Parent);
+                } elseif (! $user->hasRole(RoleSlug::Parent)) {
+                    throw ValidationException::withMessages([
+                        'email' => 'This email belongs to another school account and cannot be used for a parent login.',
+                    ]);
+                }
+
                 $userId = $user->id;
             }
 
@@ -38,7 +81,7 @@ class GuardianService
                 'full_name' => $attributes['full_name'],
                 'phone' => $attributes['phone'] ?? null,
                 'alternate_phone' => $attributes['alternate_phone'] ?? null,
-                'email' => $attributes['email'] ?? null,
+                'email' => $email ?: ($attributes['email'] ?? null),
                 'occupation' => $attributes['occupation'] ?? null,
                 'address' => $attributes['address'] ?? null,
             ]);

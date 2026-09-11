@@ -305,6 +305,7 @@ class PortalReportService
             ->map(fn (ApplicationStatus $status) => [
                 'status' => $status->value,
                 'label' => match ($status) {
+                    ApplicationStatus::PendingPayment => 'Awaiting payment',
                     ApplicationStatus::Submitted => 'Submitted',
                     ApplicationStatus::UnderReview => 'Under review',
                     ApplicationStatus::ExamScheduled => 'Exam scheduled',

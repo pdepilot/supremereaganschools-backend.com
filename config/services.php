@@ -51,4 +51,9 @@ return [
         'currency' => env('CBT_RESULT_CHECKER_CURRENCY', env('PAYSTACK_CURRENCY', 'NGN')),
     ],
 
+    'admission_application_fee' => [
+        'amount_kobo' => (int) env('ADMISSION_APPLICATION_FEE_KOBO', 500000),
+        'currency' => env('ADMISSION_APPLICATION_FEE_CURRENCY', env('PAYSTACK_CURRENCY', 'NGN')),
+    ],
+
 ];

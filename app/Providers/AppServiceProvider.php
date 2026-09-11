@@ -86,6 +86,7 @@ use App\Policies\CbtResultPolicy;
 use App\Policies\CbtResultProductPolicy;
 use App\Events\OnlinePaymentSettled;
 use App\Listeners\ActivateCbtResultCheckerOnPayment;
+use App\Listeners\FinalizeAdmissionApplicationOnPayment;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
@@ -103,6 +104,7 @@ class AppServiceProvider extends ServiceProvider
         JsonResource::withoutWrapping();
 
         EventFacade::listen(OnlinePaymentSettled::class, ActivateCbtResultCheckerOnPayment::class);
+        EventFacade::listen(OnlinePaymentSettled::class, FinalizeAdmissionApplicationOnPayment::class);
 
         Gate::before(function ($user, string $ability) {
             if ($user instanceof User && $user->hasRole(RoleSlug::SuperAdmin)) {

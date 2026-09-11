@@ -539,49 +539,6 @@
       return Math.max(1, Math.floor(ms / (7 * 24 * 60 * 60 * 1000)) + 1);
     };
 
-    const isoDate = function (date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return year + "-" + month + "-" + day;
-    };
-
-    const shiftYear = function (value) {
-      if (!value) return "";
-      const date = new Date(value + "T00:00:00");
-      if (!Number.isFinite(date.getTime())) return "";
-      date.setFullYear(date.getFullYear() + 1);
-      return isoDate(date);
-    };
-
-    const suggestYear = function () {
-      const nameInput = document.getElementById("yearName");
-      const start = document.getElementById("startDate");
-      const end = document.getElementById("endDate");
-      const live = document.getElementById("yearLive");
-      const latest = rows.slice().sort(function (a, b) {
-        return String(b.starts_on || "").localeCompare(String(a.starts_on || ""));
-      })[0];
-      const hasLive = !!settings.current_academic_session_id
-        || rows.some(function (row) { return row.status === "active"; });
-
-      if (!latest) {
-        if (nameInput && !nameInput.value) nameInput.value = "2026/2027";
-        if (start && !start.value) start.value = "2026-09-07";
-        if (end && !end.value) end.value = "2027-07-23";
-        if (live) live.checked = true;
-        return;
-      }
-
-      const match = String(latest.name || "").match(/(\d{4})\s*\/\s*(\d{4})/);
-      if (nameInput && !nameInput.value && match) {
-        nameInput.value = (Number(match[1]) + 1) + "/" + (Number(match[2]) + 1);
-      }
-      if (start && !start.value) start.value = shiftYear(latest.starts_on);
-      if (end && !end.value) end.value = shiftYear(latest.ends_on);
-      if (live) live.checked = !hasLive;
-    };
-
     const applyMetrics = function () {
       const currentId = settings.current_academic_session_id;
       const current = rows.find(function (row) { return Number(row.id) === Number(currentId); })
@@ -631,7 +588,7 @@
       applyMetrics();
       if (!list) return;
       if (!rows.length) {
-        list.innerHTML = "<p>No academic sessions have been sealed yet.</p>";
+        list.innerHTML = "<p>No academic sessions yet. Add one using the form.</p>";
         return;
       }
 
@@ -661,6 +618,8 @@
           actions.push('<button class="ghost-btn" type="button" data-archive-session="' + row.id
             + '" data-name="' + escapeHtml(row.name) + '">Archive</button>');
         }
+        actions.push('<button class="ghost-btn" type="button" data-delete-session="' + row.id
+          + '" data-name="' + escapeHtml(row.name) + '">Delete</button>');
         (row.terms || []).forEach(function (term) {
           const sealed = Number(term.id) === Number(settings.current_term_id) && term.status === "active";
           if (sealed) return;
@@ -689,7 +648,6 @@
         rows = results[0].body.data || [];
         settings = (results[1].ok && results[1].body.data) || {};
         render();
-        suggestYear();
       });
     };
 
@@ -697,11 +655,13 @@
 
     if (root) {
       root.addEventListener("click", function (event) {
-        const button = event.target.closest("[data-activate-session], [data-archive-session], [data-seal-term], [data-promote-session]");
+        const button = event.target.closest("[data-activate-session], [data-archive-session], [data-delete-session], [data-seal-term], [data-promote-session]");
         if (!button) return;
         const name = button.getAttribute("data-name") || "this year";
         const year = button.getAttribute("data-year") || "";
-        const sessionId = button.getAttribute("data-activate-session") || button.getAttribute("data-archive-session");
+        const sessionId = button.getAttribute("data-activate-session")
+          || button.getAttribute("data-archive-session")
+          || button.getAttribute("data-delete-session");
         const termId = button.getAttribute("data-seal-term");
         const promoteId = button.getAttribute("data-promote-session");
         const sourceId = button.getAttribute("data-source-session");
@@ -736,6 +696,16 @@
             confirmLabel: "Copy the roll",
             cancelLabel: "Leave it",
             danger: false
+          };
+        } else if (button.hasAttribute("data-delete-session")) {
+          path = "/api/v1/academic-sessions/" + sessionId;
+          method = "DELETE";
+          alertOptions = {
+            title: "Delete this year",
+            copy: name + " will be removed from the calendar. This only works if no forms, fees, or pupils are tied to it.",
+            confirmLabel: "Delete year",
+            cancelLabel: "Keep it",
+            danger: true
           };
         } else if (button.hasAttribute("data-archive-session")) {
           path = "/api/v1/academic-sessions/" + sessionId;
@@ -962,7 +932,15 @@
 
     const classesForLevel = function (levelId) {
       const level = levels.find(function (row) { return Number(row.id) === Number(levelId); });
-      return (level && level.classes) || [];
+      return ((level && level.classes) || []).filter(function (row) {
+        return row.is_active !== false;
+      }).map(function (klass) {
+        return Object.assign({}, klass, {
+          sections: (klass.sections || []).filter(function (section) {
+            return section.is_active !== false;
+          })
+        });
+      });
     };
 
     const syncClassOptions = function () {
@@ -1088,7 +1066,7 @@
 
     const load = function () {
       return Promise.all([
-        request("/api/v1/class-section-offerings"),
+        request("/api/v1/class-section-offerings?book_only=1"),
         request("/api/v1/levels"),
         request("/api/v1/academic-sessions"),
         request("/api/v1/campuses"),
@@ -1111,13 +1089,21 @@
         subjects = (results[6].ok && results[6].body.data) || [];
         departments = (results[7].ok && results[7].body.data) || [];
 
-        fillOptions(levelFilter, levels, "All levels");
+        if (statusFilter && !statusFilter.value) {
+          statusFilter.value = "active";
+        }
+
+        const levelsWithActiveClasses = levels.filter(function (row) {
+          return (row.classes || []).some(function (klass) { return klass.is_active !== false; });
+        });
+
+        fillOptions(levelFilter, levelsWithActiveClasses, "All levels");
         fillOptions(sessionFilter, sessions.map(function (row) {
           return { id: row.id, name: row.name + " Session" };
         }), "All sessions");
         fillOptions(document.getElementById("formSession"), sessions, "Select session");
         fillOptions(document.getElementById("formCampus"), campuses, "Select campus");
-        fillOptions(document.getElementById("formLevel"), levels, "Select level");
+        fillOptions(document.getElementById("formLevel"), levelsWithActiveClasses, "Select level");
         fillStaffSelects();
         fillOptions(document.getElementById("subjectDepartment"), departments, "No department");
 

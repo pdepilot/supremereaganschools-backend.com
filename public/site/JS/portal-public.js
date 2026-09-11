@@ -64,6 +64,22 @@
     });
   };
 
+  const getJson = function (url) {
+    return fetch(url, {
+      credentials: "same-origin",
+      headers: {
+        "Accept": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    }).then(function (response) {
+      return response.json().then(function (body) {
+        return { ok: response.ok, status: response.status, body: body };
+      }).catch(function () {
+        return { ok: false, status: response.status, body: {} };
+      });
+    });
+  };
+
   const wireContact = function () {
     const form = document.getElementById("contactForm");
     if (!form) return;
@@ -100,6 +116,30 @@
     const success = document.getElementById("admissionSuccess");
     const button = form.querySelector("button[type='submit']");
     const note = form.querySelector(".admission-note");
+    const feeLabel = document.querySelector("[data-admission-fee]");
+
+    const params = new URLSearchParams(window.location.search);
+    const paidStatus = params.get("status");
+    const paidReference = params.get("reference");
+    if (success && (paidStatus === "success" || paidStatus === "pending") && paidReference) {
+      success.textContent = paidStatus === "success"
+        ? "Payment successful. Your application has been received and is being reviewed. Reference: " + paidReference + "."
+        : "Payment is still confirming. Keep your reference " + paidReference + ". You will receive an email once it is settled.";
+      success.classList.add("show");
+      if (note) {
+        note.textContent = "A confirmation email has been sent to the parent email on the form when payment settles.";
+      }
+      success.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (success && paidStatus === "failed") {
+      success.textContent = "Payment was not completed. Please submit the form again to retry Paystack checkout.";
+      success.classList.add("show");
+    }
+
+    getJson("/api/v1/admission-applications/fee").then(function (result) {
+      if (!result.ok || !feeLabel) return;
+      const label = result.body.data && result.body.data.amount_label;
+      if (label) feeLabel.textContent = label;
+    });
 
     form.addEventListener("focusin", function () {
       if (window.srsTrack) window.srsTrack("application_started", { type: "application" });
@@ -107,25 +147,36 @@
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
-      if (button) button.disabled = true;
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Opening Paystack…";
+      }
       postForm("/api/v1/admission-applications", form).then(function (result) {
-        if (button) button.disabled = false;
         if (!result.ok) {
+          if (button) {
+            button.disabled = false;
+            button.textContent = "Pay & Submit Application";
+          }
           window.alert(firstError(result.body));
           return;
         }
-        const reference = (result.body.data && result.body.data.reference) || "";
-        form.reset();
-        if (success) {
-          success.textContent = reference
-            ? "Application received. Your reference is " + reference + "."
-            : "Application received by the admissions office.";
-          success.classList.add("show");
-          success.scrollIntoView({ behavior: "smooth", block: "center" });
+        const data = result.body.data || {};
+        const checkoutUrl = data.authorization_url;
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return;
         }
-        if (note) {
-          note.textContent = "Keep your reference number. Supporting documents are stored privately with the application.";
+        if (button) {
+          button.disabled = false;
+          button.textContent = "Pay & Submit Application";
         }
+        window.alert("Payment checkout could not be started. Please try again.");
+      }).catch(function () {
+        if (button) {
+          button.disabled = false;
+          button.textContent = "Pay & Submit Application";
+        }
+        window.alert("Unable to reach the admissions office. Please try again.");
       });
     });
   };

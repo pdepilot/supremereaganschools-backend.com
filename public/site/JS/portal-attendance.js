@@ -343,7 +343,13 @@
     setText(".attendance-card:nth-child(4) small", "This academic session");
     setText(".attendance-percentage", rate);
     setText(".progress-label strong", rate);
-    setText(".attendance-overview .section-header p", "2025/2026 Academic Session");
+    const sessionName = (payload && payload.session_name)
+      || (child && child.session_name)
+      || "";
+    setText(
+      ".attendance-overview .section-header p",
+      sessionName ? (sessionName + " Academic Session") : "Current academic session"
+    );
 
     const bar = document.querySelector(".large-progress > div");
     if (bar) bar.style.width = (summary.percentage || 0) + "%";

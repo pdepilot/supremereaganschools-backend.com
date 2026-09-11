@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum ApplicationStatus: string
 {
+    case PendingPayment = 'pending_payment';
     case Submitted = 'submitted';
     case UnderReview = 'under_review';
     case ExamScheduled = 'exam_scheduled';

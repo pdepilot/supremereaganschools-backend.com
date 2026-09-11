@@ -57,6 +57,21 @@ class PaystackCallbackController extends Controller
             return '/cbt/result-checker/success?'.$query;
         }
 
+        if ($purpose === OnlinePaymentPurpose::AdmissionApplicationFee) {
+            $application = $reference
+                ? $this->payments->findByReference($reference)?->payable
+                : null;
+            $admissionRef = $application instanceof \App\Models\AdmissionApplication
+                ? $application->reference
+                : null;
+
+            return '/admissions?'.http_build_query(array_filter([
+                'status' => $status,
+                'reference' => $admissionRef,
+                'payment' => $reference,
+            ]));
+        }
+
         return '/payments/test/status?'.$query;
     }
 }

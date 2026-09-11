@@ -24,7 +24,30 @@ class ApplicationService
      */
     public function submit(array $attributes, array $files = []): AdmissionApplication
     {
-        return DB::transaction(function () use ($attributes, $files) {
+        return $this->createApplication($attributes, $files, ApplicationStatus::Submitted);
+    }
+
+    /**
+     * Draft application awaiting successful Paystack settlement.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, UploadedFile|null>  $files
+     */
+    public function submitPendingPayment(array $attributes, array $files = []): AdmissionApplication
+    {
+        return $this->createApplication($attributes, $files, ApplicationStatus::PendingPayment);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, UploadedFile|null>  $files
+     */
+    private function createApplication(
+        array $attributes,
+        array $files,
+        ApplicationStatus $status,
+    ): AdmissionApplication {
+        return DB::transaction(function () use ($attributes, $files, $status) {
             $application = AdmissionApplication::query()->create([
                 'reference' => $this->numbers->nextApplicationReference(),
                 'academic_session_id' => $this->matchSession($attributes['session_name'] ?? null),
@@ -54,7 +77,7 @@ class ApplicationService
                 'genotype' => $attributes['genotype'] ?? null,
                 'allergies' => $attributes['allergies'] ?? null,
                 'interests' => $attributes['interests'] ?? null,
-                'status' => ApplicationStatus::Submitted,
+                'status' => $status,
             ]);
 
             $this->attachFiles($application, $files);

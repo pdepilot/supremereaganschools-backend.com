@@ -74,33 +74,36 @@ class ParentDeskApiTest extends TestCase
             ->assertJsonPath('data.children', []);
     }
 
-    public function test_family_desk_lists_children_the_guardian_may_open(): void
+    public function test_family_desk_lists_all_linked_children(): void
     {
         $parent = $this->userWithRole(RoleSlug::Parent, ['name' => 'Mrs. Okafor']);
         $guardian = $this->guardian($parent, ['full_name' => 'Mrs. Okafor']);
         $offering = $this->offering();
-        $shown = $this->student($this->userWithRole(RoleSlug::Student), [
-            'admission_number' => 'SRS/2025/0142',
+        $first = $this->student($this->userWithRole(RoleSlug::Student), [
+            'admission_number' => 'SRS/PRI/2026/0142',
             'surname' => 'Okafor',
             'first_name' => 'Amara',
         ]);
-        $hidden = $this->student($this->userWithRole(RoleSlug::Student), [
-            'admission_number' => 'SRS/2025/0198',
+        $second = $this->student($this->userWithRole(RoleSlug::Student), [
+            'admission_number' => 'SRS/PRI/2026/0198',
             'surname' => 'Okafor',
             'first_name' => 'Kamsi',
         ]);
-        $this->enroll($shown, $offering);
-        $this->linkGuardian($guardian, $shown);
-        $this->linkGuardian($guardian, $hidden, ['is_primary' => false, 'can_login' => false]);
+        $this->enroll($first, $offering);
+        $this->enroll($second, $offering);
+        $this->linkGuardian($guardian, $first);
+        $this->linkGuardian($guardian, $second, ['is_primary' => false]);
 
         $this->actingAs($parent)
             ->getJson('/api/v1/parent-desk')
             ->assertOk()
-            ->assertJsonPath('data.metrics.children', 1)
+            ->assertJsonPath('data.metrics.children', 2)
             ->assertJsonPath('data.children.0.full_name', 'Okafor Amara')
-            ->assertJsonPath('data.children.0.admission_number', 'SRS/2025/0142')
+            ->assertJsonPath('data.children.0.admission_number', 'SRS/PRI/2026/0142')
             ->assertJsonPath('data.children.0.form', $offering->classSection->name)
-            ->assertJsonPath('data.children.0.class_section_offering_id', $offering->id);
+            ->assertJsonPath('data.children.0.class_section_offering_id', $offering->id)
+            ->assertJsonPath('data.children.1.full_name', 'Okafor Kamsi')
+            ->assertJsonPath('data.children.1.admission_number', 'SRS/PRI/2026/0198');
     }
 
     public function test_admin_staff_and_pupil_cannot_read_the_family_desk(): void

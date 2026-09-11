@@ -102,7 +102,8 @@
         + '<span class="mark">' + crest + "</span>"
         + "<div><strong>" + escapeHtml(row.full_name || "Pupil") + "</strong>"
         + "<span>" + escapeHtml([row.admission_number, row.form, row.campus, pretty(row.relationship)].filter(Boolean).join(" · ") || "On the roll")
-        + "</span></div></a>";
+        + "</span></div>"
+        + '<span class="pill">Open</span></a>';
     }).join("");
   };
 

@@ -7,9 +7,12 @@ use App\Enums\GuardianRelationship;
 use App\Enums\RoleSlug;
 use App\Enums\StudentStatus;
 use App\Enums\UserStatus;
+use App\Models\ClassSection;
 use App\Models\Enrollment;
 use App\Models\GuardianProfile;
 use App\Models\GuardianStudent;
+use App\Models\Level;
+use App\Models\SchoolClass;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Support\ImageUpload;
@@ -36,7 +39,9 @@ class StudentService
     public function create(array $attributes, ?int $createdBy = null): StudentProfile
     {
         $student = DB::transaction(function () use ($attributes, $createdBy) {
-            $admissionNumber = $attributes['admission_number'] ?? $this->numbers->nextAdmissionNumber();
+            $wing = $this->resolveWingSlug($attributes);
+            $admissionNumber = $attributes['admission_number']
+                ?? $this->numbers->nextAdmissionNumber(wing: $wing);
             $fullName = trim($attributes['surname'].' '.$attributes['first_name'].' '.($attributes['other_names'] ?? ''));
             $email = $attributes['user_email'] ?? $attributes['email'] ?? $this->numbers->studentLoginEmail($admissionNumber);
 
@@ -127,6 +132,41 @@ class StudentService
     }
 
     /**
+     * Resolve nursery / primary / secondary (or activity) from the chosen class.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function resolveWingSlug(array $attributes): ?string
+    {
+        if (filled($attributes['wing'] ?? null)) {
+            return (string) $attributes['wing'];
+        }
+
+        if (filled($attributes['level_id'] ?? null)) {
+            return Level::query()->whereKey($attributes['level_id'])->value('slug');
+        }
+
+        if (filled($attributes['school_class_id'] ?? null)) {
+            return SchoolClass::query()
+                ->with('level')
+                ->find($attributes['school_class_id'])
+                ?->level
+                ?->slug;
+        }
+
+        if (filled($attributes['class_section_id'] ?? null)) {
+            return ClassSection::query()
+                ->with('schoolClass.level')
+                ->find($attributes['class_section_id'])
+                ?->schoolClass
+                ?->level
+                ?->slug;
+        }
+
+        return null;
+    }
+
+    /**
      * @param  array<string, mixed>  $attributes
      */
     private function syncEnrollment(StudentProfile $student, array $attributes, ?int $createdBy = null): void
@@ -200,11 +240,60 @@ class StudentService
             return;
         }
 
+        // Same parent/guardian email (or phone) across siblings — reuse and link.
+        $shared = $this->guardians->findExisting(
+            $payload['email'] ?? null,
+            $payload['phone'] ?? null,
+        );
+
+        if ($shared !== null) {
+            $this->assertEmailIsAvailableForParent($payload['email'] ?? null, $shared);
+
+            $update = $payload;
+            unset($update['password']); // keep the existing parent login passphrase
+            $this->guardians->update($shared, $update);
+            $this->guardians->link($shared, [
+                'student_profile_id' => $student->id,
+                'relationship' => $payload['relationship'] ?? GuardianRelationship::Guardian->value,
+                'is_primary' => true,
+                'can_login' => true,
+            ]);
+
+            return;
+        }
+
+        $this->assertEmailIsAvailableForParent($payload['email'] ?? null);
+
         $this->guardians->create(array_merge($payload, [
             'student_profile_id' => $student->id,
             'is_primary' => true,
             'can_login' => true,
         ]));
+    }
+
+    private function assertEmailIsAvailableForParent(?string $email, ?GuardianProfile $forGuardian = null): void
+    {
+        $email = strtolower(trim((string) $email));
+        if ($email === '') {
+            return;
+        }
+
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($user === null) {
+            return;
+        }
+
+        if ($forGuardian?->user_id && (int) $forGuardian->user_id === (int) $user->id) {
+            return;
+        }
+
+        if ($user->hasRole(RoleSlug::Parent) || GuardianProfile::query()->where('user_id', $user->id)->exists()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'guardian.email' => 'This email belongs to another school account and cannot be used for a parent login.',
+        ]);
     }
 
     private function requirePhoto(mixed $photo): string

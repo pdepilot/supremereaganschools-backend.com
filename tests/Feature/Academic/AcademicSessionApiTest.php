@@ -179,7 +179,7 @@ class AcademicSessionApiTest extends TestCase
         $this->assertNull(\App\Models\SchoolSetting::query()->value('current_term_id'));
     }
 
-    public function test_a_session_with_terms_cannot_be_deleted(): void
+    public function test_an_empty_session_can_be_deleted(): void
     {
         $admin = $this->admin();
 
@@ -194,11 +194,65 @@ class AcademicSessionApiTest extends TestCase
 
         $this->actingAs($admin)
             ->deleteJson('/api/v1/academic-sessions/'.$session['id'])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session['id']]);
+        $this->assertDatabaseMissing('terms', ['academic_session_id' => $session['id']]);
+    }
+
+    public function test_deleting_a_session_detaches_admission_applications(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $this->termFor($session);
+
+        $application = \App\Models\AdmissionApplication::query()->create([
+            'reference' => 'APP-TEST-001',
+            'academic_session_id' => $session->id,
+            'session_name' => $session->name,
+            'class_applied' => 'JSS 1',
+            'entry_term' => 'First Term',
+            'surname' => 'Eze',
+            'first_name' => 'Ifeanyi',
+            'gender' => \App\Enums\Gender::Male,
+            'date_of_birth' => '2014-03-12',
+            'nationality' => 'Nigerian',
+            'state_of_origin' => 'Imo',
+            'home_address' => 'Amakohia-Akwakuma, Owerri',
+            'parent_name' => 'Mrs. Ngozi Eze',
+            'relationship' => \App\Enums\GuardianRelationship::Mother,
+            'parent_phone' => '08031110011',
+            'parent_email' => 'ngozi.visit@example.test',
+            'status' => \App\Enums\ApplicationStatus::Submitted,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseHas('admission_applications', [
+            'id' => $application->id,
+            'academic_session_id' => null,
+            'session_name' => $session->name,
+        ]);
+    }
+
+    public function test_a_session_with_forms_cannot_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $this->offering(session: $session);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
             ->assertUnprocessable()
             ->assertJsonPath('success', false)
             ->assertJsonStructure(['errors' => ['session']]);
 
-        $this->assertDatabaseHas('academic_sessions', ['id' => $session['id']]);
+        $this->assertDatabaseHas('academic_sessions', ['id' => $session->id]);
     }
 
     public function test_missing_session_returns_not_found_envelope(): void

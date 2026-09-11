@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Enums\SessionStatus;
 use App\Models\AcademicSession;
+use App\Models\CbtExam;
+use App\Models\Enrollment;
+use App\Models\Promotion;
 use App\Models\SchoolSetting;
 use App\Models\Term;
 use Illuminate\Support\Facades\DB;
@@ -103,21 +106,55 @@ class AcademicSessionService
 
     public function delete(AcademicSession $session): void
     {
-        if ($session->terms()->exists() || $session->classSectionOfferings()->exists()) {
-            throw ValidationException::withMessages([
-                'session' => 'This academic session cannot be deleted because related academic records exist. Archive it instead.',
-            ]);
-        }
+        DB::transaction(function () use ($session) {
+            if ($session->classSectionOfferings()->exists()) {
+                throw ValidationException::withMessages([
+                    'session' => 'This academic session cannot be deleted because forms are still open on it. Remove those forms first, or archive the year.',
+                ]);
+            }
 
-        $settings = SchoolSetting::query()->first();
+            if ($session->invoices()->exists() || $session->feeStructures()->exists()) {
+                throw ValidationException::withMessages([
+                    'session' => 'This academic session cannot be deleted because fee records exist. Archive it instead.',
+                ]);
+            }
 
-        if ($settings?->current_academic_session_id === $session->id) {
-            throw ValidationException::withMessages([
-                'session' => 'The current academic session cannot be deleted.',
-            ]);
-        }
+            if (Enrollment::query()->where('academic_session_id', $session->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'session' => 'This academic session cannot be deleted because pupils are enrolled on it. Archive it instead.',
+                ]);
+            }
 
-        $session->delete();
+            if (Promotion::query()->where('academic_session_id', $session->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'session' => 'This academic session cannot be deleted because promotion records exist. Archive it instead.',
+                ]);
+            }
+
+            if (CbtExam::query()->where('academic_session_id', $session->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'session' => 'This academic session cannot be deleted because CBT exams reference it. Archive it instead.',
+                ]);
+            }
+
+            $settings = SchoolSetting::query()->first();
+
+            if ($settings?->current_academic_session_id === $session->id) {
+                $settings->update([
+                    'current_academic_session_id' => null,
+                    'current_term_id' => null,
+                ]);
+            } elseif ($settings?->current_term_id
+                && $session->terms()->whereKey($settings->current_term_id)->exists()) {
+                $settings->update(['current_term_id' => null]);
+            }
+
+            // Keep applications; only drop the session link (session_name stays on the form).
+            $session->admissionApplications()->update(['academic_session_id' => null]);
+
+            $session->terms()->delete();
+            $session->delete();
+        });
     }
 
     private function seedTerms(AcademicSession $session): void

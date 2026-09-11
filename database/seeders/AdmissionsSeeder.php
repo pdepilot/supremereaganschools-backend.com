@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Enums\EnquiryStatus;
 use App\Enums\Gender;
 use App\Enums\GuardianRelationship;
+use App\Enums\SessionStatus;
+use App\Models\AcademicSession;
 use App\Models\AdmissionApplication;
 use App\Models\ContactEnquiry;
 use App\Services\ApplicationService;
@@ -42,8 +44,17 @@ class AdmissionsSeeder extends Seeder
             return;
         }
 
+        $sessionName = AcademicSession::query()
+            ->where('status', SessionStatus::Active)
+            ->value('name')
+            ?? AcademicSession::query()->orderByDesc('starts_on')->value('name');
+
+        if ($sessionName === null) {
+            return;
+        }
+
         app(ApplicationService::class)->submit([
-            'session_name' => '2025/2026',
+            'session_name' => $sessionName,
             'level' => 'Secondary',
             'class_applied' => 'JSS 1',
             'entry_term' => 'First Term',

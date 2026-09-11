@@ -8,6 +8,7 @@ use App\Enums\RoleSlug;
 use App\Models\AdmissionApplication;
 use App\Models\ContactEnquiry;
 use App\Models\Document;
+use App\Services\ApplicationService;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -79,23 +80,23 @@ class AdmissionsAuthorizationTest extends TestCase
             'message' => 'Hall booking.',
         ])->assertCreated();
 
-        $this->postJson('/api/v1/admission-applications', [
-            'session' => '2025/2026',
+        app(ApplicationService::class)->submit([
+            'session_name' => '2025/2026',
             'level' => 'Primary',
-            'classApplied' => 'Primary 4',
-            'entryTerm' => 'First Term',
+            'class_applied' => 'Primary 4',
+            'entry_term' => 'First Term',
             'surname' => 'Okoro',
-            'firstName' => 'Daniel',
-            'gender' => 'Male',
-            'dob' => '2016-01-20',
+            'first_name' => 'Daniel',
+            'gender' => 'male',
+            'date_of_birth' => '2016-01-20',
             'nationality' => 'Nigerian',
-            'stateOfOrigin' => 'Imo',
-            'homeAddress' => 'Owerri',
-            'parentName' => 'Mr. Okoro',
-            'relationship' => 'Father',
-            'parentPhone' => '08031110002',
-            'parentEmail' => 'okoro@example.test',
-        ])->assertCreated();
+            'state_of_origin' => 'Imo',
+            'home_address' => 'Owerri',
+            'parent_name' => 'Mr. Okoro',
+            'relationship' => 'father',
+            'parent_phone' => '08031110002',
+            'parent_email' => 'okoro@example.test',
+        ]);
 
         $this->actingAs($admin)->getJson('/api/v1/inbox')
             ->assertOk()
@@ -134,24 +135,25 @@ class AdmissionsAuthorizationTest extends TestCase
         $teacher = $this->userWithRole(RoleSlug::Teacher);
 
         $photo = UploadedFile::fake()->image('passport.jpg');
-        $this->post('/api/v1/admission-applications', [
-            'session' => '2025/2026',
+        app(ApplicationService::class)->submit([
+            'session_name' => '2025/2026',
             'level' => 'Nursery',
-            'classApplied' => 'Nursery 2',
-            'entryTerm' => 'First Term',
+            'class_applied' => 'Nursery 2',
+            'entry_term' => 'First Term',
             'surname' => 'Nwosu',
-            'firstName' => 'Adaeze',
-            'gender' => 'Female',
-            'dob' => '2021-06-01',
+            'first_name' => 'Adaeze',
+            'gender' => 'female',
+            'date_of_birth' => '2021-06-01',
             'nationality' => 'Nigerian',
-            'stateOfOrigin' => 'Imo',
-            'homeAddress' => 'Owerri',
-            'parentName' => 'Mr. Nwosu',
-            'relationship' => 'Father',
-            'parentPhone' => '08031110003',
-            'parentEmail' => 'nwosu@example.test',
-            'passportPhoto' => $photo,
-        ], ['Accept' => 'application/json'])->assertCreated();
+            'state_of_origin' => 'Imo',
+            'home_address' => 'Owerri',
+            'parent_name' => 'Mr. Nwosu',
+            'relationship' => 'father',
+            'parent_phone' => '08031110003',
+            'parent_email' => 'nwosu@example.test',
+        ], [
+            'passport_photo' => $photo,
+        ]);
 
         $document = Document::query()->first();
 
