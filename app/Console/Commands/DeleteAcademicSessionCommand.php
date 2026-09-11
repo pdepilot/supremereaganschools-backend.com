@@ -9,9 +9,11 @@ use Illuminate\Validation\ValidationException;
 
 class DeleteAcademicSessionCommand extends Command
 {
-    protected $signature = 'academic-session:delete {name : Session name, e.g. 2025/2026}';
+    protected $signature = 'academic-session:delete
+        {name : Session name, e.g. 2025/2026}
+        {--inspect : Show what still sits on the year without deleting}';
 
-    protected $description = 'Delete an academic session, clearing empty forms, fee-book rows, invoices, and receipts for that year.';
+    protected $description = 'Inspect or delete an academic session, clearing enrollments, invoices, fee-book rows, and forms for that year.';
 
     public function handle(AcademicSessionService $sessions): int
     {
@@ -22,6 +24,18 @@ class DeleteAcademicSessionCommand extends Command
 
         if ($session === null) {
             $this->warn("No academic session named \"{$name}\" was found.");
+
+            return self::SUCCESS;
+        }
+
+        $footprint = $sessions->footprint($session);
+        $this->table(
+            ['Item', 'Count'],
+            collect($footprint)->map(fn ($count, $key) => [$key, $count])->values()->all(),
+        );
+
+        if ($this->option('inspect')) {
+            $this->info("Inspection only — \"{$name}\" was not deleted.");
 
             return self::SUCCESS;
         }

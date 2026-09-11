@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Enums\SessionStatus;
 use App\Models\AcademicSession;
+use App\Models\AssessmentScore;
 use App\Models\Assignment;
 use App\Models\AttendanceRecord;
+use App\Models\CbtAttempt;
 use App\Models\CbtExam;
 use App\Models\CbtExamAssignment;
 use App\Models\ClassSectionOffering;
@@ -17,6 +19,8 @@ use App\Models\PaymentAllocation;
 use App\Models\Promotion;
 use App\Models\SchoolSetting;
 use App\Models\Term;
+use App\Models\TermResult;
+use App\Models\TermSummary;
 use App\Models\TimetableSlot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -116,18 +120,6 @@ class AcademicSessionService
     public function delete(AcademicSession $session): void
     {
         DB::transaction(function () use ($session) {
-            if (Enrollment::query()->where('academic_session_id', $session->id)->exists()) {
-                throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because pupils are enrolled on it. Archive it instead.',
-                ]);
-            }
-
-            if (Promotion::query()->where('academic_session_id', $session->id)->exists()) {
-                throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because promotion records exist. Archive it instead.',
-                ]);
-            }
-
             if (CbtExam::query()->where('academic_session_id', $session->id)->exists()) {
                 throw ValidationException::withMessages([
                     'session' => 'This academic session cannot be deleted because CBT exams reference it. Archive it instead.',
@@ -135,11 +127,12 @@ class AcademicSessionService
             }
 
             $this->removeSessionInvoices($session);
+            $this->removeSessionEnrollments($session);
 
             // Drop fee-book rows for this year.
             $session->feeStructures()->delete();
 
-            $this->removeEmptyOfferings($session);
+            $this->removeSessionOfferings($session);
 
             $settings = SchoolSetting::query()->first();
 
@@ -159,6 +152,21 @@ class AcademicSessionService
             $session->terms()->delete();
             $session->delete();
         });
+    }
+
+    /**
+     * @return array{enrollments: int, invoices: int, fee_structures: int, forms: int, promotions: int, cbt_exams: int}
+     */
+    public function footprint(AcademicSession $session): array
+    {
+        return [
+            'enrollments' => Enrollment::query()->where('academic_session_id', $session->id)->count(),
+            'invoices' => Invoice::query()->where('academic_session_id', $session->id)->count(),
+            'fee_structures' => $session->feeStructures()->count(),
+            'forms' => $session->classSectionOfferings()->count(),
+            'promotions' => Promotion::query()->where('academic_session_id', $session->id)->count(),
+            'cbt_exams' => CbtExam::query()->where('academic_session_id', $session->id)->count(),
+        ];
     }
 
     /**
@@ -190,10 +198,39 @@ class AcademicSessionService
     }
 
     /**
-     * Drop book forms that only carry catalogue subjects / teacher appointments.
-     * Forms with sealed school work must stay — archive the year instead.
+     * Remove roll history for this year (including withdrawn rows left after pupil removal).
      */
-    private function removeEmptyOfferings(AcademicSession $session): void
+    private function removeSessionEnrollments(AcademicSession $session): void
+    {
+        $enrollmentIds = Enrollment::query()
+            ->where('academic_session_id', $session->id)
+            ->pluck('id');
+
+        if ($enrollmentIds->isNotEmpty()) {
+            AttendanceRecord::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
+            AssessmentScore::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
+            TermResult::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
+            TermSummary::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
+            CbtAttempt::query()->whereIn('enrollment_id', $enrollmentIds)->update(['enrollment_id' => null]);
+            Invoice::query()->whereIn('enrollment_id', $enrollmentIds)->update(['enrollment_id' => null]);
+
+            Promotion::query()
+                ->where(function ($query) use ($enrollmentIds): void {
+                    $query->whereIn('from_enrollment_id', $enrollmentIds)
+                        ->orWhereIn('to_enrollment_id', $enrollmentIds);
+                })
+                ->delete();
+
+            Enrollment::query()->whereIn('id', $enrollmentIds)->delete();
+        }
+
+        Promotion::query()->where('academic_session_id', $session->id)->delete();
+    }
+
+    /**
+     * Drop forms for this year, including subject offerings and light class work.
+     */
+    private function removeSessionOfferings(AcademicSession $session): void
     {
         $offerings = ClassSectionOffering::query()
             ->where('academic_session_id', $session->id)
@@ -201,9 +238,17 @@ class AcademicSessionService
             ->get();
 
         foreach ($offerings as $offering) {
-            if ($this->offeringHasSealedWork($offering)) {
+            $id = $offering->id;
+
+            AttendanceRecord::query()->where('class_section_offering_id', $id)->delete();
+            TimetableSlot::query()->where('class_section_offering_id', $id)->delete();
+            Assignment::query()->where('class_section_offering_id', $id)->delete();
+            LearningMaterial::query()->where('class_section_offering_id', $id)->delete();
+            CbtExamAssignment::query()->where('class_section_offering_id', $id)->delete();
+
+            if (CbtExam::query()->where('class_section_offering_id', $id)->exists()) {
                 throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because forms still have attendance, timetables, assignments, or other sealed work. Archive the year instead.',
+                    'session' => 'This academic session cannot be deleted because CBT exams reference its forms. Archive it instead.',
                 ]);
             }
 
@@ -215,19 +260,6 @@ class AcademicSessionService
             $offering->classTeacherAssignments()->delete();
             $offering->delete();
         }
-    }
-
-    private function offeringHasSealedWork(ClassSectionOffering $offering): bool
-    {
-        $id = $offering->id;
-
-        return $offering->enrollments()->exists()
-            || AttendanceRecord::query()->where('class_section_offering_id', $id)->exists()
-            || TimetableSlot::query()->where('class_section_offering_id', $id)->exists()
-            || Assignment::query()->where('class_section_offering_id', $id)->exists()
-            || LearningMaterial::query()->where('class_section_offering_id', $id)->exists()
-            || CbtExam::query()->where('class_section_offering_id', $id)->exists()
-            || CbtExamAssignment::query()->where('class_section_offering_id', $id)->exists();
     }
 
     private function seedTerms(AcademicSession $session): void

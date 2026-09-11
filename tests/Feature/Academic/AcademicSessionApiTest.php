@@ -273,21 +273,40 @@ class AcademicSessionApiTest extends TestCase
         $this->assertDatabaseMissing('fee_structures', ['id' => $structure->id]);
     }
 
-    public function test_a_session_with_enrolled_forms_cannot_be_deleted(): void
+    public function test_a_session_with_enrolled_forms_can_be_deleted(): void
     {
         $admin = $this->admin();
         $session = $this->academicSession();
         $offering = $this->offering(session: $session);
-        $this->enroll($this->student(), $offering);
+        $enrollment = $this->enroll($this->student(), $offering);
 
         $this->actingAs($admin)
             ->deleteJson('/api/v1/academic-sessions/'.$session->id)
-            ->assertUnprocessable()
-            ->assertJsonPath('success', false)
-            ->assertJsonStructure(['errors' => ['session']]);
+            ->assertOk()
+            ->assertJsonPath('success', true);
 
-        $this->assertDatabaseHas('academic_sessions', ['id' => $session->id]);
-        $this->assertDatabaseHas('class_section_offerings', ['id' => $offering->id]);
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('class_section_offerings', ['id' => $offering->id]);
+        $this->assertDatabaseMissing('enrollments', ['id' => $enrollment->id]);
+    }
+
+    public function test_a_session_with_withdrawn_roll_rows_can_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $offering = $this->offering(session: $session);
+        $enrollment = $this->enroll($this->student(), $offering, [
+            'status' => \App\Enums\EnrollmentStatus::Withdrawn,
+            'left_on' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('enrollments', ['id' => $enrollment->id]);
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
     }
 
     public function test_a_session_with_invoices_can_be_deleted(): void
