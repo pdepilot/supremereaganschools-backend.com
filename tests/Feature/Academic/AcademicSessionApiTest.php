@@ -309,6 +309,34 @@ class AcademicSessionApiTest extends TestCase
         $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
     }
 
+    public function test_deleting_a_session_clears_desk_term_pointers(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession(['status' => \App\Enums\SessionStatus::Archived]);
+        $term = $this->termFor($session);
+        $live = $this->academicSession([
+            'name' => '2026/2027',
+            'starts_on' => '2026-09-08',
+            'ends_on' => '2027-07-24',
+            'status' => \App\Enums\SessionStatus::Active,
+        ]);
+        $this->settings([
+            'current_academic_session_id' => $live->id,
+            'current_term_id' => $term->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseHas('school_settings', [
+            'current_academic_session_id' => null,
+            'current_term_id' => null,
+        ]);
+    }
+
     public function test_a_session_with_invoices_can_be_deleted(): void
     {
         $admin = $this->admin();

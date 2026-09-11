@@ -12,6 +12,7 @@ use App\Models\CbtExam;
 use App\Models\CbtExamAssignment;
 use App\Models\ClassSectionOffering;
 use App\Models\Enrollment;
+use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\LearningMaterial;
 use App\Models\Payment;
@@ -22,6 +23,7 @@ use App\Models\Term;
 use App\Models\TermResult;
 use App\Models\TermSummary;
 use App\Models\TimetableSlot;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -119,39 +121,86 @@ class AcademicSessionService
 
     public function delete(AcademicSession $session): void
     {
-        DB::transaction(function () use ($session) {
-            if (CbtExam::query()->where('academic_session_id', $session->id)->exists()) {
-                throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because CBT exams reference it. Archive it instead.',
-                ]);
-            }
+        try {
+            DB::transaction(function () use ($session) {
+                $termIds = $session->terms()->pluck('id');
 
-            $this->removeSessionInvoices($session);
-            $this->removeSessionEnrollments($session);
+                $cbtBlocks = CbtExam::query()
+                    ->where('academic_session_id', $session->id)
+                    ->when($termIds->isNotEmpty(), fn ($q) => $q->orWhereIn('term_id', $termIds->all()))
+                    ->exists();
 
-            // Drop fee-book rows for this year.
-            $session->feeStructures()->delete();
+                if ($cbtBlocks) {
+                    throw ValidationException::withMessages([
+                        'session' => 'This academic session cannot be deleted because CBT exams reference it. Remove those exams first, or archive the year.',
+                    ]);
+                }
 
-            $this->removeSessionOfferings($session);
+                $this->releaseDeskPointers($session, $termIds);
+                $this->removeSessionInvoices($session);
+                $this->removeSessionEnrollments($session);
+                $this->removeTermScopedRecords($termIds);
 
-            $settings = SchoolSetting::query()->first();
+                FeeStructure::query()->where('academic_session_id', $session->id)->delete();
+                if ($termIds->isNotEmpty()) {
+                    FeeStructure::query()->whereIn('term_id', $termIds)->delete();
+                }
 
-            if ($settings?->current_academic_session_id === $session->id) {
-                $settings->update([
-                    'current_academic_session_id' => null,
-                    'current_term_id' => null,
-                ]);
-            } elseif ($settings?->current_term_id
-                && $session->terms()->whereKey($settings->current_term_id)->exists()) {
-                $settings->update(['current_term_id' => null]);
-            }
+                $this->removeSessionOfferings($session);
 
-            // Keep applications; only drop the session link (session_name stays on the form).
-            $session->admissionApplications()->update(['academic_session_id' => null]);
+                // Keep applications; only drop the session link (session_name stays on the form).
+                $session->admissionApplications()->update(['academic_session_id' => null]);
 
-            $session->terms()->delete();
-            $session->delete();
-        });
+                if ($termIds->isNotEmpty()) {
+                    Term::query()->whereIn('id', $termIds)->delete();
+                }
+
+                $session->delete();
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (QueryException $exception) {
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'session' => 'This academic session could not be deleted because related ledger rows are still linked. Try again after deploying the latest session purge, or archive the year.',
+            ]);
+        }
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, int|string>  $termIds
+     */
+    private function releaseDeskPointers(AcademicSession $session, $termIds): void
+    {
+        SchoolSetting::query()
+            ->where(function ($query) use ($session, $termIds): void {
+                $query->where('current_academic_session_id', $session->id);
+                if ($termIds->isNotEmpty()) {
+                    $query->orWhereIn('current_term_id', $termIds->all());
+                }
+            })
+            ->update([
+                'current_academic_session_id' => null,
+                'current_term_id' => null,
+            ]);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, int|string>  $termIds
+     */
+    private function removeTermScopedRecords($termIds): void
+    {
+        if ($termIds->isEmpty()) {
+            return;
+        }
+
+        $ids = $termIds->all();
+
+        AssessmentScore::query()->whereIn('term_id', $ids)->delete();
+        TermResult::query()->whereIn('term_id', $ids)->delete();
+        TermSummary::query()->whereIn('term_id', $ids)->delete();
+        TimetableSlot::query()->whereIn('term_id', $ids)->delete();
     }
 
     /**
