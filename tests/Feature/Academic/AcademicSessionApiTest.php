@@ -309,6 +309,38 @@ class AcademicSessionApiTest extends TestCase
         $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
     }
 
+    public function test_a_session_with_attendance_corrections_can_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $offering = $this->offering(session: $session);
+        $enrollment = $this->enroll($this->student(), $offering);
+
+        $attendance = \App\Models\AttendanceRecord::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'class_section_offering_id' => $offering->id,
+            'marked_on' => '2025-09-10',
+            'status' => \App\Enums\AttendanceStatus::Present,
+            'marked_by' => $admin->id,
+        ]);
+
+        \App\Models\AttendanceCorrection::query()->create([
+            'attendance_record_id' => $attendance->id,
+            'from_status' => \App\Enums\AttendanceStatus::Present,
+            'to_status' => \App\Enums\AttendanceStatus::Absent,
+            'reason' => 'Office correction',
+            'corrected_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('attendance_records', ['id' => $attendance->id]);
+    }
+
     public function test_deleting_a_session_clears_desk_term_pointers(): void
     {
         $admin = $this->admin();

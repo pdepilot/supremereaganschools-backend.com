@@ -6,19 +6,24 @@ use App\Enums\SessionStatus;
 use App\Models\AcademicSession;
 use App\Models\AssessmentScore;
 use App\Models\Assignment;
+use App\Models\AttendanceCorrection;
 use App\Models\AttendanceRecord;
 use App\Models\CbtAttempt;
 use App\Models\CbtExam;
 use App\Models\CbtExamAssignment;
+use App\Models\CbtResult;
 use App\Models\ClassSectionOffering;
 use App\Models\Enrollment;
 use App\Models\FeeStructure;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\LearningMaterial;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Promotion;
 use App\Models\SchoolSetting;
+use App\Models\SubjectOffering;
+use App\Models\SubjectTeacherAssignment;
 use App\Models\Term;
 use App\Models\TermResult;
 use App\Models\TermSummary;
@@ -163,9 +168,20 @@ class AcademicSessionService
             report($exception);
 
             throw ValidationException::withMessages([
-                'session' => 'This academic session could not be deleted because related ledger rows are still linked. Try again after deploying the latest session purge, or archive the year.',
+                'session' => 'This academic session could not be deleted. '.$this->friendlyConstraintMessage($exception),
             ]);
         }
+    }
+
+    private function friendlyConstraintMessage(QueryException $exception): string
+    {
+        $message = $exception->getMessage();
+
+        if (preg_match('/constraint fails \(`[^`]+`\.`([^`]+)`/i', $message, $matches) === 1) {
+            return 'Related rows remain in '.$matches[1].'. Archive the year if those records must be kept.';
+        }
+
+        return 'Related ledger rows are still linked. Archive the year if those records must be kept.';
     }
 
     /**
@@ -197,7 +213,12 @@ class AcademicSessionService
 
         $ids = $termIds->all();
 
-        AssessmentScore::query()->whereIn('term_id', $ids)->delete();
+        $scoreIds = AssessmentScore::query()->whereIn('term_id', $ids)->pluck('id');
+        if ($scoreIds->isNotEmpty()) {
+            CbtResult::query()->whereIn('assessment_score_id', $scoreIds)->update(['assessment_score_id' => null]);
+            AssessmentScore::query()->whereIn('id', $scoreIds)->delete();
+        }
+
         TermResult::query()->whereIn('term_id', $ids)->delete();
         TermSummary::query()->whereIn('term_id', $ids)->delete();
         TimetableSlot::query()->whereIn('term_id', $ids)->delete();
@@ -231,19 +252,28 @@ class AcademicSessionService
             return;
         }
 
+        $itemIds = InvoiceItem::query()
+            ->whereIn('invoice_id', $invoiceIds)
+            ->pluck('id');
+
         $paymentIds = Payment::query()
             ->whereIn('invoice_id', $invoiceIds)
             ->pluck('id');
 
         if ($paymentIds->isNotEmpty()) {
             PaymentAllocation::query()->whereIn('payment_id', $paymentIds)->delete();
+        }
+
+        if ($itemIds->isNotEmpty()) {
+            PaymentAllocation::query()->whereIn('invoice_item_id', $itemIds)->delete();
+            InvoiceItem::query()->whereIn('id', $itemIds)->delete();
+        }
+
+        if ($paymentIds->isNotEmpty()) {
             Payment::query()->whereIn('id', $paymentIds)->delete();
         }
 
-        foreach (Invoice::query()->whereIn('id', $invoiceIds)->with('items')->get() as $invoice) {
-            $invoice->items()->delete();
-            $invoice->delete();
-        }
+        Invoice::query()->whereIn('id', $invoiceIds)->delete();
     }
 
     /**
@@ -256,8 +286,16 @@ class AcademicSessionService
             ->pluck('id');
 
         if ($enrollmentIds->isNotEmpty()) {
-            AttendanceRecord::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
-            AssessmentScore::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
+            $this->removeAttendanceForEnrollments($enrollmentIds->all());
+
+            $scoreIds = AssessmentScore::query()
+                ->whereIn('enrollment_id', $enrollmentIds)
+                ->pluck('id');
+            if ($scoreIds->isNotEmpty()) {
+                CbtResult::query()->whereIn('assessment_score_id', $scoreIds)->update(['assessment_score_id' => null]);
+                AssessmentScore::query()->whereIn('id', $scoreIds)->delete();
+            }
+
             TermResult::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
             TermSummary::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
             CbtAttempt::query()->whereIn('enrollment_id', $enrollmentIds)->update(['enrollment_id' => null]);
@@ -277,38 +315,81 @@ class AcademicSessionService
     }
 
     /**
+     * @param  list<int|string>  $enrollmentIds
+     */
+    private function removeAttendanceForEnrollments(array $enrollmentIds): void
+    {
+        if ($enrollmentIds === []) {
+            return;
+        }
+
+        $attendanceIds = AttendanceRecord::query()
+            ->whereIn('enrollment_id', $enrollmentIds)
+            ->pluck('id');
+
+        $this->removeAttendanceRecords($attendanceIds->all());
+    }
+
+    /**
+     * @param  list<int|string>  $attendanceIds
+     */
+    private function removeAttendanceRecords(array $attendanceIds): void
+    {
+        if ($attendanceIds === []) {
+            return;
+        }
+
+        AttendanceCorrection::query()->whereIn('attendance_record_id', $attendanceIds)->delete();
+        AttendanceRecord::query()->whereIn('id', $attendanceIds)->delete();
+    }
+
+    /**
      * Drop forms for this year, including subject offerings and light class work.
      */
     private function removeSessionOfferings(AcademicSession $session): void
     {
-        $offerings = ClassSectionOffering::query()
+        $offeringIds = ClassSectionOffering::query()
             ->where('academic_session_id', $session->id)
-            ->with(['subjectOfferings.teacherAssignments'])
-            ->get();
+            ->pluck('id');
 
-        foreach ($offerings as $offering) {
-            $id = $offering->id;
-
-            AttendanceRecord::query()->where('class_section_offering_id', $id)->delete();
-            TimetableSlot::query()->where('class_section_offering_id', $id)->delete();
-            Assignment::query()->where('class_section_offering_id', $id)->delete();
-            LearningMaterial::query()->where('class_section_offering_id', $id)->delete();
-            CbtExamAssignment::query()->where('class_section_offering_id', $id)->delete();
-
-            if (CbtExam::query()->where('class_section_offering_id', $id)->exists()) {
-                throw ValidationException::withMessages([
-                    'session' => 'This academic session cannot be deleted because CBT exams reference its forms. Archive it instead.',
-                ]);
-            }
-
-            foreach ($offering->subjectOfferings as $subjectOffering) {
-                $subjectOffering->teacherAssignments()->delete();
-                $subjectOffering->delete();
-            }
-
-            $offering->classTeacherAssignments()->delete();
-            $offering->delete();
+        if ($offeringIds->isEmpty()) {
+            return;
         }
+
+        $ids = $offeringIds->all();
+
+        $attendanceIds = AttendanceRecord::query()
+            ->whereIn('class_section_offering_id', $ids)
+            ->pluck('id');
+        $this->removeAttendanceRecords($attendanceIds->all());
+
+        TimetableSlot::query()->whereIn('class_section_offering_id', $ids)->delete();
+        Assignment::query()->whereIn('class_section_offering_id', $ids)->delete();
+        LearningMaterial::query()->whereIn('class_section_offering_id', $ids)->delete();
+        CbtExamAssignment::query()->whereIn('class_section_offering_id', $ids)->delete();
+
+        if (CbtExam::query()->whereIn('class_section_offering_id', $ids)->exists()) {
+            throw ValidationException::withMessages([
+                'session' => 'This academic session cannot be deleted because CBT exams reference its forms. Remove those exams first, or archive the year.',
+            ]);
+        }
+
+        $subjectOfferingIds = SubjectOffering::query()
+            ->whereIn('class_section_offering_id', $ids)
+            ->pluck('id');
+
+        if ($subjectOfferingIds->isNotEmpty()) {
+            SubjectTeacherAssignment::query()
+                ->whereIn('subject_offering_id', $subjectOfferingIds)
+                ->delete();
+            SubjectOffering::query()->whereIn('id', $subjectOfferingIds)->delete();
+        }
+
+        \App\Models\ClassTeacherAssignment::query()
+            ->whereIn('class_section_offering_id', $ids)
+            ->delete();
+
+        ClassSectionOffering::query()->whereIn('id', $ids)->delete();
     }
 
     private function seedTerms(AcademicSession $session): void
