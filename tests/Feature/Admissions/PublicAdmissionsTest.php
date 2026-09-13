@@ -165,6 +165,20 @@ class PublicAdmissionsTest extends TestCase
             ->assertJsonPath('data.currency', 'NGN');
     }
 
+    public function test_guest_can_read_admission_form_options(): void
+    {
+        $this->level(['name' => 'Activity', 'slug' => 'activity', 'sort_order' => 1]);
+        $this->level(['name' => 'Junior Secondary', 'slug' => 'jss', 'sort_order' => 4]);
+
+        $this->getJson('/api/v1/admission-applications/options')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.levels.0.name', 'Activity')
+            ->assertJsonPath('data.levels.0.classes.0', 'Activity 1')
+            ->assertJsonPath('data.levels.3.name', 'Junior Secondary')
+            ->assertJsonPath('data.levels.3.classes.1', 'JSS 2');
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -172,7 +186,7 @@ class PublicAdmissionsTest extends TestCase
     {
         return [
             'session' => '2025/2026',
-            'level' => 'Secondary',
+            'level' => 'Junior Secondary',
             'classApplied' => 'JSS 1',
             'entryTerm' => 'First Term',
             'surname' => 'Eze',

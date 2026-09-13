@@ -169,14 +169,18 @@
               <label for="level">Level applied for</label>
               <select id="level" name="level" required>
                 <option value="">Select level</option>
-                <option>Nursery</option>
-                <option>Primary</option>
-                <option>Secondary</option>
+                <option value="Activity">Activity</option>
+                <option value="Nursery">Nursery</option>
+                <option value="Primary">Primary</option>
+                <option value="Junior Secondary">Junior Secondary</option>
+                <option value="Senior Secondary">Senior Secondary</option>
               </select>
             </div>
             <div class="admission-field">
               <label for="classApplied">Class applied for</label>
-              <input type="text" id="classApplied" name="classApplied" placeholder="e.g. Nursery 2, Primary 4, JSS 1" required>
+              <select id="classApplied" name="classApplied" required>
+                <option value="">Select class</option>
+              </select>
             </div>
             <div class="admission-field">
               <label for="entryTerm">Preferred term of entry</label>
@@ -407,7 +411,7 @@
     });
   </script>
   <script src="./JS/nav.js?v=20260829e"></script>
-  <script src="./JS/portal-public.js"></script>
+  <script src="./JS/portal-public.js?v=20260913d"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

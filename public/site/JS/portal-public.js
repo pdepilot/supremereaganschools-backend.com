@@ -117,6 +117,38 @@
     const button = form.querySelector("button[type='submit']");
     const note = form.querySelector(".admission-note");
     const feeLabel = document.querySelector("[data-admission-fee]");
+    const levelSelect = document.getElementById("level");
+    const classSelect = document.getElementById("classApplied");
+    const sessionInput = document.getElementById("session");
+
+    const fallbackBook = {
+      "Activity": ["Activity 1", "Activity 2"],
+      "Nursery": ["Nursery 1", "Nursery 2", "Nursery 3"],
+      "Primary": ["Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5"],
+      "Junior Secondary": ["JSS 1", "JSS 2", "JSS 3"],
+      "Senior Secondary": ["SS 1", "SS 2", "SS 3"]
+    };
+
+    let bookByLevel = fallbackBook;
+
+    const fillClassOptions = function (levelName) {
+      if (!classSelect) return;
+      const classes = bookByLevel[levelName] || [];
+      const current = classSelect.value;
+      classSelect.innerHTML = '<option value="">Select class</option>' + classes.map(function (name) {
+        return '<option value="' + name.replace(/"/g, "&quot;") + '">' + name + "</option>";
+      }).join("");
+      if (current && classes.indexOf(current) !== -1) {
+        classSelect.value = current;
+      }
+    };
+
+    if (levelSelect) {
+      levelSelect.addEventListener("change", function () {
+        fillClassOptions(levelSelect.value);
+      });
+      if (levelSelect.value) fillClassOptions(levelSelect.value);
+    }
 
     const params = new URLSearchParams(window.location.search);
     const paidStatus = params.get("status");
@@ -139,6 +171,28 @@
       if (!result.ok || !feeLabel) return;
       const label = result.body.data && result.body.data.amount_label;
       if (label) feeLabel.textContent = label;
+    });
+
+    getJson("/api/v1/admission-applications/options").then(function (result) {
+      if (!result.ok || !result.body.data) return;
+      const data = result.body.data;
+      const levels = data.levels || [];
+      if (levels.length && levelSelect) {
+        bookByLevel = {};
+        levelSelect.innerHTML = '<option value="">Select level</option>';
+        levels.forEach(function (row) {
+          bookByLevel[row.name] = row.classes || [];
+          const option = document.createElement("option");
+          option.value = row.name;
+          option.textContent = row.name;
+          levelSelect.appendChild(option);
+        });
+        fillClassOptions(levelSelect.value);
+      }
+      if (sessionInput && !sessionInput.value && data.suggested_session) {
+        sessionInput.value = data.suggested_session;
+        sessionInput.placeholder = data.suggested_session;
+      }
     });
 
     form.addEventListener("focusin", function () {

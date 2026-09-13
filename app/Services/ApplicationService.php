@@ -149,8 +149,9 @@ class ApplicationService
         $haystack = strtolower(trim(($level ?? '').' '.($classApplied ?? '')));
 
         $slug = match (true) {
+            str_contains($haystack, 'activity') => 'activity',
             str_contains($haystack, 'nursery') => 'nursery',
-            str_contains($haystack, 'primary') => 'primary',
+            str_contains($haystack, 'primary') || (bool) preg_match('/\bbasic\s*\d/', $haystack) => 'primary',
             str_contains($haystack, 'senior') || (bool) preg_match('/\bss\s*\d/', $haystack) => 'ss',
             str_contains($haystack, 'junior') || str_contains($haystack, 'jss') || str_contains($haystack, 'secondary') => 'jss',
             default => null,

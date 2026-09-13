@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\SessionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admissions\StoreAdmissionApplicationRequest;
 use App\Http\Requests\Admissions\UpdateAdmissionApplicationRequest;
 use App\Http\Resources\Admissions\AdmissionApplicationResource;
+use App\Models\AcademicSession;
 use App\Models\AdmissionApplication;
+use App\Models\Level;
+use App\Models\SchoolSetting;
 use App\Services\Admissions\AdmissionCheckoutService;
 use App\Services\ApplicationService;
 use App\Support\ApiResponse;
+use App\Support\SchoolBookStructure;
 use Illuminate\Http\JsonResponse;
 
 class AdmissionApplicationController extends Controller
@@ -23,6 +28,46 @@ class AdmissionApplicationController extends Controller
     public function fee(): JsonResponse
     {
         return ApiResponse::success('Admission application fee retrieved.', $this->checkout->pricing());
+    }
+
+    public function options(): JsonResponse
+    {
+        $levels = [];
+
+        foreach (SchoolBookStructure::classesByLevel() as $slug => $classes) {
+            $name = Level::query()->where('slug', $slug)->value('name')
+                ?? match ($slug) {
+                    'activity' => 'Activity',
+                    'nursery' => 'Nursery',
+                    'primary' => 'Primary',
+                    'jss' => 'Junior Secondary',
+                    'ss' => 'Senior Secondary',
+                    default => ucfirst($slug),
+                };
+
+            $levels[] = [
+                'slug' => $slug,
+                'name' => $name,
+                'classes' => array_values(array_map(
+                    static fn (array $class): string => $class['name'],
+                    $classes,
+                )),
+            ];
+        }
+
+        $suggestedSession = SchoolSetting::query()
+            ->with('currentAcademicSession')
+            ->first()
+            ?->currentAcademicSession
+            ?->name
+            ?? AcademicSession::query()
+                ->where('status', SessionStatus::Active)
+                ->value('name');
+
+        return ApiResponse::success('Admission form options retrieved.', [
+            'levels' => $levels,
+            'suggested_session' => $suggestedSession,
+        ]);
     }
 
     public function index(): JsonResponse

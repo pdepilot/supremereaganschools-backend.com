@@ -97,6 +97,88 @@
   let timer = null;
   let items = [];
   let unread = 0;
+  let knownUnreadIds = null;
+  let audioCtx = null;
+  let audioUnlocked = false;
+
+  const unlockAudio = function () {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      audioCtx = audioCtx || new Ctx();
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      const oscillator = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.0001;
+      oscillator.connect(gain);
+      gain.connect(audioCtx.destination);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.02);
+      audioUnlocked = true;
+    } catch (error) {
+      audioUnlocked = false;
+    }
+  };
+
+  /**
+   * Serious office alert for new admin desk notices (no external audio file).
+   */
+  const playSeriousAlert = function () {
+    if (deskArea() !== "admin") return;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      audioCtx = audioCtx || new Ctx();
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+
+      const now = audioCtx.currentTime;
+      // Low, urgent triad — square wave reads as an office alarm, not a soft chime.
+      const tones = [
+        { freq: 392.0, at: 0 },
+        { freq: 311.13, at: 0.28 },
+        { freq: 233.08, at: 0.56 },
+        { freq: 233.08, at: 0.92 }
+      ];
+
+      tones.forEach(function (tone) {
+        const oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(tone.freq, now + tone.at);
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(1400, now + tone.at);
+        const start = now + tone.at;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.14, start + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
+        oscillator.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        oscillator.start(start);
+        oscillator.stop(start + 0.26);
+      });
+
+      if (root) {
+        root.classList.add("is-alerting");
+        window.setTimeout(function () {
+          if (root) root.classList.remove("is-alerting");
+        }, 1400);
+      }
+    } catch (error) {
+      // Autoplay policies or missing AudioContext — fail quietly.
+    }
+  };
+
+  const unreadIdsFrom = function (rows) {
+    return (rows || [])
+      .filter(function (row) { return !row.read_at; })
+      .map(function (row) { return String(row.id); });
+  };
 
   const renderList = function () {
     if (!panel) return;
@@ -142,8 +224,19 @@
       if (!result.ok) return;
       const data = result.body.data || {};
       items = data.items || [];
-      setUnread(data.unread_count || 0);
+      const nextUnreadIds = unreadIdsFrom(items);
+      setUnread(data.unread_count || nextUnreadIds.length || 0);
       renderList();
+
+      if (knownUnreadIds !== null) {
+        const hasFresh = nextUnreadIds.some(function (id) {
+          return knownUnreadIds.indexOf(id) === -1;
+        });
+        if (hasFresh) {
+          playSeriousAlert();
+        }
+      }
+      knownUnreadIds = nextUnreadIds;
     });
   };
 
@@ -279,6 +372,8 @@
   const start = function () {
     if (!document.querySelector(".stage-head, .hero")) return;
     if (!wire()) return;
+    document.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
+    document.addEventListener("keydown", unlockAudio, { once: true });
     refresh();
     if (timer) window.clearInterval(timer);
     timer = window.setInterval(refresh, POLL_MS);

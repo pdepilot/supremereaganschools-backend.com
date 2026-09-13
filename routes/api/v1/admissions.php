@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['web', 'throttle:20,1'])->group(function () {
     Route::post('contact-enquiries', [ContactEnquiryController::class, 'store']);
     Route::get('admission-applications/fee', [AdmissionApplicationController::class, 'fee']);
+    Route::get('admission-applications/options', [AdmissionApplicationController::class, 'options']);
     Route::post('admission-applications', [AdmissionApplicationController::class, 'store']);
 });
 
