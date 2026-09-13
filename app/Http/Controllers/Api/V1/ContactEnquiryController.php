@@ -69,7 +69,7 @@ class ContactEnquiryController extends Controller
     {
         $this->authorize('delete', $contactEnquiry);
 
-        $this->enquiries->destroy($contactEnquiry);
+        $this->enquiries->destroy($contactEnquiry, request()->user());
 
         return ApiResponse::success('Enquiry removed.');
     }

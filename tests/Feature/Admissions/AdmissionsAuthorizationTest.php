@@ -122,6 +122,16 @@ class AdmissionsAuthorizationTest extends TestCase
             'status' => 'offered',
         ])->assertOk()->assertJsonPath('data.status', 'offered');
 
+        $this->actingAs($admin)->deleteJson('/api/v1/admission-applications/'.$application->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('admission_applications', ['id' => $application->id]);
+        $this->assertDatabaseHas('rbac_audit_logs', [
+            'action' => 'admission.deleted',
+            'actor_id' => $admin->id,
+        ]);
+
         $this->actingAs($admin)->postJson('/api/v1/inbox/clear-urgent')
             ->assertOk();
 

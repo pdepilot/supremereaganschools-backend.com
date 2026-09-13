@@ -30,4 +30,9 @@ class AdmissionApplicationPolicy
     {
         return $this->access->allows($user, PermissionSlug::AdmissionsManage);
     }
+
+    public function delete(User $user, AdmissionApplication $application): bool
+    {
+        return $this->access->allows($user, PermissionSlug::AdmissionsManage);
+    }
 }

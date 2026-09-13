@@ -181,7 +181,7 @@
 
   const syncFilters = function () {
     const needsFees = kind === "fees";
-    const needsRange = kind === "attendance" || kind === "staff";
+    const needsRange = kind === "attendance" || kind === "staff" || kind === "audit";
     if (termSelect) termSelect.hidden = !needsFees;
     if (statusSelect) statusSelect.hidden = !needsFees;
     if (fromInput) fromInput.hidden = !needsRange;

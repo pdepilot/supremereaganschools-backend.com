@@ -97,7 +97,7 @@ class AdmissionCheckoutService
         }
 
         return [
-            'application' => $application->fresh(['documents', 'level', 'academicSession']) ?? $application,
+            'application' => $application,
             'payment' => $payment,
             'authorization_url' => $url,
         ];

@@ -27,4 +27,5 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('admission-applications', [AdmissionApplicationController::class, 'index']);
     Route::get('admission-applications/{admission_application}', [AdmissionApplicationController::class, 'show']);
     Route::put('admission-applications/{admission_application}', [AdmissionApplicationController::class, 'update']);
+    Route::delete('admission-applications/{admission_application}', [AdmissionApplicationController::class, 'destroy']);
 });

@@ -4,12 +4,28 @@
     return match ? decodeURIComponent(match[1]) : "";
   };
 
+  let csrfWarm = null;
+
   const ensureCsrf = function () {
-    return fetch("/api/v1/health", {
+    if (csrfToken()) {
+      return Promise.resolve();
+    }
+    if (csrfWarm) {
+      return csrfWarm;
+    }
+    csrfWarm = fetch("/api/v1/health", {
       credentials: "same-origin",
       headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" }
+    }).then(function () {
+      return undefined;
+    }).finally(function () {
+      csrfWarm = null;
     });
+    return csrfWarm;
   };
+
+  // Warm the session cookie as soon as the public desk loads so Paystack submit skips a round-trip.
+  ensureCsrf();
 
   const firstError = function (body) {
     if (!body) return "The office could not complete that request.";
@@ -201,12 +217,25 @@
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
+      const overlay = document.getElementById("admissionCheckoutOverlay");
+      const overlayCopy = overlay ? overlay.querySelector("[data-checkout-copy]") : null;
+      if (overlay) {
+        overlay.hidden = false;
+        overlay.setAttribute("aria-hidden", "false");
+      }
+      if (overlayCopy) {
+        overlayCopy.textContent = "Preparing secure Paystack checkout…";
+      }
       if (button) {
         button.disabled = true;
         button.textContent = "Opening Paystack…";
       }
       postForm("/api/v1/admission-applications", form).then(function (result) {
         if (!result.ok) {
+          if (overlay) {
+            overlay.hidden = true;
+            overlay.setAttribute("aria-hidden", "true");
+          }
           if (button) {
             button.disabled = false;
             button.textContent = "Pay & Submit Application";
@@ -217,8 +246,15 @@
         const data = result.body.data || {};
         const checkoutUrl = data.authorization_url;
         if (checkoutUrl) {
-          window.location.href = checkoutUrl;
+          if (overlayCopy) {
+            overlayCopy.textContent = "Redirecting to Paystack…";
+          }
+          window.location.replace(checkoutUrl);
           return;
+        }
+        if (overlay) {
+          overlay.hidden = true;
+          overlay.setAttribute("aria-hidden", "true");
         }
         if (button) {
           button.disabled = false;
@@ -226,6 +262,10 @@
         }
         window.alert("Payment checkout could not be started. Please try again.");
       }).catch(function () {
+        if (overlay) {
+          overlay.hidden = true;
+          overlay.setAttribute("aria-hidden", "true");
+        }
         if (button) {
           button.disabled = false;
           button.textContent = "Pay & Submit Application";

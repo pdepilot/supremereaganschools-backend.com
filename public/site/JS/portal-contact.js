@@ -269,6 +269,7 @@
   const applicationStatusForm = document.querySelector("[data-application-status-form]");
   const applicationFormNotice = document.querySelector("[data-application-form-notice]");
   const applicationSaveBtn = document.querySelector("[data-application-save]");
+  const applicationDeleteBtn = document.querySelector("[data-application-delete]");
   const applicationStatusEl = document.getElementById("applicationStatus");
 
   let letters = [];
@@ -450,6 +451,7 @@
     if (applicationEmptyEl) applicationEmptyEl.hidden = true;
     if (applicationSheetEl) applicationSheetEl.hidden = false;
     if (applicationStatusForm) applicationStatusForm.hidden = !canManageApplications();
+    if (applicationDeleteBtn) applicationDeleteBtn.hidden = !canManageApplications();
 
     setText("[data-application-name]", item.full_name || ((item.first_name || "") + " " + (item.surname || "")).trim() || "Applicant");
     setText("[data-application-ref]", [item.reference, statusLabel(item.status)].filter(Boolean).join(" · "));
@@ -749,6 +751,50 @@
         if (item) upsertApplication(item);
         setNotice(applicationFormNotice, "Application status updated.");
         paintApplication(item || selectedApplication);
+      });
+    });
+  }
+
+  if (applicationDeleteBtn) {
+    applicationDeleteBtn.addEventListener("click", function () {
+      if (!selectedApplicationId || !selectedApplication) return;
+      const label = selectedApplication.full_name
+        || ((selectedApplication.first_name || "") + " " + (selectedApplication.surname || "")).trim()
+        || selectedApplication.reference
+        || "this application";
+      confirmDesk({
+        title: "Remove this admission application?",
+        copy: "The dossier for " + label + " will leave the desk. The removal is sealed in the office audit trail for later review.",
+        confirmLabel: "Remove application",
+        cancelLabel: "Keep it",
+        danger: true
+      }).then(function (ok) {
+        if (!ok) return;
+        setButtonState(applicationDeleteBtn, true, "Removing…");
+        setNotice(applicationFormNotice, "");
+        request("/api/v1/admission-applications/" + selectedApplicationId, {
+          method: "DELETE"
+        }).then(function (result) {
+          setButtonState(applicationDeleteBtn, false);
+          if (!result.ok) {
+            setNotice(applicationFormNotice, firstError(result.body));
+            return;
+          }
+          applications = applications.filter(function (row) {
+            return String(row.id) !== String(selectedApplicationId);
+          });
+          selectedApplicationId = null;
+          selectedApplication = null;
+          if (applicationEmptyEl) applicationEmptyEl.hidden = false;
+          if (applicationSheetEl) applicationSheetEl.hidden = true;
+          paintApplicationList();
+          paintMetrics();
+          if (copyEl && activeTab === "applications") {
+            copyEl.textContent = applications.length
+              ? applications.length + (applications.length === 1 ? " application on the desk." : " applications on the desk.")
+              : "No admission applications have been submitted yet.";
+          }
+        });
       });
     });
   }

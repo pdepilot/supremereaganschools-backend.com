@@ -86,10 +86,10 @@ class AcademicSessionController extends Controller
         return ApiResponse::success('Academic session updated.', (new AcademicSessionResource($session))->resolve());
     }
 
-    public function destroy(AcademicSession $academicSession): JsonResponse
+    public function destroy(Request $request, AcademicSession $academicSession): JsonResponse
     {
         $this->authorize('delete', $academicSession);
-        $this->sessions->delete($academicSession);
+        $this->sessions->delete($academicSession, $request->user());
 
         return ApiResponse::success('Academic session deleted.');
     }

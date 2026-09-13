@@ -49,8 +49,8 @@ class PaystackClient
             $response = Http::withToken((string) config('services.paystack.secret_key'))
                 ->acceptJson()
                 ->asJson()
-                ->timeout(30)
-                ->connectTimeout(10)
+                ->timeout(15)
+                ->connectTimeout(5)
                 ->post($this->baseUrl().'/transaction/initialize', [
                     'email' => $payload['email'],
                     'amount' => (int) $payload['amount_kobo'],

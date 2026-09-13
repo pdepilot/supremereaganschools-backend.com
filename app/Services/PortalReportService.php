@@ -16,6 +16,7 @@ use App\Models\ClassSectionOffering;
 use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\RbacAuditLog;
 use App\Models\SchoolSetting;
 use App\Models\StaffProfile;
 use App\Models\StudentProfile;
@@ -401,6 +402,7 @@ class PortalReportService
                 ['slug' => 'fees', 'label' => 'Fees', 'copy' => 'Expected, paid, and still due.'],
                 ['slug' => 'attendance', 'label' => 'Attendance', 'copy' => 'Present, late, and absent.'],
                 ['slug' => 'staff', 'label' => 'Staff', 'copy' => 'Who took the roll.'],
+                ['slug' => 'audit', 'label' => 'Audit trail', 'copy' => 'Deletes and office actions sealed for review.'],
             ],
             'sessions' => $sessions,
             'offerings' => $offerings,
@@ -418,6 +420,7 @@ class PortalReportService
             'fees' => $this->feesReport($user, $filters),
             'attendance' => $this->attendanceReport($user, $filters),
             'staff' => $this->staffReport($user, $filters),
+            'audit' => $this->auditReport($user, $filters),
             default => throw ValidationException::withMessages([
                 'kind' => 'That report is not available.',
             ]),
@@ -690,6 +693,75 @@ class PortalReportService
                 'to' => $to,
                 'staff' => count($rows),
                 'present' => $present,
+            ],
+            $user,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function auditReport(User $user, array $filters): array
+    {
+        $from = (string) ($filters['from'] ?? Carbon::now('Africa/Lagos')->copy()->startOfMonth()->toDateString());
+        $to = (string) ($filters['to'] ?? Carbon::now('Africa/Lagos')->toDateString());
+
+        $logs = RbacAuditLog::query()
+            ->with('actor')
+            ->whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(2000)
+            ->get();
+
+        $rows = $logs->values()->map(function (RbacAuditLog $log, int $index) {
+            $meta = is_array($log->meta) ? $log->meta : [];
+            $subjectLabel = class_basename((string) $log->subject_type);
+            if ($log->subject_id) {
+                $subjectLabel .= ' #'.$log->subject_id;
+            }
+
+            $summaryBits = [];
+            foreach (['reference', 'admission_number', 'full_name', 'name', 'email', 'subject', 'session_name', 'class_applied', 'status'] as $key) {
+                if (! empty($meta[$key]) && is_scalar($meta[$key])) {
+                    $summaryBits[] = $key.': '.$meta[$key];
+                }
+            }
+
+            return [
+                'index' => $index + 1,
+                'occurred_at' => optional($log->created_at)?->timezone('Africa/Lagos')->format('Y-m-d H:i'),
+                'actor' => $log->actor?->name ?: 'System',
+                'actor_email' => $log->actor?->email,
+                'action' => $log->action,
+                'subject' => $subjectLabel !== '' ? $subjectLabel : '—',
+                'summary' => $summaryBits !== [] ? implode(' · ', $summaryBits) : json_encode($meta, JSON_UNESCAPED_UNICODE),
+            ];
+        })->all();
+
+        $deletes = collect($rows)->filter(fn (array $row) => str_contains((string) $row['action'], '.deleted'))->count();
+
+        return $this->payload(
+            'audit',
+            'Audit trail · '.$from.($from === $to ? '' : ' to '.$to),
+            'Office audit',
+            [
+                ['key' => 'index', 'label' => '#'],
+                ['key' => 'occurred_at', 'label' => 'When'],
+                ['key' => 'actor', 'label' => 'Actor'],
+                ['key' => 'actor_email', 'label' => 'Actor email'],
+                ['key' => 'action', 'label' => 'Action'],
+                ['key' => 'subject', 'label' => 'Subject'],
+                ['key' => 'summary', 'label' => 'Record'],
+            ],
+            $rows,
+            [
+                'from' => $from,
+                'to' => $to,
+                'events' => count($rows),
+                'deletes' => $deletes,
             ],
             $user,
         );

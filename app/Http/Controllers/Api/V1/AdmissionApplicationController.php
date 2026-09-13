@@ -17,6 +17,7 @@ use App\Services\ApplicationService;
 use App\Support\ApiResponse;
 use App\Support\SchoolBookStructure;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AdmissionApplicationController extends Controller
 {
@@ -97,13 +98,21 @@ class AdmissionApplicationController extends Controller
             'examReceipt',
         ]), $request->attachments());
 
+        $application = $result['application']->loadMissing('level');
+        $payment = $result['payment'];
+
+        // Lean checkout payload — parents only need the Paystack URL, not the full dossier.
         return ApiResponse::success(
             'Continue to Paystack to complete your application.',
             [
-                ...(new AdmissionApplicationResource($result['application']))->resolve(),
+                'id' => $application->id,
+                'reference' => $application->reference,
+                'status' => $application->status?->value ?? $application->status,
+                'gender' => $application->gender?->value ?? $application->gender,
+                'level_name' => $application->level?->name,
                 'authorization_url' => $result['authorization_url'],
-                'payment_reference' => $result['payment']->reference,
-                'amount_kobo' => $result['payment']->amount_kobo,
+                'payment_reference' => $payment->reference,
+                'amount_kobo' => $payment->amount_kobo,
                 'amount_label' => $this->checkout->amountLabel(),
             ],
             201,
@@ -125,5 +134,14 @@ class AdmissionApplicationController extends Controller
         $application = $this->applications->update($admissionApplication, $request->validated(), $request->user());
 
         return ApiResponse::success('Application updated.', (new AdmissionApplicationResource($application))->resolve());
+    }
+
+    public function destroy(Request $request, AdmissionApplication $admissionApplication): JsonResponse
+    {
+        $this->authorize('delete', $admissionApplication);
+
+        $this->applications->delete($admissionApplication, $request->user());
+
+        return ApiResponse::success('Admission application removed.');
     }
 }

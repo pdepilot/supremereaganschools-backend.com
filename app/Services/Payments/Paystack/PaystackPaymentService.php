@@ -112,7 +112,7 @@ class PaystackPaymentService
             'provider_reference' => $init['reference'] ?: $payment->reference,
         ]);
 
-        return $payment->fresh() ?? $payment;
+        return $payment;
     }
 
     /**

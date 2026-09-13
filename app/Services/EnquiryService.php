@@ -10,7 +10,10 @@ use Illuminate\Support\Collection;
 
 class EnquiryService
 {
-    public function __construct(private readonly EmailCenterService $mail) {}
+    public function __construct(
+        private readonly EmailCenterService $mail,
+        private readonly RbacService $rbac,
+    ) {}
 
     /**
      * Subjects that land in the urgent admissions/fees lane.
@@ -90,8 +93,18 @@ class EnquiryService
         return $enquiry->fresh(['assignee', 'replies.author']);
     }
 
-    public function destroy(ContactEnquiry $enquiry): void
+    public function destroy(ContactEnquiry $enquiry, User $actor): void
     {
+        $this->rbac->audit($actor, 'enquiry.deleted', $enquiry, [
+            'name' => $enquiry->name,
+            'phone' => $enquiry->phone,
+            'email' => $enquiry->email,
+            'subject' => $enquiry->subject,
+            'message' => $enquiry->message,
+            'status' => $enquiry->status?->value ?? $enquiry->status,
+            'intended_level' => $enquiry->intended_level,
+        ]);
+
         $enquiry->delete();
     }
 

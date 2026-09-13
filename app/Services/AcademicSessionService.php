@@ -28,12 +28,14 @@ use App\Models\Term;
 use App\Models\TermResult;
 use App\Models\TermSummary;
 use App\Models\TimetableSlot;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AcademicSessionService
 {
+    public function __construct(private readonly RbacService $rbac) {}
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -124,10 +126,10 @@ class AcademicSessionService
         }
     }
 
-    public function delete(AcademicSession $session): void
+    public function delete(AcademicSession $session, ?User $actor = null): void
     {
         try {
-            DB::transaction(function () use ($session) {
+            DB::transaction(function () use ($session, $actor) {
                 $termIds = $session->terms()->pluck('id');
 
                 $cbtBlocks = CbtExam::query()
@@ -138,6 +140,16 @@ class AcademicSessionService
                 if ($cbtBlocks) {
                     throw ValidationException::withMessages([
                         'session' => 'This academic session cannot be deleted because CBT exams reference it. Remove those exams first, or archive the year.',
+                    ]);
+                }
+
+                if ($actor !== null) {
+                    $this->rbac->audit($actor, 'academic_session.deleted', $session, [
+                        'name' => $session->name,
+                        'status' => $session->status?->value ?? $session->status,
+                        'starts_on' => optional($session->starts_on)?->toDateString(),
+                        'ends_on' => optional($session->ends_on)?->toDateString(),
+                        'term_ids' => $termIds->values()->all(),
                     ]);
                 }
 

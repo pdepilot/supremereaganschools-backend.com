@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\DocumentType;
+use App\Enums\OnlinePaymentStatus;
 use App\Models\AcademicSession;
 use App\Models\AdmissionApplication;
 use App\Models\Level;
+use App\Models\OnlinePayment;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,7 @@ class ApplicationService
     public function __construct(
         private readonly SchoolNumberService $numbers,
         private readonly DocumentService $documents,
+        private readonly RbacService $rbac,
     ) {}
 
     /**
@@ -109,6 +112,79 @@ class ApplicationService
         }
 
         return $application->fresh(['documents', 'level', 'academicSession']);
+    }
+
+    public function delete(AdmissionApplication $application, User $actor): void
+    {
+        DB::transaction(function () use ($application, $actor): void {
+            $application->load(['documents', 'onlinePayments', 'level', 'academicSession']);
+
+            $this->rbac->audit($actor, 'admission.deleted', $application, $this->deletionAuditMeta($application));
+
+            foreach ($application->documents as $document) {
+                $this->documents->delete($document);
+            }
+
+            foreach ($application->onlinePayments as $payment) {
+                $this->releaseOrRemovePayment($payment);
+            }
+
+            $application->delete();
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function deletionAuditMeta(AdmissionApplication $application): array
+    {
+        return [
+            'reference' => $application->reference,
+            'status' => $application->status?->value ?? $application->status,
+            'session_name' => $application->session_name,
+            'level' => $application->level?->name,
+            'class_applied' => $application->class_applied,
+            'entry_term' => $application->entry_term,
+            'surname' => $application->surname,
+            'first_name' => $application->first_name,
+            'other_names' => $application->other_names,
+            'full_name' => $application->fullName(),
+            'gender' => $application->gender?->value ?? $application->gender,
+            'date_of_birth' => optional($application->date_of_birth)?->toDateString(),
+            'parent_name' => $application->parent_name,
+            'parent_phone' => $application->parent_phone,
+            'parent_email' => $application->parent_email,
+            'student_profile_id' => $application->student_profile_id,
+            'documents' => $application->documents->map(fn ($document) => [
+                'id' => $document->id,
+                'type' => $document->type?->value ?? $document->type,
+                'original_name' => $document->original_name,
+            ])->values()->all(),
+            'payments' => $application->onlinePayments->map(fn (OnlinePayment $payment) => [
+                'id' => $payment->id,
+                'reference' => $payment->reference,
+                'status' => $payment->status?->value ?? $payment->status,
+                'amount_kobo' => $payment->amount_kobo,
+            ])->values()->all(),
+        ];
+    }
+
+    private function releaseOrRemovePayment(OnlinePayment $payment): void
+    {
+        $status = $payment->status instanceof OnlinePaymentStatus
+            ? $payment->status
+            : OnlinePaymentStatus::tryFrom((string) $payment->status);
+
+        if (in_array($status, [OnlinePaymentStatus::Pending, OnlinePaymentStatus::Failed, OnlinePaymentStatus::Cancelled], true)) {
+            $payment->delete();
+
+            return;
+        }
+
+        $payment->update([
+            'payable_type' => null,
+            'payable_id' => null,
+        ]);
     }
 
     /**
