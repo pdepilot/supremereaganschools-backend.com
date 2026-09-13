@@ -95,6 +95,15 @@ ul {
   overflow-y: auto;
 }
 
+/* Faculty desk: a little more room between rail links */
+.faculty-house .rail-nav {
+  gap: 0.8rem;
+}
+
+.faculty-house .rail-btn {
+  min-height: 46px;
+}
+
 /* Parent/pupil desk: more breathing room between rail links */
 .pupil-house .rail-nav {
   gap: 0.9rem;
@@ -1070,6 +1079,14 @@ ul {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     gap: 0.45rem;
+  }
+
+  .faculty-house .rail-nav {
+    gap: 0.65rem;
+  }
+
+  .faculty-house .rail-btn {
+    min-height: 0;
   }
 
   .pupil-house .rail-nav {
