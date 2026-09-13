@@ -60,25 +60,15 @@ class SchoolBookSessionSync
 
     /**
      * Ensure school-book classes/sections exist, then open offerings for the session.
+     *
+     * Always re-seeds levels/subjects/classes so expanding the book (e.g. JSS 2–3, SS)
+     * shows up on portal/classes without a separate artisan sync.
      */
     public function ensureBookForSession(int $sessionId): void
     {
-        $expectedForms = count(SchoolBookStructure::formNames());
-        $activeForms = ClassSection::query()
-            ->where('is_active', true)
-            ->whereIn('name', SchoolBookStructure::formNames())
-            ->whereHas('schoolClass', function ($q): void {
-                $q->where('is_active', true)
-                    ->whereIn('name', SchoolBookStructure::schoolClassNames())
-                    ->whereHas('level', fn ($l) => $l->whereIn('slug', SchoolBookStructure::LEVEL_SLUGS));
-            })
-            ->count();
-
-        if ($activeForms < $expectedForms) {
-            app(LevelSeeder::class)->run();
-            app(SubjectSeeder::class)->run();
-            app(SchoolClassSeeder::class)->run();
-        }
+        app(LevelSeeder::class)->run();
+        app(SubjectSeeder::class)->run();
+        app(SchoolClassSeeder::class)->run();
 
         $this->syncBookOfferings($sessionId);
     }

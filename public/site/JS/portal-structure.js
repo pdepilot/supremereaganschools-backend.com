@@ -1145,18 +1145,33 @@
         }
 
         const ensureSessionId = Number((sessionFilter && sessionFilter.value) || currentSessionId || 0);
-        const offeringsUrl = ensureSessionId
-          ? "/api/v1/class-section-offerings?book_only=1&ensure_book=1&ensure_session_id=" + ensureSessionId
-          : "/api/v1/class-section-offerings?book_only=1";
 
-        return request(offeringsUrl).then(function (offeringResult) {
-          if (!offeringResult.ok) {
-            table.innerHTML = "<tr><td colspan=\"7\">" + escapeHtml(firstError(offeringResult.body)) + "</td></tr>";
-            return;
-          }
-          offerings = offeringResult.body.data || [];
-          apply();
-          previewSelectedFormSubjects();
+        const loadOfferings = function () {
+          const offeringsUrl = ensureSessionId
+            ? "/api/v1/class-section-offerings?book_only=1&academic_session_id=" + ensureSessionId
+              + "&ensure_book=1&ensure_session_id=" + ensureSessionId
+            : "/api/v1/class-section-offerings?book_only=1";
+
+          return request(offeringsUrl).then(function (offeringResult) {
+            if (!offeringResult.ok) {
+              table.innerHTML = "<tr><td colspan=\"7\">" + escapeHtml(firstError(offeringResult.body)) + "</td></tr>";
+              return;
+            }
+            offerings = offeringResult.body.data || [];
+            apply();
+            previewSelectedFormSubjects();
+          });
+        };
+
+        if (!ensureSessionId) {
+          return loadOfferings();
+        }
+
+        return request("/api/v1/class-section-offerings/ensure-book", {
+          method: "POST",
+          body: JSON.stringify({ academic_session_id: ensureSessionId })
+        }).then(function () {
+          return loadOfferings();
         });
       });
     };
@@ -1171,14 +1186,25 @@
       sessionFilter.addEventListener("change", function () {
         page = 1;
         const sid = Number(sessionFilter.value || 0);
-        const url = sid
-          ? "/api/v1/class-section-offerings?book_only=1&ensure_book=1&ensure_session_id=" + sid
-          : "/api/v1/class-section-offerings?book_only=1";
-        request(url).then(function (result) {
-          if (result.ok) offerings = result.body.data || [];
-          apply();
-          previewSelectedFormSubjects();
-        });
+        const fetchRows = function () {
+          const url = sid
+            ? "/api/v1/class-section-offerings?book_only=1&academic_session_id=" + sid
+              + "&ensure_book=1&ensure_session_id=" + sid
+            : "/api/v1/class-section-offerings?book_only=1";
+          return request(url).then(function (result) {
+            if (result.ok) offerings = result.body.data || [];
+            apply();
+            previewSelectedFormSubjects();
+          });
+        };
+        if (!sid) {
+          fetchRows();
+          return;
+        }
+        request("/api/v1/class-section-offerings/ensure-book", {
+          method: "POST",
+          body: JSON.stringify({ academic_session_id: sid })
+        }).then(fetchRows);
       });
     }
 
