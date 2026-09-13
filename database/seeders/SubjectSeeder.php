@@ -75,6 +75,13 @@ class SubjectSeeder extends Seeder
             ['name' => 'Nigerian History', 'code' => 'NHIS', 'department' => 'Arts'],
             ['name' => 'Cambridge Science', 'code' => 'CAMS', 'department' => 'Sciences'],
             ['name' => 'Coding and Robotics', 'code' => 'CORT', 'department' => 'ICT'],
+
+            // SS 1–3 book
+            ['name' => 'English Language', 'code' => 'ENGL', 'department' => 'Languages'],
+            ['name' => 'Citizenship and Heritage Studies', 'code' => 'CHS', 'department' => 'Arts'],
+            ['name' => 'Data Processing', 'code' => 'DPR', 'department' => 'ICT'],
+            ['name' => 'Economics', 'code' => 'ECO', 'department' => 'Arts'],
+            ['name' => 'Accounting', 'code' => 'ACC', 'department' => 'Vocational'],
         ];
 
         foreach ($subjects as $subject) {
@@ -94,7 +101,7 @@ class SubjectSeeder extends Seeder
         // Retire superseded catalogue labels that no longer match the school book.
         Subject::query()
             ->whereIn('code', ['ICT'])
-            ->orWhereIn('name', ['English Language', 'Computer Studies', 'Literary Studies'])
+            ->orWhereIn('name', ['Computer Studies', 'Literary Studies'])
             ->whereNotIn('code', collect($subjects)->pluck('code')->all())
             ->update(['is_active' => false]);
     }

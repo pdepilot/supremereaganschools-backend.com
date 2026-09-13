@@ -8,7 +8,7 @@ namespace App\Support;
 final class SchoolBookStructure
 {
     /** @var list<string> */
-    public const LEVEL_SLUGS = ['activity', 'nursery', 'primary', 'jss'];
+    public const LEVEL_SLUGS = ['activity', 'nursery', 'primary', 'jss', 'ss'];
 
     /**
      * @return array<string, list<array{name: string, short_code: string, arms: list<string>}>>
@@ -34,6 +34,13 @@ final class SchoolBookStructure
             ],
             'jss' => [
                 ['name' => 'JSS 1', 'short_code' => 'J1', 'arms' => ['Reagan', 'Diamond']],
+                ['name' => 'JSS 2', 'short_code' => 'J2', 'arms' => ['Reagan', 'Diamond']],
+                ['name' => 'JSS 3', 'short_code' => 'J3', 'arms' => ['Reagan', 'Diamond']],
+            ],
+            'ss' => [
+                ['name' => 'SS 1', 'short_code' => 'S1', 'arms' => ['Reagan', 'Diamond']],
+                ['name' => 'SS 2', 'short_code' => 'S2', 'arms' => ['Reagan', 'Diamond']],
+                ['name' => 'SS 3', 'short_code' => 'S3', 'arms' => ['Reagan', 'Diamond']],
             ],
         ];
     }
@@ -174,7 +181,7 @@ final class SchoolBookStructure
             ];
         }
 
-        if (preg_match('/^JSS\s+1\b/i', $className) === 1 || $levelSlug === 'jss') {
+        if (preg_match('/^JSS\s+[123]\b/i', $className) === 1 || $levelSlug === 'jss') {
             return [
                 'Mathematics',
                 'English Studies',
@@ -192,6 +199,28 @@ final class SchoolBookStructure
                 'French',
                 'Christian Religious Studies',
                 'Coding and Robotics',
+            ];
+        }
+
+        if (preg_match('/^SS\s+[123]\b/i', $className) === 1 || $levelSlug === 'ss') {
+            return [
+                'Mathematics',
+                'English Language',
+                'Biology',
+                'Chemistry',
+                'Physics',
+                'Agricultural Science',
+                'Government',
+                'Civic Education',
+                'Citizenship and Heritage Studies',
+                'Data Processing',
+                'Literature in English',
+                'Christian Religious Studies',
+                'Igbo',
+                'Economics',
+                'Accounting',
+                'Solar PV',
+                'Fashion Design',
             ];
         }
 

@@ -63,14 +63,6 @@ class SchoolClassSeeder extends Seeder
                 $class->sections()->update(['is_active' => false]);
             });
 
-        // Senior Secondary forms are not part of the current Supreme Reagan class book.
-        SchoolClass::query()
-            ->whereHas('level', fn ($query) => $query->where('slug', 'ss'))
-            ->each(function (SchoolClass $class): void {
-                $class->update(['is_active' => false]);
-                $class->sections()->update(['is_active' => false]);
-            });
-
         // Any section not on the school-book forms must stay inactive.
         ClassSection::query()
             ->whereNotIn('name', SchoolBookStructure::formNames())

@@ -852,7 +852,7 @@
       };
     };
 
-    const BOOK_LEVEL_SLUGS = ["activity", "nursery", "primary", "jss"];
+    const BOOK_LEVEL_SLUGS = ["activity", "nursery", "primary", "jss", "ss"];
 
     const fillOptions = function (select, rows, placeholder, extra, labelFn) {
       if (!select) return;

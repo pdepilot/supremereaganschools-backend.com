@@ -106,6 +106,10 @@ class ClassSectionOfferingApiTest extends TestCase
         $this->assertTrue($forms->contains('Activity 1'));
         $this->assertTrue($forms->contains('Activity 2 – Blossom'));
         $this->assertTrue($forms->contains('Activity 2 – Excel'));
+        $this->assertTrue($forms->contains('JSS 2 – Reagan'));
+        $this->assertTrue($forms->contains('JSS 3 – Diamond'));
+        $this->assertTrue($forms->contains('SS 1 – Reagan'));
+        $this->assertTrue($forms->contains('SS 3 – Diamond'));
 
         $activity = collect(
             $this->actingAs($this->admin())
@@ -114,6 +118,30 @@ class ClassSectionOfferingApiTest extends TestCase
         )->firstWhere('form', 'Activity 1');
 
         $this->assertNotEmpty($activity['subjects'] ?? []);
+
+        $ss = collect(
+            $this->actingAs($this->admin())
+                ->getJson('/api/v1/class-section-offerings?book_only=1&academic_session_id='.$session->id)
+                ->json('data')
+        )->firstWhere('form', 'SS 1 – Reagan');
+
+        $ssSubjects = collect($ss['subjects'] ?? [])->pluck('name');
+        $this->assertTrue($ssSubjects->contains('English Language'));
+        $this->assertTrue($ssSubjects->contains('Citizenship and Heritage Studies'));
+        $this->assertTrue($ssSubjects->contains('Data Processing'));
+        $this->assertTrue($ssSubjects->contains('Solar PV'));
+        $this->assertTrue($ssSubjects->contains('Fashion Design'));
+
+        $jss2 = collect(
+            $this->actingAs($this->admin())
+                ->getJson('/api/v1/class-section-offerings?book_only=1&academic_session_id='.$session->id)
+                ->json('data')
+        )->firstWhere('form', 'JSS 2 – Reagan');
+
+        $jss2Subjects = collect($jss2['subjects'] ?? [])->pluck('name');
+        $this->assertTrue($jss2Subjects->contains('English Studies'));
+        $this->assertTrue($jss2Subjects->contains('Coding and Robotics'));
+        $this->assertTrue($jss2Subjects->contains('Intermediate Science'));
     }
 
     public function test_forms_include_offered_subjects(): void

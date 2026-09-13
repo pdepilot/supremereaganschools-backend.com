@@ -37,6 +37,7 @@ class ClassSectionOfferingSeeder extends Seeder
             'basic-1-3' => $this->subjectIds(SchoolBookStructure::defaultSubjectNames('Basic 1')),
             'basic-4-5' => $this->subjectIds(SchoolBookStructure::defaultSubjectNames('Basic 4')),
             'jss' => $this->subjectIds(SchoolBookStructure::defaultSubjectNames('JSS 1', 'jss')),
+            'ss' => $this->subjectIds(SchoolBookStructure::defaultSubjectNames('SS 1', 'ss')),
         ];
 
         ClassSection::query()
@@ -118,8 +119,12 @@ class ClassSectionOfferingSeeder extends Seeder
             return $byForm['basic-4-5'];
         }
 
-        if (preg_match('/^JSS\s+1\b/i', $className) === 1) {
+        if (preg_match('/^JSS\s+[123]\b/i', $className) === 1) {
             return $byForm['jss'];
+        }
+
+        if (preg_match('/^SS\s+[123]\b/i', $className) === 1) {
+            return $byForm['ss'];
         }
 
         return $byForm[$levelSlug] ?? collect();
