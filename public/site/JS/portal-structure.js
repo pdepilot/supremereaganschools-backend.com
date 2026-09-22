@@ -587,27 +587,29 @@
 
     const render = function () {
       applyMetrics();
-      // Closed years stay off the books — only live/planned cards appear.
-      const openRows = rows.filter(function (row) { return row.status !== "archived"; });
-      if (books) books.hidden = !openRows.length;
+      if (books) books.hidden = !rows.length;
       if (!list) return;
-      if (!openRows.length) {
+      if (!rows.length) {
         list.innerHTML = "";
         return;
       }
 
-      list.innerHTML = openRows.map(function (row) {
+      list.innerHTML = rows.map(function (row) {
         const liveTerm = (row.terms || []).find(function (item) { return item.status === "active"; });
         const isCurrent = Number(row.id) === Number(settings.current_academic_session_id);
-        const title = row.status === "active" || isCurrent ? "Current session" : "Session";
+        const title = row.status === "active" || isCurrent
+          ? "Current session"
+          : (row.status === "archived" ? "Closed session" : "Session");
         const copyLine = row.status === "active"
           ? ((liveTerm && liveTerm.name) || "In session") + " · " + row.starts_on + " – " + row.ends_on
-          : "Planned · " + row.term_count + " terms";
+          : (row.status === "archived" ? "Closed " + (row.ends_on || "") : "Planned") + " · " + row.term_count + " terms";
         const actions = [];
-        const previous = openRows.slice()
-          .filter(function (item) { return String(item.starts_on || "") < String(row.starts_on || ""); })
+        const previous = rows.slice()
+          .filter(function (item) {
+            return item.status !== "archived" && String(item.starts_on || "") < String(row.starts_on || "");
+          })
           .sort(function (a, b) { return String(b.starts_on || "").localeCompare(String(a.starts_on || "")); })[0];
-        if (previous) {
+        if (previous && row.status !== "archived") {
           actions.push('<button class="ghost-btn" type="button" data-promote-session="' + row.id
             + '" data-source-session="' + previous.id
             + '" data-source-name="' + escapeHtml(previous.name)
@@ -620,13 +622,15 @@
         }
         actions.push('<button class="ghost-btn" type="button" data-delete-session="' + row.id
           + '" data-name="' + escapeHtml(row.name) + '">Delete</button>');
-        (row.terms || []).forEach(function (term) {
-          const sealed = Number(term.id) === Number(settings.current_term_id) && term.status === "active";
-          if (sealed) return;
-          actions.push('<button class="ghost-btn" type="button" data-seal-term="' + term.id
-            + '" data-name="' + escapeHtml(term.name) + '" data-year="' + escapeHtml(row.name) + '">Seal '
-            + escapeHtml(term.name) + "</button>");
-        });
+        if (row.status !== "archived") {
+          (row.terms || []).forEach(function (term) {
+            const sealed = Number(term.id) === Number(settings.current_term_id) && term.status === "active";
+            if (sealed) return;
+            actions.push('<button class="ghost-btn" type="button" data-seal-term="' + term.id
+              + '" data-name="' + escapeHtml(term.name) + '" data-year="' + escapeHtml(row.name) + '">Seal '
+              + escapeHtml(term.name) + "</button>");
+          });
+        }
         return '<article class="ticket">'
           + '<div class="ticket-code">' + escapeHtml(row.name) + "</div>"
           + "<div><h3>" + title + "</h3><p>" + escapeHtml(copyLine) + "</p></div>"

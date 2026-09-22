@@ -14,6 +14,15 @@ class StoreAcademicSessionRequest extends FormRequest
         return $this->user()?->can('create', AcademicSession::class) ?? false;
     }
 
+    public function messages(): array
+    {
+        return [
+            'name.unique' => 'That year is still on the ledger (including archived years). Delete it first, or choose a different name.',
+            'ends_on.after_or_equal' => 'The end date must be on or after the start date.',
+            'term_count.in' => 'Choose 2 or 3 terms.',
+        ];
+    }
+
     /**
      * @return array<string, mixed>
      */
