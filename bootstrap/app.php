@@ -2,6 +2,7 @@
 
 use App\Enums\AuthPortal;
 use App\Enums\RoleSlug;
+use App\Http\Middleware\ActivateDeskSession;
 use App\Http\Middleware\EnsureCbtDeskSession;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\RedirectIfAuthenticatedForPortal;
@@ -37,6 +38,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest.portal' => RedirectIfAuthenticatedForPortal::class,
             'cbt.desk' => EnsureCbtDeskSession::class,
         ]);
+
+        $middleware->appendToGroup('web', ActivateDeskSession::class);
 
         $middleware->validateCsrfTokens(except: [
             'payments/paystack/webhook',

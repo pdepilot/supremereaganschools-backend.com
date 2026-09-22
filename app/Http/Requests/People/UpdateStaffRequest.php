@@ -27,7 +27,6 @@ class UpdateStaffRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($staff->user_id)],
-            'password' => ['sometimes', 'string', 'min:8'],
             'role' => ['sometimes', Rule::in([
                 RoleSlug::Teacher->value,
                 RoleSlug::Staff->value,
@@ -44,7 +43,7 @@ class UpdateStaffRequest extends FormRequest
             ],
             'gender' => ['nullable', Rule::enum(Gender::class)],
             'job_title' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['sometimes', 'string', 'max:30'],
             'employed_on' => ['nullable', 'date'],
             'status' => ['sometimes', Rule::enum(StaffStatus::class)],
         ];

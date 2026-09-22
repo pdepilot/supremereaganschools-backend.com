@@ -508,6 +508,7 @@
     const form = document.querySelector("[data-session-form]");
     if (!list && !form) return;
 
+    const books = document.querySelector("[data-session-books]");
     const copy = document.querySelector("[data-session-copy]");
     const notice = document.querySelector("[data-session-notice]");
     const formNotice = document.querySelector("[data-session-form-notice]");
@@ -586,24 +587,27 @@
 
     const render = function () {
       applyMetrics();
+      // Closed years stay off the books — only live/planned cards appear.
+      const openRows = rows.filter(function (row) { return row.status !== "archived"; });
+      if (books) books.hidden = !openRows.length;
       if (!list) return;
-      if (!rows.length) {
-        list.innerHTML = "<p>No academic sessions yet. Add one using the form.</p>";
+      if (!openRows.length) {
+        list.innerHTML = "";
         return;
       }
 
-      list.innerHTML = rows.map(function (row) {
+      list.innerHTML = openRows.map(function (row) {
         const liveTerm = (row.terms || []).find(function (item) { return item.status === "active"; });
         const isCurrent = Number(row.id) === Number(settings.current_academic_session_id);
         const title = row.status === "active" || isCurrent ? "Current session" : "Session";
         const copyLine = row.status === "active"
           ? ((liveTerm && liveTerm.name) || "In session") + " · " + row.starts_on + " – " + row.ends_on
-          : (row.status === "archived" ? "Closed " + (row.ends_on || "") : "Planned") + " · " + row.term_count + " terms";
+          : "Planned · " + row.term_count + " terms";
         const actions = [];
-        const previous = rows.slice()
+        const previous = openRows.slice()
           .filter(function (item) { return String(item.starts_on || "") < String(row.starts_on || ""); })
           .sort(function (a, b) { return String(b.starts_on || "").localeCompare(String(a.starts_on || "")); })[0];
-        if (previous && row.status !== "archived") {
+        if (previous) {
           actions.push('<button class="ghost-btn" type="button" data-promote-session="' + row.id
             + '" data-source-session="' + previous.id
             + '" data-source-name="' + escapeHtml(previous.name)
@@ -614,22 +618,15 @@
           actions.push('<button class="ghost-btn" type="button" data-activate-session="' + row.id
             + '" data-name="' + escapeHtml(row.name) + '">Make live</button>');
         }
-        if (row.status !== "archived") {
-          actions.push('<button class="ghost-btn" type="button" data-archive-session="' + row.id
-            + '" data-name="' + escapeHtml(row.name) + '">Archive</button>');
-        }
         actions.push('<button class="ghost-btn" type="button" data-delete-session="' + row.id
           + '" data-name="' + escapeHtml(row.name) + '">Delete</button>');
-        // Seal terms only on live/planned years — archived cards stay Make live + Delete.
-        if (row.status !== "archived") {
-          (row.terms || []).forEach(function (term) {
-            const sealed = Number(term.id) === Number(settings.current_term_id) && term.status === "active";
-            if (sealed) return;
-            actions.push('<button class="ghost-btn" type="button" data-seal-term="' + term.id
-              + '" data-name="' + escapeHtml(term.name) + '" data-year="' + escapeHtml(row.name) + '">Seal '
-              + escapeHtml(term.name) + "</button>");
-          });
-        }
+        (row.terms || []).forEach(function (term) {
+          const sealed = Number(term.id) === Number(settings.current_term_id) && term.status === "active";
+          if (sealed) return;
+          actions.push('<button class="ghost-btn" type="button" data-seal-term="' + term.id
+            + '" data-name="' + escapeHtml(term.name) + '" data-year="' + escapeHtml(row.name) + '">Seal '
+            + escapeHtml(term.name) + "</button>");
+        });
         return '<article class="ticket">'
           + '<div class="ticket-code">' + escapeHtml(row.name) + "</div>"
           + "<div><h3>" + title + "</h3><p>" + escapeHtml(copyLine) + "</p></div>"
@@ -658,12 +655,11 @@
 
     if (root) {
       root.addEventListener("click", function (event) {
-        const button = event.target.closest("[data-activate-session], [data-archive-session], [data-delete-session], [data-seal-term], [data-promote-session]");
+        const button = event.target.closest("[data-activate-session], [data-delete-session], [data-seal-term], [data-promote-session]");
         if (!button) return;
         const name = button.getAttribute("data-name") || "this year";
         const year = button.getAttribute("data-year") || "";
         const sessionId = button.getAttribute("data-activate-session")
-          || button.getAttribute("data-archive-session")
           || button.getAttribute("data-delete-session");
         const termId = button.getAttribute("data-seal-term");
         const promoteId = button.getAttribute("data-promote-session");
@@ -705,20 +701,9 @@
           method = "DELETE";
           alertOptions = {
             title: "Delete this year",
-            copy: name + " will be removed from the calendar. Enrolments (including withdrawn roll rows after pupils were removed), invoices, receipts, fee-book rows, and forms for that year are cleared with it.",
+            copy: name + " will be removed from the calendar. Enrolments, invoices, receipts, fee-book rows, forms, and CBT exams for that year are cleared with it.",
             confirmLabel: "Delete year",
             cancelLabel: "Keep it",
-            danger: true
-          };
-        } else if (button.hasAttribute("data-archive-session")) {
-          path = "/api/v1/academic-sessions/" + sessionId;
-          method = "PUT";
-          payload = { status: "archived" };
-          alertOptions = {
-            title: "Archive this year",
-            copy: name + " will leave the live calendar. Forms and the roll stay sealed on the ledger.",
-            confirmLabel: "Archive year",
-            cancelLabel: "Keep it open",
             danger: true
           };
         } else {

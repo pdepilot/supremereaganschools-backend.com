@@ -7,6 +7,7 @@ use App\Enums\StaffStatus;
 use App\Enums\UserStatus;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -27,10 +28,20 @@ class StaffService
         $this->assertStaffRole($role);
 
         return DB::transaction(function () use ($attributes, $role, $assignedBy) {
+            $phone = is_string($attributes['phone'] ?? null) ? trim($attributes['phone']) : '';
+            $initialSecret = Phone::nationalKey($phone);
+
+            if ($phone === '' || $initialSecret === '') {
+                throw ValidationException::withMessages([
+                    'phone' => 'A valid telephone number is required. Staff sign in with this number until they set a passphrase.',
+                ]);
+            }
+
             $user = User::query()->create([
                 'name' => $attributes['name'],
                 'email' => $attributes['email'],
-                'password' => $attributes['password'],
+                'password' => $initialSecret,
+                'must_change_password' => true,
                 'status' => UserStatus::Active,
             ]);
             $user->assignRole($role);
@@ -41,7 +52,7 @@ class StaffService
                 'department_id' => $attributes['department_id'] ?? null,
                 'gender' => $attributes['gender'] ?? null,
                 'job_title' => $attributes['job_title'] ?? null,
-                'phone' => $attributes['phone'] ?? null,
+                'phone' => $phone,
                 'employed_on' => $attributes['employed_on'] ?? null,
                 'status' => $attributes['status'] ?? StaffStatus::Active->value,
             ]);
@@ -61,7 +72,6 @@ class StaffService
             $userData = array_filter([
                 'name' => $attributes['name'] ?? null,
                 'email' => $attributes['email'] ?? null,
-                'password' => $attributes['password'] ?? null,
             ], fn ($value) => $value !== null);
 
             if ($userData !== []) {

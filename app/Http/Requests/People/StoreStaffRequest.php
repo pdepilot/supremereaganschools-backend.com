@@ -24,7 +24,6 @@ class StoreStaffRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
             'role' => ['sometimes', Rule::in([
                 RoleSlug::Teacher->value,
                 RoleSlug::Staff->value,
@@ -41,7 +40,7 @@ class StoreStaffRequest extends FormRequest
             ],
             'gender' => ['nullable', Rule::enum(Gender::class)],
             'job_title' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30'],
             'employed_on' => ['nullable', 'date'],
             'status' => ['sometimes', Rule::enum(StaffStatus::class)],
         ];

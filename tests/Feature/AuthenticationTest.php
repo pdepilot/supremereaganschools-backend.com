@@ -308,7 +308,15 @@ class AuthenticationTest extends TestCase
             ->assertRedirect(route('staff.home'));
 
         $this->assertAuthenticatedAs($teacher);
-        $this->get('/portal/home')->assertRedirect(route('staff.home'));
+
+        $this->get('/portal/home')
+            ->assertOk()
+            ->assertSee('data-page="dashboard"', false);
+        $this->assertAuthenticatedAs($admin);
+
+        $this->get('/staff/home')
+            ->assertOk();
+        $this->assertAuthenticatedAs($teacher);
     }
 
     public function test_html_visits_to_the_wrong_desk_go_home(): void
@@ -427,8 +435,10 @@ class AuthenticationTest extends TestCase
             'portal' => 'parent',
         ])->assertRedirect(route('parent.home'));
 
-        $this->assertAuthenticated();
-        $this->assertTrue(auth()->user()->hasRole(RoleSlug::Parent));
+        $parentUser = $guardian->fresh()?->user;
+        $this->assertNotNull($parentUser);
+        $this->assertAuthenticatedAs($parentUser);
+        $this->assertTrue($parentUser->hasRole(RoleSlug::Parent));
     }
 
     public function test_student_can_sign_in_with_admission_number_and_parent_phone(): void

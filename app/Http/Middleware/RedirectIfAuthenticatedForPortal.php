@@ -24,7 +24,7 @@ class RedirectIfAuthenticatedForPortal
                 return $next($request);
             }
 
-            return redirect()->intended(route($portal->homeRoute()));
+            return redirect()->to($portal->consumeIntendedPath($request));
         }
 
         return $next($request);

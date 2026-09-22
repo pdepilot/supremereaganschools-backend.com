@@ -8,10 +8,17 @@ use App\Models\AssessmentScore;
 use App\Models\Assignment;
 use App\Models\AttendanceCorrection;
 use App\Models\AttendanceRecord;
+use App\Models\CbtAnswer;
 use App\Models\CbtAttempt;
 use App\Models\CbtExam;
 use App\Models\CbtExamAssignment;
+use App\Models\CbtExamIntegrityEvent;
+use App\Models\CbtExamQuestion;
+use App\Models\CbtExamQuestionOption;
 use App\Models\CbtResult;
+use App\Models\CbtResultAccess;
+use App\Models\CbtResultCheckerPurchase;
+use App\Models\CbtSyncLog;
 use App\Models\ClassSectionOffering;
 use App\Models\Enrollment;
 use App\Models\FeeStructure;
@@ -132,17 +139,6 @@ class AcademicSessionService
             DB::transaction(function () use ($session, $actor) {
                 $termIds = $session->terms()->pluck('id');
 
-                $cbtBlocks = CbtExam::query()
-                    ->where('academic_session_id', $session->id)
-                    ->when($termIds->isNotEmpty(), fn ($q) => $q->orWhereIn('term_id', $termIds->all()))
-                    ->exists();
-
-                if ($cbtBlocks) {
-                    throw ValidationException::withMessages([
-                        'session' => 'This academic session cannot be deleted because CBT exams reference it. Remove those exams first, or archive the year.',
-                    ]);
-                }
-
                 if ($actor !== null) {
                     $this->rbac->audit($actor, 'academic_session.deleted', $session, [
                         'name' => $session->name,
@@ -154,6 +150,7 @@ class AcademicSessionService
                 }
 
                 $this->releaseDeskPointers($session, $termIds);
+                $this->removeSessionCbtExams($session, $termIds);
                 $this->removeSessionInvoices($session);
                 $this->removeSessionEnrollments($session);
                 $this->removeTermScopedRecords($termIds);
@@ -249,6 +246,59 @@ class AcademicSessionService
             'promotions' => Promotion::query()->where('academic_session_id', $session->id)->count(),
             'cbt_exams' => CbtExam::query()->where('academic_session_id', $session->id)->count(),
         ];
+    }
+
+    /**
+     * Remove CBT exams for this year (attempts, answers, results, assignments, frozen questions).
+     *
+     * @param  \Illuminate\Support\Collection<int, int|string>  $termIds
+     */
+    private function removeSessionCbtExams(AcademicSession $session, $termIds): void
+    {
+        $examIds = CbtExam::withTrashed()
+            ->where(function ($query) use ($session, $termIds): void {
+                $query->where('academic_session_id', $session->id);
+                if ($termIds->isNotEmpty()) {
+                    $query->orWhereIn('term_id', $termIds->all());
+                }
+            })
+            ->pluck('id');
+
+        if ($examIds->isEmpty()) {
+            return;
+        }
+
+        $ids = $examIds->all();
+
+        $attemptIds = CbtAttempt::query()->whereIn('exam_id', $ids)->pluck('id');
+        if ($attemptIds->isNotEmpty()) {
+            $attempts = $attemptIds->all();
+            $resultIds = CbtResult::query()->whereIn('attempt_id', $attempts)->pluck('id');
+
+            if ($resultIds->isNotEmpty()) {
+                $results = $resultIds->all();
+                CbtResultAccess::query()->whereIn('cbt_result_id', $results)->delete();
+                CbtResultCheckerPurchase::query()->whereIn('cbt_result_id', $results)->delete();
+                CbtResult::query()->whereIn('id', $results)->delete();
+            }
+
+            CbtExamIntegrityEvent::query()->whereIn('attempt_id', $attempts)->delete();
+            CbtSyncLog::query()->whereIn('attempt_id', $attempts)->delete();
+            CbtAnswer::query()->whereIn('attempt_id', $attempts)->delete();
+            CbtAttempt::query()->whereIn('id', $attempts)->delete();
+        }
+
+        CbtExamAssignment::query()->whereIn('exam_id', $ids)->delete();
+
+        $examQuestionIds = CbtExamQuestion::query()->whereIn('exam_id', $ids)->pluck('id');
+        if ($examQuestionIds->isNotEmpty()) {
+            $questionIds = $examQuestionIds->all();
+            CbtAnswer::query()->whereIn('exam_question_id', $questionIds)->delete();
+            CbtExamQuestionOption::query()->whereIn('exam_question_id', $questionIds)->delete();
+            CbtExamQuestion::query()->whereIn('id', $questionIds)->delete();
+        }
+
+        CbtExam::withTrashed()->whereIn('id', $ids)->forceDelete();
     }
 
     /**
@@ -379,12 +429,6 @@ class AcademicSessionService
         Assignment::query()->whereIn('class_section_offering_id', $ids)->delete();
         LearningMaterial::query()->whereIn('class_section_offering_id', $ids)->delete();
         CbtExamAssignment::query()->whereIn('class_section_offering_id', $ids)->delete();
-
-        if (CbtExam::query()->whereIn('class_section_offering_id', $ids)->exists()) {
-            throw ValidationException::withMessages([
-                'session' => 'This academic session cannot be deleted because CBT exams reference its forms. Remove those exams first, or archive the year.',
-            ]);
-        }
 
         $subjectOfferingIds = SubjectOffering::query()
             ->whereIn('class_section_offering_id', $ids)

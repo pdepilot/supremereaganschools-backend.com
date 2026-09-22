@@ -42,11 +42,22 @@ class PortalAcademicPagesTest extends TestCase
             ->assertSee('Add a session', false)
             ->assertSee('id="yearLive"', false)
             ->assertSee('data-session-list', false)
+            ->assertSee('data-session-books', false)
             ->assertSee('data-desk-alert', false)
             ->assertSee('portal-structure.js', false)
             ->assertDontSee('Last session', false)
             ->assertDontSee('Closed July 2025', false)
             ->assertDontSee('>25/26<', false);
+
+        $css = (string) file_get_contents(public_path('site/CSS/admin-command.css'));
+        $this->assertStringContainsString(
+            '[data-page="academic_sessions"] .split:not(:has([data-session-books]:not([hidden])))',
+            $css,
+        );
+        $this->assertStringNotContainsString(
+            ".split:not(:has([data-session-books]:not([hidden]))) {\n  grid-template-columns: minmax(0, 28rem);\n}",
+            $css,
+        );
 
         $this->actingAs($admin)
             ->get('/portal/classes')

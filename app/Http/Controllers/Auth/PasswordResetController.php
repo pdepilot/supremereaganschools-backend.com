@@ -77,7 +77,7 @@ class PasswordResetController extends Controller
         $user = $request->user();
 
         if ($user && $portal->admits($user)) {
-            return redirect()->intended(route($portal->homeRoute()));
+            return redirect()->to($portal->consumeIntendedPath($request));
         }
 
         $file = $portal === AuthPortal::Portal

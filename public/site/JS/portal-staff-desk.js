@@ -318,5 +318,13 @@
 
   tickClock();
   window.setInterval(tickClock, 1000);
-  load().then(startPoll);
+  request("/api/v1/me").then(function (result) {
+    if (result.ok && result.body && result.body.data && result.body.data.must_change_password) {
+      window.location.href = "/staff/settings";
+      return;
+    }
+    load().then(startPoll);
+  }).catch(function () {
+    load().then(startPoll);
+  });
 })();

@@ -163,8 +163,12 @@
       return part.charAt(0);
     }).join("").toUpperCase() || "F";
     document.querySelectorAll("[data-account-name]").forEach(function (node) {
-      if (node.tagName === "INPUT") node.value = name;
-      else node.textContent = name || "—";
+      if (node.tagName === "INPUT") {
+        node.value = name;
+        node.readOnly = true;
+      } else {
+        node.textContent = name || "—";
+      }
     });
     document.querySelectorAll("[data-account-email]").forEach(function (node) {
       if (node.tagName === "INPUT") node.value = email;
@@ -177,11 +181,26 @@
     document.querySelectorAll("[data-account-roles]").forEach(function (node) {
       node.textContent = roles || "Faculty";
     });
+
+    const mustChange = !!data.must_change_password;
+    const notice = document.querySelector("[data-must-change-notice]");
+    if (notice) notice.hidden = !mustChange;
+    const passwordPanel = document.querySelector("[data-password-panel]");
+    if (passwordPanel) passwordPanel.classList.toggle("is-attention", mustChange);
+    if (mustChange && page !== "settings") {
+      window.location.href = "/staff/settings";
+    }
   };
 
   if (page === "profile" || page === "settings") {
     request("/api/v1/me").then(function (result) {
       if (result.ok && result.body.data) fillAccount(result.body.data);
+    });
+  } else {
+    request("/api/v1/me").then(function (result) {
+      if (result.ok && result.body.data && result.body.data.must_change_password) {
+        window.location.href = "/staff/settings";
+      }
     });
   }
 
@@ -193,7 +212,6 @@
       request("/api/v1/me", {
         method: "PUT",
         body: JSON.stringify({
-          name: (document.getElementById("accountName") || {}).value || "",
           email: (document.getElementById("accountEmail") || {}).value || ""
         })
       }).then(function (result) {
@@ -226,6 +244,10 @@
         }
         passwordForm.reset();
         if (notice) notice.textContent = "Passphrase reset.";
+        const banner = document.querySelector("[data-must-change-notice]");
+        if (banner) banner.hidden = true;
+        const passwordPanel = document.querySelector("[data-password-panel]");
+        if (passwordPanel) passwordPanel.classList.remove("is-attention");
       });
     });
   }

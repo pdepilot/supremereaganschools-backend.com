@@ -8,6 +8,8 @@ use App\Enums\UserStatus;
 use App\Models\ClassTeacherAssignment;
 use App\Models\StaffProfile;
 use App\Models\SubjectTeacherAssignment;
+use App\Models\User;
+use App\Support\Phone;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -34,7 +36,6 @@ class StaffApiTest extends TestCase
         $create = $this->actingAs($admin)->postJson('/api/v1/staff', [
             'name' => 'Mrs. Eze',
             'email' => 'eze@school.test',
-            'password' => 'password',
             'role' => RoleSlug::Teacher->value,
             'staff_number' => 'SRS/TCH/0012',
             'department_id' => $department->id,
@@ -51,9 +52,10 @@ class StaffApiTest extends TestCase
             ->assertJsonMissingPath('data.password');
 
         $id = $create->json('data.id');
-        $userId = StaffProfile::query()->findOrFail($id)->user_id;
+        $user = StaffProfile::query()->findOrFail($id)->user;
 
-        $this->assertTrue(Hash::check('password', StaffProfile::query()->findOrFail($id)->user->getAuthPassword()));
+        $this->assertTrue(Hash::check(Phone::nationalKey('08030000012'), $user->getAuthPassword()));
+        $this->assertTrue($user->must_change_password);
 
         $this->actingAs($admin)->putJson('/api/v1/staff/'.$id, [
             'job_title' => 'Head of Mathematics',
@@ -63,7 +65,69 @@ class StaffApiTest extends TestCase
             ->assertJsonPath('data.job_title', 'Head of Mathematics')
             ->assertJsonPath('data.status', 'on_leave');
 
-        $this->assertDatabaseHas('users', ['id' => $userId, 'email' => 'eze@school.test']);
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'eze@school.test']);
+    }
+
+    public function test_staff_create_requires_phone_and_rejects_admin_password(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->postJson('/api/v1/staff', [
+            'name' => 'No Phone',
+            'email' => 'nophone@school.test',
+            'role' => RoleSlug::Teacher->value,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('phone');
+    }
+
+    public function test_new_staff_can_sign_in_with_phone_then_set_passphrase(): void
+    {
+        $admin = $this->admin();
+
+        $create = $this->actingAs($admin)->postJson('/api/v1/staff', [
+            'name' => 'Mrs. Phone Login',
+            'email' => 'phone.login@school.test',
+            'role' => RoleSlug::Teacher->value,
+            'phone' => '08031112233',
+        ])->assertCreated();
+
+        $userId = StaffProfile::query()->findOrFail($create->json('data.id'))->user_id;
+
+        $this->post('/logout');
+        $this->assertGuest();
+
+        $this->postJson('/login', [
+            'email' => '08031112233',
+            'password' => '08031112233',
+            'portal' => 'staff',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.redirect', '/staff/settings')
+            ->assertJsonPath('data.user.must_change_password', true);
+
+        $this->assertAuthenticated();
+
+        $this->putJson('/api/v1/me/password', [
+            'current_password' => '08031112233',
+            'password' => 'new-desk-pass',
+            'password_confirmation' => 'new-desk-pass',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.must_change_password', false);
+
+        $this->assertFalse(User::query()->findOrFail($userId)->must_change_password);
+        $this->assertTrue(Hash::check('new-desk-pass', User::query()->findOrFail($userId)->getAuthPassword()));
+
+        $this->post('/logout');
+
+        $this->postJson('/login', [
+            'email' => 'phone.login@school.test',
+            'password' => 'new-desk-pass',
+            'portal' => 'staff',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.redirect', route('staff.home', absolute: false))
+            ->assertJsonPath('data.user.must_change_password', false);
     }
 
     public function test_admin_can_appoint_staff_to_a_department_and_form(): void
@@ -75,8 +139,8 @@ class StaffApiTest extends TestCase
         $create = $this->actingAs($admin)->postJson('/api/v1/staff', [
             'name' => 'Mrs. Cynthia Obi',
             'email' => 'obi@school.test',
-            'password' => 'password',
             'role' => RoleSlug::Teacher->value,
+            'phone' => '08030000021',
             'department_id' => $department->id,
             'class_section_offering_id' => $offering->id,
             'job_title' => 'Class Teacher',
@@ -111,7 +175,7 @@ class StaffApiTest extends TestCase
         $create = $this->actingAs($admin)->postJson('/api/v1/staff', [
             'name' => 'Mr. Daniel Okoro',
             'email' => 'okoro@school.test',
-            'password' => 'password',
+            'phone' => '08030000017',
             'role' => RoleSlug::Teacher->value,
             'class_section_offering_id' => $home->id,
         ])->assertCreated();
@@ -158,7 +222,7 @@ class StaffApiTest extends TestCase
         $this->actingAs($admin)->postJson('/api/v1/staff', [
             'name' => 'Other Teacher',
             'email' => 'other@school.test',
-            'password' => 'password',
+            'phone' => '08039999999',
             'staff_number' => 'SRS/TCH/0012',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors('staff_number');
@@ -169,7 +233,7 @@ class StaffApiTest extends TestCase
         $this->actingAs($this->admin())->postJson('/api/v1/staff', [
             'name' => 'Mrs. Eze',
             'email' => 'eze@school.test',
-            'password' => 'password',
+            'phone' => '08030000012',
             'department_id' => 9999,
         ])->assertUnprocessable()
             ->assertJsonValidationErrors('department_id');
@@ -180,7 +244,7 @@ class StaffApiTest extends TestCase
         $this->actingAs($this->admin())->postJson('/api/v1/staff', [
             'name' => 'Not A Teacher',
             'email' => 'student-role@school.test',
-            'password' => 'password',
+            'phone' => '08030000099',
             'role' => RoleSlug::Student->value,
         ])->assertUnprocessable()
             ->assertJsonValidationErrors('role');
@@ -194,7 +258,7 @@ class StaffApiTest extends TestCase
         $this->actingAs($teacher)->postJson('/api/v1/staff', [
             'name' => 'Hacked',
             'email' => 'hacked@school.test',
-            'password' => 'password',
+            'phone' => '08030000088',
         ])
             ->assertForbidden()
             ->assertJsonPath('success', false)

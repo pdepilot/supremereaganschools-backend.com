@@ -97,6 +97,7 @@ class PeopleAccessService
 
         return Enrollment::query()
             ->whereIn('class_section_offering_id', $offeringIds)
+            ->where('status', EnrollmentStatus::Active)
             ->pluck('student_profile_id')
             ->unique()
             ->values();
@@ -336,7 +337,9 @@ class PeopleAccessService
         }
 
         if ($this->isTeacher($actor) && $this->isStudent($target)) {
-            return $this->assignedStudentIds($actor)->contains($target->studentProfile?->id);
+            $studentId = $target->studentProfile?->id;
+
+            return $studentId !== null && $this->assignedStudentIds($actor)->contains($studentId);
         }
 
         if ($this->isParent($actor) && $this->isTeacher($target)) {

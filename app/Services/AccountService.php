@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -33,6 +34,7 @@ class AccountService
 
         $user->update([
             'password' => $password,
+            'must_change_password' => false,
         ]);
 
         $student = $user->studentProfile;
@@ -55,6 +57,13 @@ class AccountService
     {
         if (Hash::check($attempt, $user->getAuthPassword())) {
             return true;
+        }
+
+        if ($user->must_change_password) {
+            $key = Phone::nationalKey($attempt);
+            if ($key !== '' && Hash::check($key, $user->getAuthPassword())) {
+                return true;
+            }
         }
 
         $student = $user->studentProfile;

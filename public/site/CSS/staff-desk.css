@@ -1847,6 +1847,20 @@ ul {
   color: #8a3b2a;
 }
 
+.form-notice[data-must-change-notice]:not([hidden]) {
+  min-height: 0;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #c9a227;
+  background: rgba(201, 162, 39, 0.12);
+  color: #5c4a12;
+}
+
+.panel.is-attention {
+  outline: 2px solid #c9a227;
+  outline-offset: 2px;
+}
+
 .crest-line {
   display: flex;
   align-items: center;

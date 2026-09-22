@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260913e">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260922-sessions-open">
 </head>
 <body data-page="academic_sessions">
   <div class="vault">
@@ -67,9 +67,9 @@
       <main class="workspace" data-session-root>
         <p data-session-notice></p>
         <div class="split">
-          <div class="surface" data-stamp="Years">
+          <div class="surface" data-stamp="Years" data-session-books hidden>
             <div class="panel-title"><div><h2>On the books</h2><p>Activate, seal a term, or close a year.</p></div></div>
-            <div class="tickets" data-session-list><p>Connecting to the calendar…</p></div>
+            <div class="tickets" data-session-list></div>
           </div>
           <div class="surface" data-stamp="Add" id="add-session">
             <div class="panel-title"><div><h2>Add a session</h2><p>Name the year and the dates it will run.</p></div></div>
@@ -106,6 +106,6 @@
     </div>
   </div>
   <script src="../JS/admin-command.js"></script>
-  <script src="../JS/portal-structure.js"></script>
+  <script src="../JS/portal-structure.js?v=20260922-sessions-open"></script>
 </body>
 </html>

@@ -128,6 +128,79 @@ enum AuthPortal: string
             || $user->hasPermission(PermissionSlug::DeskAdminister);
     }
 
+    public function homePath(): string
+    {
+        return route($this->homeRoute(), absolute: false);
+    }
+
+    public function pathBelongs(string $path): bool
+    {
+        return match ($this) {
+            self::Staff => str_starts_with($path, '/staff'),
+            self::Parent => str_starts_with($path, '/parent'),
+            self::Student => str_starts_with($path, '/student'),
+            self::Portal => str_starts_with($path, '/portal') || str_starts_with($path, '/admin'),
+            self::Cbt => str_starts_with($path, '/cbt'),
+        };
+    }
+
+    /**
+     * Prefer a same-desk intended URL; discard cross-desk leftovers that would
+     * bounce an office session onto the staff/parent/pupil desk (or the reverse).
+     */
+    public function consumeIntendedPath(Request $request): string
+    {
+        $default = $this->homePath();
+
+        if (! $request->hasSession()) {
+            return $default;
+        }
+
+        $intended = $request->session()->pull('url.intended');
+
+        if (! is_string($intended) || $intended === '') {
+            return $default;
+        }
+
+        $path = parse_url($intended, PHP_URL_PATH);
+
+        if (! is_string($path) || $path === '' || ! $this->pathBelongs($path)) {
+            return $default;
+        }
+
+        if (preg_match('#/(login|forgot-password|reset-password)(/|$)#', $path) === 1) {
+            return $default;
+        }
+
+        $query = parse_url($intended, PHP_URL_QUERY);
+
+        return is_string($query) && $query !== '' ? $path.'?'.$query : $path;
+    }
+
+    /**
+     * Drop a queued intended URL when it belongs to another desk.
+     */
+    public function forgetForeignIntended(Request $request): void
+    {
+        if (! $request->hasSession()) {
+            return;
+        }
+
+        $intended = $request->session()->get('url.intended');
+
+        if (! is_string($intended) || $intended === '') {
+            return;
+        }
+
+        $path = parse_url($intended, PHP_URL_PATH);
+
+        if (! is_string($path) || $path === '' || $this->pathBelongs($path)) {
+            return;
+        }
+
+        $request->session()->forget('url.intended');
+    }
+
     public static function forUser(?User $user): ?self
     {
         if ($user === null) {

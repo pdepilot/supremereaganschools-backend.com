@@ -170,7 +170,6 @@ class PeopleSeeder extends Seeder
         return $staff->create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => 'password',
             'role' => RoleSlug::Teacher->value,
             'staff_number' => $data['staff_number'],
             'department_id' => Department::query()->where('name', $data['department'])->value('id'),

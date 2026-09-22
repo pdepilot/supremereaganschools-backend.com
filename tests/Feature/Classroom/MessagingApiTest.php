@@ -125,4 +125,44 @@ class MessagingApiTest extends TestCase
         $this->actingAs($this->admin())->getJson('/api/v1/conversations/999')
             ->assertNotFound();
     }
+
+    public function test_teacher_recipients_and_letters_are_limited_to_assigned_pupils(): void
+    {
+        $home = $this->offering();
+        $other = $this->otherOffering($home);
+
+        $teacher = $this->userWithRole(RoleSlug::Teacher, ['name' => 'Mrs. Eze']);
+        $this->classTeacher($this->staff($teacher), $home);
+
+        $mine = $this->student($this->userWithRole(RoleSlug::Student, ['name' => 'Chiamaka Okafor']));
+        $this->enroll($mine, $home);
+
+        $theirs = $this->student($this->userWithRole(RoleSlug::Student, ['name' => 'Adaeze Nwosu']));
+        $this->enroll($theirs, $other);
+
+        $recipients = $this->actingAs($teacher)
+            ->getJson('/api/v1/messages/recipients')
+            ->assertOk()
+            ->json('data');
+
+        $ids = collect($recipients)->pluck('id');
+        $this->assertTrue($ids->contains($mine->user_id));
+        $this->assertFalse($ids->contains($theirs->user_id));
+
+        $this->actingAs($teacher)->postJson('/api/v1/conversations', [
+            'recipient_id' => $theirs->user_id,
+            'subject' => 'Wrong form',
+            'body' => 'Should not send.',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['recipient_id']);
+
+        $this->actingAs($teacher)->postJson('/api/v1/conversations', [
+            'recipient_id' => $mine->user_id,
+            'subject' => 'Class note',
+            'body' => 'Bring your workbook.',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.subject', 'Class note');
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserStatus;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Message;
@@ -21,12 +22,38 @@ class MessagingService
      */
     public function recipients(User $actor): Collection
     {
+        if ($this->access->isTeacher($actor) && ! $this->access->administers($actor)) {
+            return $this->teacherStudentRecipients($actor);
+        }
+
         return User::query()
-            ->where('status', \App\Enums\UserStatus::Active)
+            ->where('status', UserStatus::Active)
             ->where('id', '!=', $actor->id)
             ->orderBy('name')
             ->get()
             ->filter(fn (User $user) => $this->access->canMessage($actor, $user))
+            ->values();
+    }
+
+    /**
+     * Faculty letters may only open to pupils on the teacher's live forms.
+     *
+     * @return Collection<int, User>
+     */
+    private function teacherStudentRecipients(User $actor): Collection
+    {
+        $studentIds = $this->access->assignedStudentIds($actor);
+
+        if ($studentIds->isEmpty()) {
+            return collect();
+        }
+
+        return User::query()
+            ->where('status', UserStatus::Active)
+            ->where('id', '!=', $actor->id)
+            ->whereHas('studentProfile', fn ($query) => $query->whereIn('id', $studentIds))
+            ->orderBy('name')
+            ->get()
             ->values();
     }
 

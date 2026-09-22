@@ -46,13 +46,14 @@
           <div>
             <p class="kicker">Faculty · The vault</p>
             <h1>Account setup</h1>
-            <p class="head-copy">Your mailbox and passphrase. The school ledger keeps the rest.</p>
+            <p class="head-copy">Your mailbox and passphrase. New staff must set a passphrase after the first sign-in.</p>
           </div>
           <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Vault sealed</div>
         </div>
       </header>
 
       <main class="workspace">
+        <p class="form-notice" data-must-change-notice hidden>Set a new passphrase before you continue on the desk. Your current passphrase is the telephone the office recorded.</p>
         <div class="board">
           <section class="panel">
             <div class="panel-head">
@@ -63,9 +64,10 @@
             </div>
             <form data-account-form>
               <div class="field-grid">
-                <label class="field"><span>Name</span><input id="accountName" data-account-name required></label>
+                <label class="field"><span>Name</span><input id="accountName" data-account-name required readonly></label>
                 <label class="field"><span>Email</span><input id="accountEmail" type="email" data-account-email required></label>
               </div>
+              <p class="head-copy">Your name is set by the school office.</p>
               <p class="form-notice"></p>
               <div class="modal-actions">
                 <button class="gold-btn" type="submit">Seal details</button>
@@ -73,7 +75,7 @@
             </form>
           </section>
 
-          <section class="panel">
+          <section class="panel" data-password-panel>
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Security</p>

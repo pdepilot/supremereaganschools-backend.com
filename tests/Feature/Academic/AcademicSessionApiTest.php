@@ -369,6 +369,42 @@ class AcademicSessionApiTest extends TestCase
         ]);
     }
 
+    public function test_a_session_with_cbt_exams_can_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $term = $this->termFor($session);
+        $offering = $this->offering(session: $session);
+        $subject = $this->subject();
+
+        $exam = \App\Models\CbtExam::query()->create([
+            'title' => 'Session wipe CBT',
+            'subject_id' => $subject->id,
+            'class_section_offering_id' => $offering->id,
+            'academic_session_id' => $session->id,
+            'term_id' => $term->id,
+            'duration_minutes' => 40,
+            'question_count' => 0,
+            'max_score' => 0,
+            'status' => \App\Enums\CbtExamStatus::Draft,
+            'write_to_assessment_score' => false,
+        ]);
+
+        \App\Models\CbtExamAssignment::query()->create([
+            'exam_id' => $exam->id,
+            'class_section_offering_id' => $offering->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('cbt_exams', ['id' => $exam->id]);
+        $this->assertDatabaseMissing('cbt_exam_assignments', ['exam_id' => $exam->id]);
+    }
+
     public function test_a_session_with_invoices_can_be_deleted(): void
     {
         $admin = $this->admin();

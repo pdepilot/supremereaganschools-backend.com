@@ -1169,8 +1169,6 @@
     const formDepartment = document.getElementById("staffDepartment");
     const formOffering = document.getElementById("staffForm");
     const formRole = document.getElementById("staffRole");
-    const passwordInput = document.getElementById("staffPassword");
-    const passwordHint = document.querySelector("[data-staff-password-hint]");
     const cancelEdit = document.querySelector("[data-cancel-staff-edit]");
     const addDepartmentBtn = document.querySelector("[data-add-department]");
     const newDepartmentInput = document.querySelector("[data-new-department]");
@@ -1247,14 +1245,12 @@
 
     const setEditMode = function (row) {
       editingId = row ? row.id : null;
-      if (passwordInput) passwordInput.required = !editingId;
-      if (passwordHint) passwordHint.hidden = !editingId;
       if (cancelEdit) cancelEdit.hidden = !editingId;
       if (formTitle) formTitle.textContent = editingId ? "Revise this master" : "Appoint a master";
       if (formCopy) {
         formCopy.textContent = editingId
           ? "Update the department, form, and desk for this appointment."
-          : "Seal a new staff account onto the live directory";
+          : "Seal a new staff account. They sign in with their telephone, then set a passphrase.";
       }
       if (submit) {
         submit.dataset.label = editingId ? "Save the revision" : "Seal the appointment";
@@ -1280,7 +1276,6 @@
       fieldValue("staffTitle", row.job_title);
       fieldValue("staffPhone", row.phone);
       fieldValue("staffNumber", row.staff_number);
-      fieldValue("staffPassword", "");
       fieldValue("staffDepartment", row.department_id);
       const offeringId = row.class_section_offering_id ? String(row.class_section_offering_id) : "";
       if (offeringId && formOffering && !Array.prototype.some.call(formOffering.options, function (opt) {
@@ -1505,7 +1500,6 @@
         const payload = {
           name: (document.getElementById("staffName") || {}).value || "",
           email: (document.getElementById("staffEmail") || {}).value || "",
-          password: (document.getElementById("staffPassword") || {}).value || "",
           role: (document.getElementById("staffRole") || {}).value || "teacher",
           gender: (document.getElementById("staffGender") || {}).value || "",
           job_title: (document.getElementById("staffTitle") || {}).value || "",
@@ -1523,7 +1517,6 @@
         payload.class_section_offering_id = payload.class_section_offering_id
           ? Number(payload.class_section_offering_id)
           : null;
-        if (!payload.password) delete payload.password;
 
         if (formNotice) formNotice.textContent = "";
         const busyLabel = editingId ? "Saving…" : "Sealing…";

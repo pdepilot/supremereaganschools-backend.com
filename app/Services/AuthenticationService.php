@@ -7,6 +7,7 @@ use App\Enums\RoleSlug;
 use App\Enums\UserStatus;
 use App\Models\GuardianProfile;
 use App\Models\LoginActivity;
+use App\Models\StaffProfile;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Support\Phone;
@@ -23,6 +24,8 @@ class AuthenticationService
     public const INVALID_CREDENTIALS = 'These credentials do not match our records.';
 
     public const CBT_DESK_SESSION_KEY = 'cbt_desk';
+
+    public const DESK_SESSIONS_KEY = 'desk_sessions';
 
     /**
      * @throws ValidationException
@@ -49,11 +52,12 @@ class AuthenticationService
             $portal === AuthPortal::Cbt => app(SchoolSettingService::class)->authenticateCbtStaff($email, $password),
             $portal === AuthPortal::Parent && $household => $this->parentUserForLogin((string) $admissionNumber, $password),
             $portal === AuthPortal::Parent => $this->parentUserForEmailLogin((string) $email, $password),
+            $portal === AuthPortal::Staff => $this->staffUserForLogin((string) $email, $password),
             default => User::query()->whereRaw('LOWER(email) = ?', [strtolower((string) $email)])->first(),
         };
 
         $passwordOk = match (true) {
-            $household, $portal === AuthPortal::Parent, $portal === AuthPortal::Cbt => $user !== null,
+            $household, $portal === AuthPortal::Parent, $portal === AuthPortal::Cbt, $portal === AuthPortal::Staff => $user !== null,
             default => $user && Hash::check($password, $user->getAuthPassword()),
         };
 
@@ -73,14 +77,134 @@ class AuthenticationService
             ]);
         }
 
+        $previousDesks = $this->captureDeskSessionsFromCurrentUser();
+
         Auth::login($user, $remember);
-        request()->session()->regenerate();
+        // Auth::login already regenerates the session (destroy=true). Re-apply
+        // other desk accounts afterwards so database sessions keep them.
+        $this->reapplyCapturedDeskSessions($previousDesks, $portal);
+        $this->rememberDeskSession($portal, $user);
         RateLimiter::clear($throttleKey);
 
         $this->syncCbtDeskSession($portal);
         $this->recordLogin($user, $portal);
 
         return $user;
+    }
+
+    /**
+     * Switch the active auth user back to the account last signed into this desk,
+     * so office and faculty sessions can coexist in one browser.
+     */
+    public function activateDeskSession(AuthPortal $portal): ?User
+    {
+        if (! request()->hasSession()) {
+            return null;
+        }
+
+        $current = Auth::user();
+        if ($current instanceof User && $current->status === UserStatus::Active && $portal->admits($current)) {
+            $this->rememberDeskSession($portal, $current);
+
+            return $current;
+        }
+
+        $id = request()->session()->get(self::DESK_SESSIONS_KEY.'.'.$portal->value);
+        if (! is_numeric($id)) {
+            return null;
+        }
+
+        $user = User::query()->find((int) $id);
+        if ($user === null || $user->status !== UserStatus::Active || ! $portal->admits($user)) {
+            request()->session()->forget(self::DESK_SESSIONS_KEY.'.'.$portal->value);
+
+            return null;
+        }
+
+        $previousDesks = $this->captureDeskSessionsFromCurrentUser();
+        Auth::login($user);
+        $this->reapplyCapturedDeskSessions($previousDesks, $portal);
+        $this->rememberDeskSession($portal, $user);
+        $this->syncCbtDeskSession($portal);
+
+        return $user;
+    }
+
+    /**
+     * On any desk URL, prefer the account last signed into that desk.
+     */
+    public function activateDeskForRequest(\Illuminate\Http\Request $request): ?User
+    {
+        if (! $request->user() instanceof User) {
+            return null;
+        }
+
+        return $this->activateDeskSession(AuthPortal::matchingRequest($request));
+    }
+
+    public function clearDeskSessions(): void
+    {
+        if (request()->hasSession()) {
+            request()->session()->forget(self::DESK_SESSIONS_KEY);
+        }
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function captureDeskSessionsFromCurrentUser(): array
+    {
+        $captured = [];
+        if (request()->hasSession()) {
+            $existing = request()->session()->get(self::DESK_SESSIONS_KEY, []);
+            if (is_array($existing)) {
+                foreach ($existing as $desk => $id) {
+                    if (is_numeric($id)) {
+                        $captured[(string) $desk] = (int) $id;
+                    }
+                }
+            }
+        }
+
+        $current = Auth::user();
+        if (! $current instanceof User) {
+            return $captured;
+        }
+
+        foreach ([AuthPortal::Portal, AuthPortal::Staff, AuthPortal::Parent, AuthPortal::Student, AuthPortal::Cbt] as $desk) {
+            if ($desk->admits($current)) {
+                $captured[$desk->value] = (int) $current->id;
+            }
+        }
+
+        return $captured;
+    }
+
+    /**
+     * @param  array<string, int>  $captured
+     */
+    private function reapplyCapturedDeskSessions(array $captured, AuthPortal $incoming): void
+    {
+        if (! request()->hasSession() || $captured === []) {
+            return;
+        }
+
+        foreach ($captured as $desk => $id) {
+            if ($desk === $incoming->value) {
+                continue;
+            }
+
+            request()->session()->put(self::DESK_SESSIONS_KEY.'.'.$desk, $id);
+        }
+    }
+
+    private function rememberDeskSession(AuthPortal $portal, User $user): void
+    {
+        if (! request()->hasSession()) {
+            return;
+        }
+
+        request()->session()->put(self::DESK_SESSIONS_KEY.'.'.$portal->value, $user->id);
     }
 
     public function markCbtDeskSession(): void
@@ -127,6 +251,57 @@ class AuthenticationService
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    private function staffUserForLogin(string $identifier, string $password): ?User
+    {
+        $trimmed = trim($identifier);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        $user = null;
+
+        if (str_contains($trimmed, '@')) {
+            $user = User::query()
+                ->with('staffProfile')
+                ->whereRaw('LOWER(email) = ?', [strtolower($trimmed)])
+                ->first();
+        } else {
+            $matched = StaffProfile::query()
+                ->with('user')
+                ->whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->get()
+                ->filter(fn (StaffProfile $staff) => Phone::matches($trimmed, (string) $staff->phone))
+                ->values();
+
+            if ($matched->count() === 1) {
+                $user = $matched->first()?->user;
+            }
+        }
+
+        if ($user === null || ! $this->staffSecretMatches($user, $password)) {
+            return null;
+        }
+
+        return $user;
+    }
+
+    private function staffSecretMatches(User $user, string $attempt): bool
+    {
+        if (Hash::check($attempt, $user->getAuthPassword())) {
+            return true;
+        }
+
+        if (! $user->must_change_password) {
+            return false;
+        }
+
+        $key = Phone::nationalKey($attempt);
+
+        return $key !== '' && Hash::check($key, $user->getAuthPassword());
     }
 
     private function studentUserForLogin(string $identifier, string $password): ?User

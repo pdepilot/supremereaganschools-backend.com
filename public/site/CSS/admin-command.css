@@ -1997,6 +1997,15 @@ table.ledger .row-actions {
   gap: 1.25rem;
 }
 
+/* Only the Session desk collapses to a single column when the books panel is empty. */
+[data-page="academic_sessions"] .split:not(:has([data-session-books]:not([hidden]))) {
+  grid-template-columns: minmax(0, 28rem);
+}
+
+[data-session-books][hidden] {
+  display: none !important;
+}
+
 .split-stack {
   display: grid;
   gap: 1.25rem;

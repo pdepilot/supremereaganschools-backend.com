@@ -130,36 +130,16 @@ class AuthenticatedSessionController extends Controller
 
     private function pathAfterAuthentication(AuthPortal $portal, Request $request): string
     {
-        $default = route($portal->homeRoute(), absolute: false);
-        $intended = $request->hasSession() ? $request->session()->pull('url.intended') : null;
+        $user = $request->user();
 
-        if (! is_string($intended) || $intended === '') {
-            return $default;
+        if ($portal === AuthPortal::Staff && $user?->must_change_password) {
+            if ($request->hasSession()) {
+                $request->session()->forget('url.intended');
+            }
+
+            return '/staff/settings';
         }
 
-        $path = parse_url($intended, PHP_URL_PATH);
-
-        if (! is_string($path) || $path === '' || ! $this->pathBelongsToPortal($path, $portal)) {
-            return $default;
-        }
-
-        if (preg_match('#/(login|forgot-password|reset-password)(/|$)#', $path) === 1) {
-            return $default;
-        }
-
-        $query = parse_url($intended, PHP_URL_QUERY);
-
-        return is_string($query) && $query !== '' ? $path.'?'.$query : $path;
-    }
-
-    private function pathBelongsToPortal(string $path, AuthPortal $portal): bool
-    {
-        return match ($portal) {
-            AuthPortal::Staff => str_starts_with($path, '/staff'),
-            AuthPortal::Parent => str_starts_with($path, '/parent'),
-            AuthPortal::Student => str_starts_with($path, '/student'),
-            AuthPortal::Portal => str_starts_with($path, '/portal') || str_starts_with($path, '/admin'),
-            AuthPortal::Cbt => str_starts_with($path, '/cbt'),
-        };
+        return $portal->consumeIntendedPath($request);
     }
 }

@@ -174,4 +174,39 @@ class AccountApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('message', 'This action is unauthorized.');
     }
+
+    public function test_staff_cannot_rename_themselves_but_can_change_passphrase(): void
+    {
+        $teacher = $this->userWithRole(RoleSlug::Teacher, [
+            'name' => 'Mrs. Eze',
+            'email' => 'eze@school.test',
+            'password' => 'password',
+        ]);
+
+        $this->actingAs($teacher)
+            ->putJson('/api/v1/me', [
+                'name' => 'Renamed Teacher',
+                'email' => 'eze.desk@school.test',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Mrs. Eze')
+            ->assertJsonPath('data.email', 'eze.desk@school.test');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $teacher->id,
+            'name' => 'Mrs. Eze',
+            'email' => 'eze.desk@school.test',
+        ]);
+
+        $this->actingAs($teacher)
+            ->putJson('/api/v1/me/password', [
+                'current_password' => 'password',
+                'password' => 'new-staff-key',
+                'password_confirmation' => 'new-staff-key',
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Passphrase reset.');
+
+        $this->assertTrue(Hash::check('new-staff-key', $teacher->fresh()->getAuthPassword()));
+    }
 }

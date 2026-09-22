@@ -22,6 +22,7 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'status' => $this->status?->value,
+            'must_change_password' => (bool) $this->must_change_password,
             'roles' => $this->roleSlugs()->values()->all(),
             'permissions' => $this->permissionSlugs()->values()->all(),
             'is_super_admin' => $this->hasRole(RoleSlug::SuperAdmin),

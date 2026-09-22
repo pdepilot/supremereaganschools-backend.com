@@ -37,13 +37,20 @@ class LoginRequest extends FormRequest
             || ($portal === AuthPortal::Cbt && filled($this->input('admission_number')))
             || ($portal === AuthPortal::Parent && filled($this->input('admission_number')));
 
+        $emailRules = [
+            Rule::requiredIf(! $household && $portal !== AuthPortal::Student),
+            'nullable',
+            'max:255',
+        ];
+
+        if ($portal === AuthPortal::Staff) {
+            $emailRules[] = 'string';
+        } else {
+            $emailRules[] = 'email';
+        }
+
         return [
-            'email' => [
-                Rule::requiredIf(! $household && $portal !== AuthPortal::Student),
-                'nullable',
-                'email',
-                'max:255',
-            ],
+            'email' => $emailRules,
             'admission_number' => [
                 Rule::requiredIf(
                     $portal === AuthPortal::Student
