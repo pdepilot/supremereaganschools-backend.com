@@ -187,10 +187,10 @@ class AcademicSessionService
         $message = $exception->getMessage();
 
         if (preg_match('/constraint fails \(`[^`]+`\.`([^`]+)`/i', $message, $matches) === 1) {
-            return 'Related rows remain in '.$matches[1].'. Archive the year if those records must be kept.';
+            return 'Related rows remain in '.$matches[1].'. Delete blocked dependencies, or contact support if this persists after a wipe.';
         }
 
-        return 'Related ledger rows are still linked. Archive the year if those records must be kept.';
+        return 'Related ledger rows are still linked. Retry after clearing class work for that year.';
     }
 
     /**
@@ -426,8 +426,9 @@ class AcademicSessionService
         $this->removeAttendanceRecords($attendanceIds->all());
 
         TimetableSlot::query()->whereIn('class_section_offering_id', $ids)->delete();
-        Assignment::query()->whereIn('class_section_offering_id', $ids)->delete();
-        LearningMaterial::query()->whereIn('class_section_offering_id', $ids)->delete();
+        // Soft-deleted rows still hold the offering FK — force-remove them.
+        Assignment::withTrashed()->whereIn('class_section_offering_id', $ids)->forceDelete();
+        LearningMaterial::withTrashed()->whereIn('class_section_offering_id', $ids)->forceDelete();
         CbtExamAssignment::query()->whereIn('class_section_offering_id', $ids)->delete();
 
         $subjectOfferingIds = SubjectOffering::query()

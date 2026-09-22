@@ -309,6 +309,32 @@ class AcademicSessionApiTest extends TestCase
         $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
     }
 
+    public function test_a_session_with_assignments_can_be_deleted(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $offering = $this->offering(session: $session);
+        $subject = $this->subject();
+        $staff = $this->staff();
+
+        $assignment = \App\Models\Assignment::query()->create([
+            'class_section_offering_id' => $offering->id,
+            'subject_id' => $subject->id,
+            'staff_profile_id' => $staff->id,
+            'title' => 'Week 1 worksheet',
+            'due_on' => '2025-09-20',
+        ]);
+        $assignment->delete(); // soft-delete — must still clear on session wipe
+
+        $this->actingAs($admin)
+            ->deleteJson('/api/v1/academic-sessions/'.$session->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('academic_sessions', ['id' => $session->id]);
+        $this->assertDatabaseMissing('assignments', ['id' => $assignment->id]);
+    }
+
     public function test_a_session_with_attendance_corrections_can_be_deleted(): void
     {
         $admin = $this->admin();
