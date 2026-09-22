@@ -13,9 +13,9 @@ class SchoolHandoverResetCommand extends Command
 {
     protected $signature = 'school:handover-reset
         {--force : Skip the confirmation prompt}
-        {--keep-cms : Keep news, events, and announcements}';
+        {--wipe-cms : Also wipe news posts, events, and announcements (kept by default)}';
 
-    protected $description = 'Wipe test pupils, staff, fees, sessions, and classroom data for school handover. Keeps portal admins, roles, classes, subjects, and fee types.';
+    protected $description = 'Wipe test pupils, staff, fees, sessions, and classroom data for school handover. Keeps portal admins, roles, classes, subjects, fee types, and news by default.';
 
     /**
      * Operational tables wiped in any order (foreign keys disabled).
@@ -94,7 +94,10 @@ class SchoolHandoverResetCommand extends Command
     public function handle(): int
     {
         $this->warn('This permanently deletes pupils, guardians, teachers, fees, invoices, sessions, CBT attempts, attendance, and class work.');
-        $this->line('Kept: portal admin logins, roles/permissions, campuses, levels, classes, subjects, fee types, CBT question bank, result products.');
+        $this->line('Kept: portal admin logins, roles/permissions, campuses, levels, classes, subjects, fee types, CBT question bank, result products, and news/events/announcements.');
+        if ($this->option('wipe-cms')) {
+            $this->warn('Also wiping news posts, events, and announcements (--wipe-cms).');
+        }
 
         if (! $this->option('force') && ! $this->confirm('Wipe all operational test data for school handover?', false)) {
             $this->warn('Cancelled.');
@@ -111,7 +114,7 @@ class SchoolHandoverResetCommand extends Command
             ]);
 
             $tables = $this->operationalTables;
-            if (! $this->option('keep-cms')) {
+            if ($this->option('wipe-cms')) {
                 $tables = array_merge($tables, $this->cmsTables);
             }
 
