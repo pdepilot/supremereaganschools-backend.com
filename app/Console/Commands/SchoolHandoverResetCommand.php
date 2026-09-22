@@ -131,6 +131,9 @@ class SchoolHandoverResetCommand extends Command
             Schema::enableForeignKeyConstraints();
         }
 
+        $this->callSilent('db:seed', ['--class' => \Database\Seeders\NewsInsightsSeeder::class, '--force' => true]);
+        $this->line('Restored news categories, tags, and resource hubs (no articles).');
+
         $this->info('Handover reset complete. Portal admins can sign in and enter real school data.');
 
         return self::SUCCESS;

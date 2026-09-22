@@ -65,5 +65,6 @@ class SchoolHandoverResetCommandTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $admin->id]);
         $this->assertTrue($admin->fresh()->hasRole(RoleSlug::SchoolAdmin));
         $this->assertDatabaseHas('fee_types', ['id' => $type->id]);
+        $this->assertDatabaseHas('post_categories', ['slug' => 'school-news']);
     }
 }
