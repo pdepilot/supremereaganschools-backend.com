@@ -72,15 +72,19 @@
             <div class="tickets" data-session-list></div>
           </div>
           <div class="surface" data-stamp="Add" id="add-session">
-            <div class="panel-title"><div><h2>Add a session</h2><p>Name the year and the dates it will run.</p></div></div>
+            <div class="panel-title"><div><h2>Add a session</h2><p>Name the year. Seal First Term after it is live.</p></div></div>
             <form data-session-form>
               <p data-session-form-notice></p>
-              <div class="field"><label for="yearName">Year name</label><input id="yearName" placeholder="Academic year" required autocomplete="off"></div>
+              <div class="field"><label for="yearName">Year name</label><input id="yearName" placeholder="e.g. 2026/2027" required autocomplete="off"></div>
               <div class="field-row">
-                <div class="field"><label for="startDate">Starts</label><input id="startDate" type="date" required></div>
-                <div class="field"><label for="endDate">Ends</label><input id="endDate" type="date" required></div>
+                <div class="field"><label for="startDate">Year starts</label><input id="startDate" type="date" required></div>
+                <div class="field"><label for="endDate">Year ends</label><input id="endDate" type="date" required></div>
               </div>
-              <div class="field"><label for="termCount">Terms</label><input id="termCount" type="number" min="1" max="4" value="3"></div>
+              <div class="field">
+                <label for="termCount">Terms in this year</label>
+                <input id="termCount" type="number" min="2" max="3" value="3" required>
+                <p class="field-hint">Usually 3 (First, Second, Third). This is not “which term we are in”.</p>
+              </div>
               <label class="field-check"><input id="yearLive" type="checkbox"> Make live</label>
               <div class="form-actions"><button class="solid-btn" type="submit">Add a session</button></div>
             </form>
@@ -106,6 +110,6 @@
     </div>
   </div>
   <script src="../JS/admin-command.js"></script>
-  <script src="../JS/portal-structure.js?v=20260922-sessions-422"></script>
+  <script src="../JS/portal-structure.js?v=20260922-sessions-terms"></script>
 </body>
 </html>

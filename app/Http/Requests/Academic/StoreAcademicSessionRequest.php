@@ -19,7 +19,7 @@ class StoreAcademicSessionRequest extends FormRequest
         return [
             'name.unique' => 'That year is still on the ledger (including archived years). Delete it first, or choose a different name.',
             'ends_on.after_or_equal' => 'The end date must be on or after the start date.',
-            'term_count.in' => 'Choose 2 or 3 terms.',
+            'term_count.in' => 'A year must have 2 or 3 terms (usually 3). Put 3 here, then Seal First Term after the year is live.',
         ];
     }
 
