@@ -75,6 +75,18 @@ a {
   color: var(--gold-soft);
 }
 
+.rail-logo {
+  flex-shrink: 0;
+  padding: 0.15rem 0 0.55rem;
+  line-height: 0;
+}
+
+.rail-logo img {
+  display: block;
+  width: 60px;
+  height: auto;
+}
+
 .rail-nav {
   display: flex;
   flex-direction: column;
@@ -1250,6 +1262,14 @@ button.cell.is-active {
 
   .rail-mark {
     display: none;
+  }
+
+  .rail-logo {
+    padding: 0;
+  }
+
+  .rail-logo img {
+    width: 36px;
   }
 
   .rail-nav {
