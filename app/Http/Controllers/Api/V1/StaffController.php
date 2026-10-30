@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\RoleSlug;
+use App\Enums\StaffStatus;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\People\StoreStaffRequest;
 use App\Http\Requests\People\UpdateStaffRequest;
@@ -20,17 +23,29 @@ class StaffController extends Controller
     {
         $this->authorize('viewAny', StaffProfile::class);
 
+        $isAdmin = $request->user()?->hasAnyRole(RoleSlug::SuperAdmin, RoleSlug::SchoolAdmin) ?? false;
+
         $query = StaffProfile::query()->with($this->staff->defaultRelations());
 
-        if (! $request->user()?->hasAnyRole(\App\Enums\RoleSlug::SuperAdmin, \App\Enums\RoleSlug::SchoolAdmin)) {
+        if (! $isAdmin) {
             $query->where('user_id', $request->user()?->id);
         }
 
         if ($search = $request->string('q')->toString()) {
             $query->where(function ($builder) use ($search) {
-                $builder->where('staff_number', 'like', '%'.$search.'%')
-                    ->orWhere('job_title', 'like', '%'.$search.'%')
-                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$search.'%'));
+                $term = '%'.$search.'%';
+                $builder->where('staff_number', 'like', $term)
+                    ->orWhere('job_title', 'like', $term)
+                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', $term))
+                    ->orWhereHas('department', fn ($dept) => $dept->where('name', 'like', $term))
+                    ->orWhereHas('subjectTeacherAssignments', function ($sub) use ($term) {
+                        $sub->where('is_active', true)
+                            ->whereHas('subjectOffering.subject', fn ($subject) => $subject->where('name', 'like', $term));
+                    })
+                    ->orWhereHas('classTeacherAssignments', function ($cla) use ($term) {
+                        $cla->where('is_active', true)
+                            ->whereHas('classSectionOffering.classSection', fn ($sec) => $sec->where('name', 'like', $term));
+                    });
             });
         }
 
@@ -38,14 +53,69 @@ class StaffController extends Controller
             $query->where('department_id', $request->integer('department_id'));
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
+        if ($request->filled('form')) {
+            $form = $request->string('form')->toString();
+            $query->whereHas('classTeacherAssignments', function ($assignment) use ($form) {
+                $assignment->where('is_active', true)
+                    ->whereHas('classSectionOffering.classSection', fn ($section) => $section->where('name', $form));
+            });
         }
 
-        return ApiResponse::success(
-            'Staff retrieved.',
-            StaffResource::collection($query->orderBy('staff_number')->get())->resolve(),
-        );
+        if ($request->filled('status')) {
+            $status = $request->string('status')->toString();
+            if ($status === 'suspended') {
+                $query->whereHas('user', fn ($user) => $user->where('status', UserStatus::Suspended->value));
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        $supportedPerPage = [10, 25, 50, 100];
+        $requestedPerPage = $request->integer('per_page', 25);
+        if (! in_array($requestedPerPage, $supportedPerPage, true)) {
+            if ($requestedPerPage <= 10) {
+                $perPage = 10;
+            } elseif ($requestedPerPage >= 100) {
+                $perPage = 100;
+            } elseif ($requestedPerPage > 10 && $requestedPerPage <= 37) {
+                $perPage = 25;
+            } elseif ($requestedPerPage > 37 && $requestedPerPage < 100) {
+                $perPage = 50;
+            } else {
+                $perPage = 25;
+            }
+        } else {
+            $perPage = $requestedPerPage;
+        }
+
+        $rows = $query->orderBy('staff_number')->paginate($perPage);
+
+        $summaryQuery = StaffProfile::query();
+        if (! $isAdmin) {
+            $summaryQuery->where('user_id', $request->user()?->id);
+        }
+
+        $totalStaff = (clone $summaryQuery)->count();
+        $activeStaff = (clone $summaryQuery)
+            ->where('status', StaffStatus::Active->value)
+            ->whereHas('user', fn ($user) => $user->where('status', '!=', UserStatus::Suspended->value))
+            ->count();
+
+        return ApiResponse::success('Staff retrieved.', [
+            'items' => StaffResource::collection($rows)->resolve(),
+            'meta' => [
+                'current_page' => $rows->currentPage(),
+                'last_page' => $rows->lastPage(),
+                'per_page' => $rows->perPage(),
+                'from' => $rows->firstItem(),
+                'to' => $rows->lastItem(),
+                'total' => $rows->total(),
+            ],
+            'summary' => [
+                'total' => $totalStaff,
+                'active' => $activeStaff,
+            ],
+        ]);
     }
 
     public function store(StoreStaffRequest $request): JsonResponse

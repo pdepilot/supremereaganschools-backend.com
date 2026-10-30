@@ -327,9 +327,9 @@ class StaffApiTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/api/v1/staff')
             ->assertOk()
-            ->assertJsonPath('data.0.forms.0', 'JSS 1 A')
-            ->assertJsonPath('data.0.subjects.0', 'English Language')
-            ->assertJsonPath('data.0.account_status', 'active');
+            ->assertJsonPath('data.items.0.forms.0', 'JSS 1 A')
+            ->assertJsonPath('data.items.0.subjects.0', 'English Language')
+            ->assertJsonPath('data.items.0.account_status', 'active');
 
         $this->actingAs($admin)
             ->deleteJson('/api/v1/staff/'.$staff->id)
@@ -350,5 +350,236 @@ class StaffApiTest extends TestCase
         $subjectAssignment = SubjectTeacherAssignment::query()->findOrFail($subjectAssignment->id);
         $this->assertFalse($subjectAssignment->is_active);
         $this->assertNotNull($subjectAssignment->ended_on);
+    }
+
+    public function test_staff_directory_returns_pagination_metadata_and_default_page_size(): void
+    {
+        $admin = $this->admin();
+
+        for ($i = 1; $i <= 30; $i++) {
+            $user = $this->userWithRole(RoleSlug::Teacher, [
+                'name' => 'Teacher '.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'email' => "teacher{$i}@school.test",
+            ]);
+            $this->staff($user, [
+                'staff_number' => 'SRS/TCH/'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+            ]);
+        }
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/staff');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.meta.current_page', 1)
+            ->assertJsonPath('data.meta.per_page', 25)
+            ->assertJsonPath('data.meta.last_page', 2)
+            ->assertJsonPath('data.meta.from', 1)
+            ->assertJsonPath('data.meta.to', 25)
+            ->assertJsonPath('data.meta.total', 30)
+            ->assertJsonCount(25, 'data.items')
+            ->assertJsonPath('data.summary.total', 30)
+            ->assertJsonPath('data.summary.active', 30);
+    }
+
+    public function test_admin_can_select_supported_page_sizes(): void
+    {
+        $admin = $this->admin();
+
+        for ($i = 1; $i <= 55; $i++) {
+            $user = $this->userWithRole(RoleSlug::Teacher, ['email' => "page_size_{$i}@school.test"]);
+            $this->staff($user, [
+                'staff_number' => 'SRS/TCH/'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+            ]);
+        }
+
+        foreach ([10, 50] as $size) {
+            $response = $this->actingAs($admin)->getJson("/api/v1/staff?per_page={$size}");
+
+            $response->assertOk()
+                ->assertJsonPath('data.meta.per_page', $size)
+                ->assertJsonCount($size, 'data.items');
+        }
+    }
+
+    public function test_unsupported_page_sizes_are_safely_clamped(): void
+    {
+        $admin = $this->admin();
+
+        for ($i = 1; $i <= 15; $i++) {
+            $user = $this->userWithRole(RoleSlug::Teacher, ['email' => "clamp_{$i}@school.test"]);
+            $this->staff($user, [
+                'staff_number' => 'SRS/TCH/'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+            ]);
+        }
+
+        $this->actingAs($admin)->getJson('/api/v1/staff?per_page=5')
+            ->assertOk()
+            ->assertJsonPath('data.meta.per_page', 10);
+
+        $this->actingAs($admin)->getJson('/api/v1/staff?per_page=999')
+            ->assertOk()
+            ->assertJsonPath('data.meta.per_page', 100);
+
+        $this->actingAs($admin)->getJson('/api/v1/staff?per_page=33')
+            ->assertOk()
+            ->assertJsonPath('data.meta.per_page', 25);
+    }
+
+    public function test_admin_can_navigate_to_another_page(): void
+    {
+        $admin = $this->admin();
+
+        for ($i = 1; $i <= 25; $i++) {
+            $user = $this->userWithRole(RoleSlug::Teacher, [
+                'name' => 'Alpha '.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'email' => "alpha_{$i}@school.test",
+            ]);
+            $this->staff($user, [
+                'staff_number' => 'SRS/TCH/'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+            ]);
+        }
+
+        $page1 = $this->actingAs($admin)->getJson('/api/v1/staff?per_page=10&page=1')
+            ->assertOk()
+            ->assertJsonPath('data.meta.current_page', 1)
+            ->assertJsonPath('data.meta.from', 1)
+            ->assertJsonPath('data.meta.to', 10)
+            ->assertJsonCount(10, 'data.items');
+
+        $page2 = $this->actingAs($admin)->getJson('/api/v1/staff?per_page=10&page=2')
+            ->assertOk()
+            ->assertJsonPath('data.meta.current_page', 2)
+            ->assertJsonPath('data.meta.from', 11)
+            ->assertJsonPath('data.meta.to', 20)
+            ->assertJsonCount(10, 'data.items');
+
+        $firstIdPage1 = $page1->json('data.items.0.id');
+        $firstIdPage2 = $page2->json('data.items.0.id');
+        $this->assertNotEquals($firstIdPage1, $firstIdPage2);
+    }
+
+    public function test_search_and_department_filters_work_with_pagination(): void
+    {
+        $admin = $this->admin();
+        $deptMath = $this->department(['name' => 'Mathematics']);
+        $deptScience = $this->department(['name' => 'Natural Sciences']);
+
+        $offering = $this->offering();
+        $subject = $this->subject(['name' => 'Further Mathematics']);
+        $subjectOffering = $this->subjectOffering($offering, $subject);
+
+        $mathTeacher = $this->staff($this->userWithRole(RoleSlug::Teacher, ['name' => 'Newton Isaac']), [
+            'department_id' => $deptMath->id,
+            'job_title' => 'Senior Math Instructor',
+            'staff_number' => 'SRS/TCH/1111',
+        ]);
+        $this->subjectTeacher($mathTeacher, $subjectOffering);
+
+        $this->staff($this->userWithRole(RoleSlug::Teacher, ['name' => 'Marie Curie']), [
+            'department_id' => $deptScience->id,
+            'job_title' => 'Head of Physics',
+            'staff_number' => 'SRS/TCH/2222',
+        ]);
+
+        // Search by user name
+        $this->actingAs($admin)->getJson('/api/v1/staff?q=Newton')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Newton Isaac');
+
+        // Search by staff number
+        $this->actingAs($admin)->getJson('/api/v1/staff?q=2222')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.staff_number', 'SRS/TCH/2222');
+
+        // Search by job title
+        $this->actingAs($admin)->getJson('/api/v1/staff?q=Physics')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Marie Curie');
+
+        // Search by department name
+        $this->actingAs($admin)->getJson('/api/v1/staff?q=Natural+Sciences')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Marie Curie');
+
+        // Search by assigned subject name
+        $this->actingAs($admin)->getJson('/api/v1/staff?q=Further+Mathematics')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Newton Isaac');
+
+        // Filter by department_id
+        $this->actingAs($admin)->getJson('/api/v1/staff?department_id='.$deptMath->id)
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Newton Isaac');
+    }
+
+    public function test_form_filtering(): void
+    {
+        $admin = $this->admin();
+        $homeOffering = $this->offering();
+        $otherOffering = $this->otherOffering($homeOffering);
+
+        $teacherA = $this->staff($this->userWithRole(RoleSlug::Teacher, ['name' => 'Teacher Alpha']));
+        $this->classTeacher($teacherA, $homeOffering);
+
+        $teacherB = $this->staff($this->userWithRole(RoleSlug::Teacher, ['name' => 'Teacher Beta']));
+        $this->classTeacher($teacherB, $otherOffering);
+
+        $homeFormName = $homeOffering->classSection->name;
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/staff?form='.urlencode($homeFormName));
+
+        $response->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Teacher Alpha')
+            ->assertJsonPath('data.items.0.forms.0', $homeFormName);
+    }
+
+    public function test_suspended_staff_filtering_using_user_account_status(): void
+    {
+        $admin = $this->admin();
+
+        $activeUser = $this->userWithRole(RoleSlug::Teacher, ['name' => 'Active Master', 'status' => UserStatus::Active]);
+        $this->staff($activeUser, ['status' => StaffStatus::Active]);
+
+        $suspendedUser = $this->userWithRole(RoleSlug::Teacher, ['name' => 'Suspended Master', 'status' => UserStatus::Suspended]);
+        $this->staff($suspendedUser, ['status' => StaffStatus::Inactive]);
+
+        // Filter status=suspended should look up related user's status=suspended
+        $suspendedRes = $this->actingAs($admin)->getJson('/api/v1/staff?status=suspended');
+        $suspendedRes->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Suspended Master')
+            ->assertJsonPath('data.items.0.account_status', 'suspended');
+
+        // Filter status=active should filter StaffProfile.status=active
+        $activeRes = $this->actingAs($admin)->getJson('/api/v1/staff?status=active');
+        $activeRes->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.items.0.name', 'Active Master')
+            ->assertJsonPath('data.items.0.status', 'active');
+    }
+
+    public function test_non_admin_users_remain_restricted_to_their_own_staff_profile(): void
+    {
+        $teacherUserA = $this->userWithRole(RoleSlug::Teacher, ['name' => 'Teacher Self']);
+        $staffA = $this->staff($teacherUserA);
+
+        $teacherUserB = $this->userWithRole(RoleSlug::Teacher, ['name' => 'Teacher Other']);
+        $this->staff($teacherUserB);
+
+        $response = $this->actingAs($teacherUserA)->getJson('/api/v1/staff');
+
+        $response->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.id', $staffA->id)
+            ->assertJsonPath('data.items.0.name', 'Teacher Self')
+            ->assertJsonPath('data.summary.total', 1);
     }
 }

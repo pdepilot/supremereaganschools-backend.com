@@ -1162,6 +1162,10 @@
     const statusFilter = document.querySelector("[data-staff-status]");
     const copy = document.querySelector("[data-staff-copy]");
     const notice = document.querySelector("[data-staff-notice]");
+    const pagination = document.querySelector("[data-staff-pagination]");
+    const prevBtn = document.querySelector("[data-staff-prev]");
+    const nextBtn = document.querySelector("[data-staff-next]");
+    const pageInfo = document.querySelector("[data-staff-page-info]");
     const form = document.querySelector("[data-staff-form]");
     const formNotice = document.querySelector("[data-staff-form-notice]");
     const formTitle = document.querySelector("[data-staff-form-title]");
@@ -1177,10 +1181,15 @@
     const root = document.querySelector("[data-staff-root]") || table;
     const submit = form && form.querySelector("[data-staff-submit]");
     let rows = [];
+    let meta = { current_page: 1, last_page: 1, per_page: 25, total: 0 };
+    let summary = null;
     let departments = [];
     let offerings = [];
     let subjectCount = 0;
     let editingId = null;
+    let currentPage = 1;
+    let perPage = 25;
+    let searchDebounceTimer = null;
 
     const fieldValue = function (id, value) {
       const node = document.getElementById(id);
@@ -1229,6 +1238,22 @@
     const paintOfferings = function (selectId) {
       fillSelect(formOffering, "No form yet", offeringOptions());
       if (selectId) fieldValue("staffForm", selectId);
+    };
+
+    const paintForms = function () {
+      const forms = [];
+      offerings.forEach(function (item) {
+        const name = item.form || (item.class_section && item.class_section.name);
+        if (name && forms.indexOf(name) === -1) {
+          forms.push(name);
+        }
+      });
+      forms.sort(function (a, b) {
+        return String(a).localeCompare(String(b), undefined, { numeric: true });
+      });
+      fillSelect(formFilter, "All forms", forms.map(function (name) {
+        return { value: name, label: name };
+      }));
     };
 
     const canAssignForm = function () {
@@ -1293,95 +1318,175 @@
 
     const beginEdit = function (id) {
       const row = rows.find(function (item) { return String(item.id) === String(id); });
-      if (!row) return;
-      fillStaffForm(row);
-      const panel = document.getElementById("appoint-staff");
-      if (panel && typeof panel.scrollIntoView === "function") {
-        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (row) {
+        fillStaffForm(row);
+        const panel = document.getElementById("appoint-staff");
+        if (panel && typeof panel.scrollIntoView === "function") {
+          panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        return;
+      }
+      request("/api/v1/staff/" + id).then(function (result) {
+        if (result.ok && result.body.data) {
+          fillStaffForm(result.body.data);
+          const panel = document.getElementById("appoint-staff");
+          if (panel && typeof panel.scrollIntoView === "function") {
+            panel.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+    };
+
+    const staffQueryString = function () {
+      const params = [];
+      params.push("page=" + encodeURIComponent(currentPage));
+      params.push("per_page=" + encodeURIComponent(perPage));
+
+      const q = ((search && search.value) || "").trim();
+      if (q) params.push("q=" + encodeURIComponent(q));
+
+      const dept = departmentFilter && departmentFilter.value;
+      if (dept) params.push("department_id=" + encodeURIComponent(dept));
+
+      const formVal = formFilter && formFilter.value;
+      if (formVal) params.push("form=" + encodeURIComponent(formVal));
+
+      const stat = statusFilter && statusFilter.value;
+      if (stat) params.push("status=" + encodeURIComponent(stat));
+
+      return params.join("&");
+    };
+
+    const renderPagination = function () {
+      const current = meta.current_page || 1;
+      const last = Math.max(1, meta.last_page || 1);
+      currentPage = current;
+
+      if (pageInfo) {
+        pageInfo.textContent = "Page " + current + " of " + last;
+      }
+      if (prevBtn) {
+        prevBtn.disabled = current <= 1;
+      }
+      if (nextBtn) {
+        nextBtn.disabled = current >= last;
       }
     };
 
-    const matchesFilters = function (row) {
-      const query = ((search && search.value) || "").trim().toLowerCase();
-      const departmentId = departmentFilter && departmentFilter.value;
-      const formName = formFilter && formFilter.value;
-      const status = statusFilter && statusFilter.value;
-      const hay = [
-        row.name, row.staff_number, row.job_title, row.department,
-        (row.subjects || []).join(" "),
-        (row.forms || []).join(" ")
-      ].join(" ").toLowerCase();
-      if (query && hay.indexOf(query) === -1) return false;
-      if (departmentId && String(row.department_id) !== String(departmentId)) return false;
-      if (formName && (row.forms || []).indexOf(formName) === -1) return false;
-      if (status === "suspended") {
-        if (row.account_status !== "suspended") return false;
-      } else if (status && row.status !== status) return false;
-      return true;
-    };
+    const renderMetrics = function () {
+      const totalMasters = (summary && typeof summary.total === "number")
+        ? summary.total
+        : (meta.total || 0);
+      const activeMasters = (summary && typeof summary.active === "number")
+        ? summary.active
+        : 0;
 
-    const apply = function () {
-      const visible = rows.filter(matchesFilters);
-      if (!visible.length) {
-        table.innerHTML = "<tr><td colspan=\"7\">No staff appointments yet.</td></tr>";
-      } else {
-        table.innerHTML = visible.map(staffRow).join("");
-      }
-
-      setMetricValue("masters", String(rows.length));
-      setMetricValue("active", String(rows.filter(function (row) {
-        return row.status === "active" && row.account_status !== "suspended";
-      }).length));
+      setMetricValue("masters", String(totalMasters));
+      setMetricValue("active", String(activeMasters));
       setMetricValue("subjects", String(subjectCount));
       setMetricValue("departments", String(departments.length));
+
       if (copy) {
-        copy.textContent = rows.length
-          ? rows.length + " appointment" + (rows.length === 1 ? "" : "s") + " on the books"
+        copy.textContent = totalMasters
+          ? totalMasters + " appointment" + (totalMasters === 1 ? "" : "s") + " on the books"
           : "No appointments on the books yet";
       }
     };
 
+    const renderTable = function () {
+      if (!rows.length) {
+        table.innerHTML = "<tr><td colspan=\"7\">No staff appointments yet.</td></tr>";
+      } else {
+        table.innerHTML = rows.map(staffRow).join("");
+      }
+    };
+
+    const fetchStaff = function () {
+      const qs = staffQueryString();
+      return request("/api/v1/staff?" + qs).then(function (result) {
+        if (!result.ok) {
+          table.innerHTML = "<tr><td colspan=\"7\">" + escapeHtml(firstError(result.body)) + "</td></tr>";
+          if (copy) copy.textContent = "Unable to reach the office.";
+          renderPagination();
+          return;
+        }
+
+        const data = result.body.data || {};
+        rows = data.items || [];
+        meta = data.meta || {
+          current_page: 1,
+          last_page: 1,
+          per_page: perPage,
+          total: rows.length
+        };
+        summary = data.summary || null;
+
+        if (meta.last_page > 0 && currentPage > meta.last_page) {
+          currentPage = meta.last_page;
+          return fetchStaff();
+        }
+
+        renderTable();
+        renderPagination();
+        renderMetrics();
+      });
+    };
+
     const load = function () {
       return Promise.all([
-        request("/api/v1/staff"),
         request("/api/v1/departments"),
         request("/api/v1/subjects"),
         request("/api/v1/class-section-offerings?is_active=1")
       ]).then(function (results) {
-        if (!results[0].ok) {
-          table.innerHTML = "<tr><td colspan=\"7\">" + escapeHtml(firstError(results[0].body)) + "</td></tr>";
-          return;
-        }
-
-        rows = results[0].body.data || [];
-        departments = (results[1].ok && results[1].body.data) || [];
-        subjectCount = ((results[2].ok && results[2].body.data) || []).length;
-        offerings = ((results[3].ok && results[3].body.data) || []).filter(function (item) {
+        departments = (results[0].ok && results[0].body.data) || [];
+        subjectCount = ((results[1].ok && results[1].body.data) || []).length;
+        offerings = ((results[2].ok && results[2].body.data) || []).filter(function (item) {
           return item.is_active !== false;
         });
 
         paintDepartments();
         paintOfferings();
+        paintForms();
 
-        const forms = [];
-        rows.forEach(function (row) {
-          (row.forms || []).forEach(function (name) {
-            if (name && forms.indexOf(name) === -1) forms.push(name);
-          });
-        });
-        fillSelect(formFilter, "All forms", forms.map(function (name) {
-          return { value: name, label: name };
-        }));
-
-        apply();
+        return fetchStaff();
       });
     };
 
-    [search, departmentFilter, formFilter, statusFilter].forEach(function (node) {
+    if (search) {
+      search.addEventListener("input", function () {
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(function () {
+          currentPage = 1;
+          fetchStaff();
+        }, 300);
+      });
+    }
+
+    [departmentFilter, formFilter, statusFilter].forEach(function (node) {
       if (!node) return;
-      node.addEventListener("input", apply);
-      node.addEventListener("change", apply);
+      node.addEventListener("change", function () {
+        currentPage = 1;
+        fetchStaff();
+      });
     });
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", function () {
+        if (currentPage > 1) {
+          currentPage--;
+          fetchStaff();
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        if (currentPage < (meta.last_page || 1)) {
+          currentPage++;
+          fetchStaff();
+        }
+      });
+    }
 
     if (formRole) formRole.addEventListener("change", syncFormField);
 
@@ -1410,6 +1515,7 @@
               return String(a.name).localeCompare(String(b.name));
             });
             paintDepartments(created.id);
+            setMetricValue("departments", String(departments.length));
           }
           if (newDepartmentInput) newDepartmentInput.value = "";
           setButtonState(addDepartmentBtn, false, "Added.");
@@ -1478,7 +1584,12 @@
             button.disabled = false;
             return;
           }
-          return load();
+          if (button.hasAttribute("data-delete-staff")) {
+            if (currentPage > 1 && rows.length <= 1) {
+              currentPage--;
+            }
+          }
+          return fetchStaff();
         }).catch(function () {
           if (notice) notice.textContent = "Unable to reach the office.";
           button.disabled = false;
@@ -1538,7 +1649,7 @@
           paintOfferings();
           setButtonState(submit, false, doneLabel);
           window.setTimeout(function () { setButtonState(submit, false); }, 1600);
-          return load();
+          return fetchStaff();
         }).catch(function () {
           if (formNotice) formNotice.textContent = "Unable to reach the office.";
           setButtonState(submit, false, "Unable to reach the office.");
