@@ -48,7 +48,7 @@ class ClassroomWorkApiTest extends TestCase
             'subject_id' => $subject->id,
             'title' => 'Exercise 4',
             'instructions' => 'Page 12.',
-            'due_on' => '2026-09-10',
+            'due_on' => now()->addDays(7)->toDateString(),
         ];
 
         $this->actingAs($teacher)->postJson('/api/v1/assignments', $payload)
@@ -85,14 +85,14 @@ class ClassroomWorkApiTest extends TestCase
             'subject_id' => $subject->id,
             'staff_profile_id' => $staff->id,
             'title' => 'Own class work',
-            'due_on' => '2026-09-10',
+            'due_on' => now()->addDays(7)->toDateString(),
         ]);
         Assignment::query()->create([
             'class_section_offering_id' => $other->id,
             'subject_id' => $subject->id,
             'staff_profile_id' => $staff->id,
             'title' => 'Other class work',
-            'due_on' => '2026-09-10',
+            'due_on' => now()->addDays(7)->toDateString(),
         ]);
 
         $this->actingAs($parent)->getJson('/api/v1/assignments?student_profile_id='.$ownChild->id)
@@ -336,7 +336,7 @@ class ClassroomWorkApiTest extends TestCase
             'staff_profile_id' => $staff->id,
             'title' => 'Exercise 4',
             'instructions' => 'Page 12.',
-            'due_on' => '2026-09-10',
+            'due_on' => now()->addDays(7)->toDateString(),
         ]);
 
         return [

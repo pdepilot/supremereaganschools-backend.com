@@ -63,7 +63,7 @@ class AuthenticationTest extends TestCase
             ->assertSee('data-auth-scene="panel"', false)
             ->assertSee('The pupil desk.', false)
             ->assertSee('name="admission_number"', false)
-            ->assertSee('Parent’s phone number', false)
+            ->assertSee('registered parent or guardian phone number', false)
             ->assertSee('value="student"', false);
 
         $script = (string) file_get_contents(public_path('site/JS/portal-auth-scene.js'));

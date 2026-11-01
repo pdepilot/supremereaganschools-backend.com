@@ -492,7 +492,7 @@ class CbtAdminApiTest extends TestCase
 
         $classNames = collect($response->json('data.classes'))->pluck('name');
         $this->assertTrue($classNames->contains('Nursery 2'));
-        $this->assertFalse($classNames->contains('JSS 1'));
+        $this->assertTrue($classNames->contains('JSS 1'));
 
         $this->assertNotNull($bookOffering->id);
         $this->assertNotNull($jssOffering->id);

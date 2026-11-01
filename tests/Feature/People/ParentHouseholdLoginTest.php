@@ -26,9 +26,17 @@ class ParentHouseholdLoginTest extends TestCase
         $this->get('/parent/login')
             ->assertOk()
             ->assertSee('Child’s name or admission number', false)
-            ->assertSee('Parent’s phone number', false)
+            ->assertSee('Phone number', false)
             ->assertSee('name="admission_number"', false)
             ->assertSee('name="email"', false)
+            ->assertSee(
+                'name="email" type="email" autocomplete="username" placeholder="Email used at registration"',
+                false
+            )
+            ->assertDontSee(
+                'name="email" type="email" autocomplete="username" placeholder="Email used at registration" required',
+                false
+            )
             ->assertSee('href="/parent/forgot-password"', false)
             ->assertSee('value="parent"', false);
     }

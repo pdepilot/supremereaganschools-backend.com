@@ -19,7 +19,7 @@ class PortalDesignReplicationTest extends TestCase
         $this->seed(RoleSeeder::class);
     }
 
-    public function test_all_admin_portal_pages_render_with_bricks_site_design(): void
+    public function test_all_admin_portal_pages_render_with_original_portal_design(): void
     {
         $admin = $this->admin();
 
@@ -52,8 +52,9 @@ class PortalDesignReplicationTest extends TestCase
             $response->assertOk();
             $response->assertSee('admin-command.css', false);
             $response->assertSee('admin-command.js', false);
-            $response->assertSee('Cormorant+Garamond', false);
-            $response->assertSee('Manrope', false);
+            $response->assertSee('family=Montserrat', false);
+            $response->assertDontSee('Cormorant+Garamond', false);
+            $response->assertDontSee('Manrope', false);
         }
     }
 
@@ -65,23 +66,27 @@ class PortalDesignReplicationTest extends TestCase
         $response->assertOk();
         $response->assertSee('admin-command.css', false);
         $response->assertSee('admin-command.js', false);
-        $response->assertSee('Cormorant+Garamond', false);
-        $response->assertSee('Manrope', false);
+        $response->assertSee('family=Montserrat', false);
+        $response->assertDontSee('Cormorant+Garamond', false);
+        $response->assertDontSee('Manrope', false);
     }
 
-    public function test_stylesheet_contains_bricks_site_design_tokens(): void
+    public function test_stylesheet_contains_original_portal_design_tokens(): void
     {
         $css = file_get_contents(public_path('site/CSS/admin-command.css'));
 
-        // Palette & tokens
-        $this->assertStringContainsString('--bg: #F5F8F5;', $css);
-        $this->assertStringContainsString('--accent: #275C3E;', $css);
-        $this->assertStringContainsString('--heading: #123321;', $css);
-        $this->assertStringContainsString('--gold: #C29B38;', $css);
-        $this->assertStringContainsString("--display: 'Cormorant Garamond'", $css);
-        $this->assertStringContainsString("--body: 'Manrope'", $css);
-        $this->assertStringContainsString('[data-theme="dark"]', $css);
-        $this->assertStringContainsString('--sidebar: 264px;', $css);
+        // Palette & tokens for original Supreme Reagan Schools design
+        $this->assertStringContainsString('--navy: #243A8F;', $css);
+        $this->assertStringContainsString('--navy-deep: #243A8F;', $css);
+        $this->assertStringContainsString('--accent: #5B2D8B;', $css);
+        $this->assertStringContainsString('--chalk: #f4efe4;', $css);
+        $this->assertStringContainsString('--paper: #fffdf8;', $css);
+        $this->assertStringContainsString('--ink: #243A8F;', $css);
+        $this->assertStringContainsString('"Montserrat"', $css);
+        $this->assertStringContainsString('grid-template-columns: 92px minmax(0, 1fr);', $css);
+
+        // Staff pagination feature
+        $this->assertStringContainsString('.staff-pagination', $css);
 
         // Required academic sessions selector for regressions
         $this->assertStringContainsString(

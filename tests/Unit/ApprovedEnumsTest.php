@@ -66,6 +66,7 @@ class ApprovedEnumsTest extends TestCase
         $this->assertSame(['unpaid', 'partial', 'paid', 'void'], $this->values(InvoiceStatus::class));
         $this->assertSame(['posted', 'pending', 'failed', 'void'], $this->values(PaymentStatus::class));
         $this->assertSame([
+            'pending_payment',
             'submitted',
             'under_review',
             'exam_scheduled',

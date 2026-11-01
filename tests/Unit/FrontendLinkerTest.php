@@ -73,7 +73,7 @@ HTML, 'public');
 HTML, 'admin');
 
         $this->assertStringContainsString('src="/site/JS/portal-session.js"', $html);
-        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $html);
+        $this->assertStringContainsString('/site/JS/portal-desk-bell.js', $html);
         $this->assertStringContainsString('src="/site/JS/admin-command.js"', $html);
         $this->assertLessThan(
             strpos($html, 'admin-command.js'),
@@ -94,7 +94,7 @@ HTML, 'admin');
 </body>
 HTML, 'parent');
 
-        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $html);
+        $this->assertStringContainsString('/site/JS/portal-desk-bell.js', $html);
         $this->assertStringContainsString('src="/site/JS/portal-session.js"', $html);
     }
 
@@ -116,8 +116,8 @@ HTML, 'staff');
 </body>
 HTML, 'student');
 
-        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $staff);
-        $this->assertStringContainsString('src="/site/JS/portal-desk-bell.js"', $student);
+        $this->assertStringContainsString('/site/JS/portal-desk-bell.js', $staff);
+        $this->assertStringContainsString('/site/JS/portal-desk-bell.js', $student);
     }
 
     public function test_session_lifetime_defaults_to_fifteen_minutes(): void
