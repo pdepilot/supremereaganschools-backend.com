@@ -53,20 +53,20 @@
           <div>
             <p class="eyebrow">Wing · The house books</p>
             <h1 class="head-title" data-wing-title>Wing</h1>
-            <p class="head-copy">Pupils on this wing of the school.</p>
+            <p class="head-copy" data-wing-copy>Pupils on this wing of the school.</p>
           </div>
           <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Wing</div>
         </div>
         <div class="metric-rail">
-          <article class="metric"><span class="label">Pupils</span><span class="value" data-metric="pupils">—</span></article>
+          <article class="metric"><span class="label" data-wing-metric-label>Pupils</span><span class="value" data-metric="pupils">—</span></article>
         </div>
       </header>
       <main class="workspace">
         <div class="surface">
-          <div class="panel-title"><div><h2 data-wing-table-title>Roll</h2><p>Live pupils on this wing.</p></div></div>
+          <div class="panel-title"><div><h2 data-wing-table-title>Roll</h2><p data-wing-table-copy>Live pupils on this wing.</p></div></div>
           <div class="ledger-wrap">
             <table class="ledger">
-              <thead><tr><th>Pupil</th><th>Admission</th><th>Form</th><th>Guardian</th><th>Fees</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th data-wing-member-th>Pupil</th><th>Admission</th><th>Form</th><th>Guardian</th><th>Fees</th><th>Status</th><th></th></tr></thead>
               <tbody data-pupil-table><tr><td colspan="7">Connecting to this wing…</td></tr></tbody>
             </table>
           </div>
@@ -102,6 +102,6 @@
     </div>
   </div>
   <script src="../JS/admin-command.js"></script>
-  <script src="../JS/portal-people.js"></script>
+  <script src="../JS/portal-people.js?v=20261102b"></script>
 </body>
 </html>

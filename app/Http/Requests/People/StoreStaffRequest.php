@@ -38,6 +38,11 @@ class StoreStaffRequest extends FormRequest
                 'integer',
                 Rule::exists('class_section_offerings', 'id')->where('is_active', true),
             ],
+            'class_section_offering_ids' => ['sometimes', 'array'],
+            'class_section_offering_ids.*' => [
+                'integer',
+                Rule::exists('class_section_offerings', 'id')->where('is_active', true),
+            ],
             'gender' => ['nullable', Rule::enum(Gender::class)],
             'job_title' => ['nullable', 'string', 'max:100'],
             'phone' => ['required', 'string', 'max:30'],

@@ -53,6 +53,20 @@ class StaffResource extends JsonResource
             'class_section_offering_id' => $this->whenLoaded('classTeacherAssignments', function () {
                 return $this->classTeacherAssignments->first()?->class_section_offering_id;
             }),
+            'class_section_offering_ids' => $this->whenLoaded('classTeacherAssignments', function () {
+                return $this->classTeacherAssignments
+                    ->pluck('class_section_offering_id')
+                    ->filter()
+                    ->values()
+                    ->all();
+            }),
+            'assigned_classes' => $this->whenLoaded('classTeacherAssignments', function () {
+                return $this->classTeacherAssignments->map(fn ($assignment) => [
+                    'id' => $assignment->id,
+                    'offering_id' => $assignment->class_section_offering_id,
+                    'name' => $assignment->classSectionOffering?->classSection?->name,
+                ])->values()->all();
+            }),
         ];
     }
 }

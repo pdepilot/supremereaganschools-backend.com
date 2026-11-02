@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\EnrollmentStatus;
+use App\Enums\SessionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Academic\StoreClassSectionOfferingRequest;
 use App\Http\Requests\Academic\UpdateClassSectionOfferingRequest;
 use App\Http\Resources\Academic\ClassSectionOfferingResource;
+use App\Models\AcademicSession;
 use App\Models\ClassSectionOffering;
+use App\Models\SchoolSetting;
 use App\Models\StudentProfile;
 use App\Models\SubjectOffering;
 use App\Services\ClassTeacherAssignmentService;
@@ -38,7 +41,14 @@ class ClassSectionOfferingController extends Controller
         }
 
         if ($request->boolean('ensure_book') && ($user?->can('create', ClassSectionOffering::class) ?? false)) {
-            $sessionId = $request->integer('ensure_session_id') ?: $request->integer('academic_session_id');
+            $sessionId = $request->integer('ensure_session_id')
+                ?: $request->integer('academic_session_id')
+                ?: (int) (
+                    SchoolSetting::query()->value('current_academic_session_id')
+                    ?? AcademicSession::query()->where('status', SessionStatus::Active)->value('id')
+                    ?? AcademicSession::query()->orderByDesc('starts_on')->value('id')
+                    ?? 0
+                );
             if ($sessionId > 0) {
                 $this->schoolBook->ensureBookForSession($sessionId);
             }

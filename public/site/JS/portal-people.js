@@ -212,7 +212,7 @@
         : "")
       + action
       + '<button class="ghost-btn" type="button" data-delete-pupil="' + row.id
-      + '" data-name="' + escapeHtml(row.full_name || "this pupil") + '">Remove</button></div></td>'
+      + '" data-name="' + escapeHtml(row.full_name || ((row.wing === "secondary" || pathWing() === "secondary") ? "this student" : "this pupil")) + '">Remove</button></div></td>'
       + "</tr>";
   };
 
@@ -503,7 +503,7 @@
         : '<span class="mark">' + escapeHtml(mark(row.full_name)) + "</span>";
       if (viewHead) {
         viewHead.innerHTML = '<div class="pupil-view-hero">' + photo
-          + '<div><h2 id="pupilViewTitle">' + escapeHtml(row.full_name || "Pupil") + "</h2>"
+          + '<div><h2 id="pupilViewTitle">' + escapeHtml(row.full_name || ((row.wing === "secondary" || pathWing() === "secondary") ? "Student" : "Pupil")) + "</h2>"
           + "<p>" + escapeHtml([row.admission_number, row.current_form || "Unplaced", row.session_name].filter(Boolean).join(" · ")) + "</p>"
           + badge(row.status, row.account_status)
           + "</div></div>";
@@ -695,12 +695,12 @@
       if (splitTables.nursery) {
         fillPupilTable(splitTables.nursery, visible.filter(function (row) { return row.wing === "nursery"; }), "No nursery pupils on the roll.");
         fillPupilTable(splitTables.primary, visible.filter(function (row) { return row.wing === "primary"; }), "No primary pupils on the roll.");
-        fillPupilTable(splitTables.secondary, visible.filter(function (row) { return row.wing === "secondary"; }), "No secondary pupils on the roll.");
+        fillPupilTable(splitTables.secondary, visible.filter(function (row) { return row.wing === "secondary"; }), "No secondary students on the roll.");
         const unplaced = visible.filter(function (row) { return !row.wing; });
         fillPupilTable(splitTables.unplaced, unplaced, "No unplaced pupils.");
         if (unplacedWrap) unplacedWrap.hidden = unplaced.length === 0;
       } else {
-        fillPupilTable(table, visible, "No pupils on this desk yet.");
+        fillPupilTable(table, visible, wing === "secondary" ? "No students on this desk yet." : "No pupils on this desk yet.");
       }
 
       if (pager) pager.textContent = "Showing " + visible.length + " of " + rows.length;
@@ -788,6 +788,16 @@
           const tableTitle = document.querySelector("[data-wing-table-title]");
           if (title) title.textContent = data.name + " desk";
           if (tableTitle) tableTitle.textContent = data.name + " roll";
+        }
+        if (wing === "secondary") {
+          const introNode = document.querySelector("[data-wing-copy]");
+          if (introNode) introNode.textContent = "Students on this wing of the school.";
+          const metricLabel = document.querySelector("[data-wing-metric-label]");
+          if (metricLabel) metricLabel.textContent = "Students";
+          const tableCopy = document.querySelector("[data-wing-table-copy]");
+          if (tableCopy) tableCopy.textContent = "Live students on this wing.";
+          const memberTh = document.querySelector("[data-wing-member-th]");
+          if (memberTh) memberTh.textContent = "Student";
         }
         if (data.copy) {
           const intro = document.querySelector("[data-wing-copy]");
@@ -1190,6 +1200,35 @@
     let currentPage = 1;
     let perPage = 25;
     let searchDebounceTimer = null;
+    let selectedFormOfferings = [];
+
+    const renderStaffFormPills = function () {
+      const container = document.querySelector("[data-staff-forms-pills]");
+      if (!container) return;
+      if (!selectedFormOfferings.length) {
+        container.innerHTML = "";
+        return;
+      }
+      container.innerHTML = selectedFormOfferings.map(function (item) {
+        return '<span class="offering-pill">' + escapeHtml(item.label)
+          + ' <button type="button" class="ghost-btn" data-remove-staff-form="' + escapeHtml(item.id) + '">Remove</button>'
+          + '</span>';
+      }).join("");
+    };
+
+    const addStaffFormOffering = function (id) {
+      if (!id) return;
+      const numId = Number(id);
+      if (selectedFormOfferings.some(function (item) { return Number(item.id) === numId; })) {
+        return;
+      }
+      const live = offerings.find(function (item) { return Number(item.id) === numId; });
+      const label = (live && live.form)
+        ? (live.form + (live.academic_session && live.academic_session.name ? " · " + live.academic_session.name : ""))
+        : ("Form #" + numId);
+      selectedFormOfferings.push({ id: numId, label: label });
+      renderStaffFormPills();
+    };
 
     const fieldValue = function (id, value) {
       const node = document.getElementById(id);
@@ -1289,6 +1328,8 @@
       fieldValue("staffRole", "teacher");
       if (newDepartmentInput) newDepartmentInput.value = "";
       if (departmentNotice) departmentNotice.textContent = "";
+      selectedFormOfferings = [];
+      renderStaffFormPills();
       setEditMode(null);
     };
 
@@ -1302,17 +1343,22 @@
       fieldValue("staffPhone", row.phone);
       fieldValue("staffNumber", row.staff_number);
       fieldValue("staffDepartment", row.department_id);
-      const offeringId = row.class_section_offering_id ? String(row.class_section_offering_id) : "";
-      if (offeringId && formOffering && !Array.prototype.some.call(formOffering.options, function (opt) {
-        return opt.value === offeringId;
-      })) {
-        const live = offerings.find(function (item) { return String(item.id) === offeringId; });
-        const option = document.createElement("option");
-        option.value = offeringId;
-        option.textContent = (live && live.form) || (row.forms && row.forms[0]) || "Current form";
-        formOffering.appendChild(option);
-      }
-      fieldValue("staffForm", offeringId);
+      selectedFormOfferings = [];
+      const offeringIds = (Array.isArray(row.class_section_offering_ids) && row.class_section_offering_ids.length)
+        ? row.class_section_offering_ids
+        : ((Array.isArray(row.assigned_classes) && row.assigned_classes.length)
+          ? row.assigned_classes.map(function (c) { return c.offering_id; })
+          : (row.class_section_offering_id ? [row.class_section_offering_id] : []));
+
+      offeringIds.forEach(function (offId, idx) {
+        const live = offerings.find(function (item) { return Number(item.id) === Number(offId); });
+        const formName = (live && live.form)
+          ? (live.form + (live.academic_session && live.academic_session.name ? " · " + live.academic_session.name : ""))
+          : ((row.forms && row.forms[idx]) || ("Form #" + offId));
+        selectedFormOfferings.push({ id: Number(offId), label: formName });
+      });
+      renderStaffFormPills();
+      fieldValue("staffForm", "");
       setEditMode(row);
     };
 
@@ -1628,6 +1674,12 @@
         payload.class_section_offering_id = payload.class_section_offering_id
           ? Number(payload.class_section_offering_id)
           : null;
+        if (payload.class_section_offering_id) {
+          addStaffFormOffering(payload.class_section_offering_id);
+        }
+        const assignedIds = selectedFormOfferings.map(function (item) { return Number(item.id); });
+        payload.class_section_offering_ids = assignedIds;
+        payload.class_section_offering_id = assignedIds.length ? assignedIds[0] : (payload.class_section_offering_id || null);
 
         if (formNotice) formNotice.textContent = "";
         const busyLabel = editingId ? "Saving…" : "Sealing…";
@@ -1655,6 +1707,30 @@
           setButtonState(submit, false, "Unable to reach the office.");
           window.setTimeout(function () { setButtonState(submit, false); }, 1800);
         });
+      });
+    }
+
+    const addStaffFormBtn = document.querySelector("[data-add-staff-form]");
+    if (addStaffFormBtn) {
+      addStaffFormBtn.addEventListener("click", function () {
+        const val = formOffering ? formOffering.value : "";
+        if (val) {
+          addStaffFormOffering(val);
+          formOffering.value = "";
+        }
+      });
+    }
+
+    const staffPills = document.querySelector("[data-staff-forms-pills]");
+    if (staffPills) {
+      staffPills.addEventListener("click", function (event) {
+        const btn = event.target.closest("[data-remove-staff-form]");
+        if (!btn) return;
+        const idToRemove = Number(btn.getAttribute("data-remove-staff-form"));
+        selectedFormOfferings = selectedFormOfferings.filter(function (item) {
+          return Number(item.id) !== idToRemove;
+        });
+        renderStaffFormPills();
       });
     }
 

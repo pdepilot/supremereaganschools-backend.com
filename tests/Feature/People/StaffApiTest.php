@@ -582,4 +582,77 @@ class StaffApiTest extends TestCase
             ->assertJsonPath('data.items.0.name', 'Teacher Self')
             ->assertJsonPath('data.summary.total', 1);
     }
+
+    public function test_admin_can_appoint_multiple_forms_to_a_teacher(): void
+    {
+        $admin = $this->admin();
+        $offering1 = $this->offering();
+        $offering2 = $this->otherOffering($offering1);
+
+        $level = $offering1->classSection->schoolClass->level;
+        $section3 = $this->section(
+            $this->schoolClass($level, ['name' => 'JSS 3', 'short_code' => 'J3']),
+            ['arm' => 'C', 'name' => 'JSS 3 C'],
+        );
+        $offering3 = $this->offering($section3, $offering1->academicSession, $offering1->campus);
+
+        // 1. Create staff with multiple classes
+        $create = $this->actingAs($admin)->postJson('/api/v1/staff', [
+            'name' => 'Mr. Multi Class Master',
+            'email' => 'multiclass@school.test',
+            'phone' => '08031112233',
+            'role' => RoleSlug::Teacher->value,
+            'class_section_offering_ids' => [$offering1->id, $offering2->id],
+        ]);
+
+        $create->assertCreated()
+            ->assertJsonCount(2, 'data.forms')
+            ->assertJsonCount(2, 'data.class_section_offering_ids');
+
+        $staffId = $create->json('data.id');
+
+        $this->assertSame(2, ClassTeacherAssignment::query()
+            ->where('staff_profile_id', $staffId)
+            ->where('is_active', true)
+            ->count());
+
+        // 2. Update staff to add a third class
+        $update = $this->actingAs($admin)->putJson('/api/v1/staff/'.$staffId, [
+            'class_section_offering_ids' => [$offering1->id, $offering2->id, $offering3->id],
+        ]);
+
+        $update->assertOk()
+            ->assertJsonCount(3, 'data.forms')
+            ->assertJsonCount(3, 'data.class_section_offering_ids');
+
+        $this->assertSame(3, ClassTeacherAssignment::query()
+            ->where('staff_profile_id', $staffId)
+            ->where('is_active', true)
+            ->count());
+
+        // 3. Update staff to remove offering2, keeping offering1 and offering3
+        $update2 = $this->actingAs($admin)->putJson('/api/v1/staff/'.$staffId, [
+            'class_section_offering_ids' => [$offering1->id, $offering3->id],
+        ]);
+
+        $update2->assertOk()
+            ->assertJsonCount(2, 'data.forms')
+            ->assertJsonCount(2, 'data.class_section_offering_ids');
+
+        $this->assertDatabaseHas('class_teacher_assignments', [
+            'staff_profile_id' => $staffId,
+            'class_section_offering_id' => $offering2->id,
+            'is_active' => false,
+        ]);
+        $this->assertDatabaseHas('class_teacher_assignments', [
+            'staff_profile_id' => $staffId,
+            'class_section_offering_id' => $offering1->id,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('class_teacher_assignments', [
+            'staff_profile_id' => $staffId,
+            'class_section_offering_id' => $offering3->id,
+            'is_active' => true,
+        ]);
+    }
 }

@@ -869,7 +869,7 @@
       add("new", "New subject…");
       offered.forEach(function (row) { add(String(row.id), row.name); });
       catalogue.forEach(function (row) {
-        add("offer:" + row.id, row.name + " · offer on this form");
+        add("offer:" + row.id, row.name);
       });
       if (current && Array.from(select.options).some(function (option) { return option.value === current; })) {
         select.value = current;
@@ -935,7 +935,8 @@
     };
 
     const fillStaff = function () {
-      const rows = staff.filter(function (row) {
+      const list = Array.isArray(staff) ? staff : ((staff && staff.items) || []);
+      const rows = list.filter(function (row) {
         return row.status === "active" && row.account_status !== "suspended";
       }).map(function (row) {
         return { id: row.id, name: row.name };
@@ -1009,12 +1010,13 @@
 
     Promise.all([
       loadContext(),
-      form ? request("/api/v1/staff") : Promise.resolve({ ok: false, body: {} }),
+      form ? request("/api/v1/staff?per_page=100") : Promise.resolve({ ok: false, body: {} }),
       form ? request("/api/v1/subjects") : Promise.resolve({ ok: false, body: {} }),
       form ? request("/api/v1/departments") : Promise.resolve({ ok: false, body: {} })
     ]).then(function (results) {
       context = results[0] || { offerings: [] };
-      staff = (results[1].ok && results[1].body.data) || [];
+      const staffPayload = results[1].ok && results[1].body.data;
+      staff = Array.isArray(staffPayload) ? staffPayload : ((staffPayload && staffPayload.items) || []);
       subjects = (results[2].ok && results[2].body.data) || [];
       departments = (results[3].ok && results[3].body.data) || [];
 

@@ -65,6 +65,7 @@ class AcademicSessionController extends Controller
     public function store(StoreAcademicSessionRequest $request): JsonResponse
     {
         $session = $this->sessions->create($request->validated(), $request->user()?->id);
+        $this->sessionSync->syncBookOfferings((int) $session->id);
 
         return ApiResponse::success('Academic session created.', (new AcademicSessionResource($session))->resolve(), 201);
     }

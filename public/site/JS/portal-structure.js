@@ -859,7 +859,8 @@
     };
 
     const assignableStaff = function () {
-      return staff.filter(function (row) {
+      const list = Array.isArray(staff) ? staff : ((staff && staff.items) || []);
+      return list.filter(function (row) {
         const roles = row.roles || [];
         const teaching = roles.indexOf("teacher") !== -1
           || roles.indexOf("staff") !== -1
@@ -1034,7 +1035,11 @@
       setMetricDelta("levels", levels.map(function (level) { return level.name; }).join(" · ") || "No levels sealed");
 
       if (!rows.length) {
-        table.innerHTML = '<tr><td colspan="7">No forms match the ledger filters.</td></tr>';
+        if (!sessions.length) {
+          table.innerHTML = '<tr><td colspan="7">No academic sessions on the ledger yet. <a href="academic_sessions.html">Open an academic year</a> to view and seal forms.</td></tr>';
+        } else {
+          table.innerHTML = '<tr><td colspan="7">No forms match the ledger filters.</td></tr>';
+        }
       } else {
         table.innerHTML = slice.map(function (row) {
           const section = row.class_section || {};
@@ -1088,7 +1093,7 @@
         request("/api/v1/levels"),
         request("/api/v1/academic-sessions"),
         request("/api/v1/campuses"),
-        request("/api/v1/staff"),
+        request("/api/v1/staff?per_page=100"),
         request("/api/v1/school-settings"),
         request("/api/v1/subjects"),
         request("/api/v1/departments")
@@ -1096,7 +1101,8 @@
         levels = (results[0].ok && results[0].body.data) || [];
         sessions = (results[1].ok && results[1].body.data) || [];
         campuses = (results[2].ok && results[2].body.data) || [];
-        staff = (results[3].ok && results[3].body.data) || [];
+        const staffPayload = results[3].ok && results[3].body.data;
+        staff = Array.isArray(staffPayload) ? staffPayload : ((staffPayload && staffPayload.items) || []);
         const settings = (results[4].ok && results[4].body.data) || {};
         subjects = (results[5].ok && results[5].body.data) || [];
         departments = (results[6].ok && results[6].body.data) || [];
@@ -1121,7 +1127,8 @@
         fillOptions(document.getElementById("subjectDepartment"), departments, "No department");
 
         const currentSessionId = settings.current_academic_session_id
-          || (sessions.find(function (row) { return row.status === "active"; }) || {}).id;
+          || (sessions.find(function (row) { return row.status === "active"; }) || {}).id
+          || (sessions[0] || {}).id;
         if (currentSessionId) {
           if (sessionFilter && !sessionFilter.value) sessionFilter.value = String(currentSessionId);
           if (document.getElementById("formSession") && !document.getElementById("formSession").value) {
@@ -1139,7 +1146,7 @@
           const offeringsUrl = ensureSessionId
             ? "/api/v1/class-section-offerings?book_only=1&academic_session_id=" + ensureSessionId
               + "&ensure_book=1&ensure_session_id=" + ensureSessionId
-            : "/api/v1/class-section-offerings?book_only=1";
+            : "/api/v1/class-section-offerings?book_only=1&ensure_book=1";
 
           return request(offeringsUrl).then(function (offeringResult) {
             if (!offeringResult.ok) {
@@ -1179,7 +1186,7 @@
           const url = sid
             ? "/api/v1/class-section-offerings?book_only=1&academic_session_id=" + sid
               + "&ensure_book=1&ensure_session_id=" + sid
-            : "/api/v1/class-section-offerings?book_only=1";
+            : "/api/v1/class-section-offerings?book_only=1&ensure_book=1";
           return request(url).then(function (result) {
             if (result.ok) offerings = result.body.data || [];
             apply();

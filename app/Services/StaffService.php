@@ -95,7 +95,10 @@ class StaffService
             );
 
             $this->syncClassForm($staff, $attributes, $assignedBy);
-            unset($attributes['class_section_offering_id']);
+            unset(
+                $attributes['class_section_offering_id'],
+                $attributes['class_section_offering_ids'],
+            );
 
             $staff->update($attributes);
 
@@ -165,7 +168,38 @@ class StaffService
      */
     private function syncClassForm(StaffProfile $staff, array $attributes, ?int $assignedBy): void
     {
-        if (! array_key_exists('class_section_offering_id', $attributes)) {
+        $hasIds = array_key_exists('class_section_offering_ids', $attributes);
+        $hasSingle = array_key_exists('class_section_offering_id', $attributes);
+
+        if (! $hasIds && ! $hasSingle) {
+            return;
+        }
+
+        if ($hasIds) {
+            $rawIds = $attributes['class_section_offering_ids'];
+            $targetIds = collect(is_array($rawIds) ? $rawIds : [])
+                ->filter(fn ($id) => ! empty($id))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            $this->classTeachers->endActiveForStaff($staff, $targetIds);
+
+            foreach ($targetIds as $offeringId) {
+                $alreadyAssigned = $staff->classTeacherAssignments()
+                    ->where('class_section_offering_id', $offeringId)
+                    ->where('is_active', true)
+                    ->exists();
+
+                if (! $alreadyAssigned) {
+                    $this->classTeachers->assign([
+                        'staff_profile_id' => $staff->id,
+                        'class_section_offering_id' => $offeringId,
+                    ], $assignedBy);
+                }
+            }
+
             return;
         }
 

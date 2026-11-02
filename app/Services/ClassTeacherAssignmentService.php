@@ -87,12 +87,18 @@ class ClassTeacherAssignmentService
         return $assignment->fresh(['staff.user', 'classSectionOffering.classSection']);
     }
 
-    public function endActiveForStaff(StaffProfile $staff, ?int $exceptOfferingId = null): void
+    /**
+     * @param  array<int, int>|int|null  $exceptOfferingIds
+     */
+    public function endActiveForStaff(StaffProfile $staff, array|int|null $exceptOfferingIds = null): void
     {
         $query = $staff->classTeacherAssignments()->where('is_active', true);
 
-        if ($exceptOfferingId !== null) {
-            $query->where('class_section_offering_id', '!=', $exceptOfferingId);
+        if ($exceptOfferingIds !== null) {
+            $ids = is_array($exceptOfferingIds) ? $exceptOfferingIds : [$exceptOfferingIds];
+            if ($ids !== []) {
+                $query->whereNotIn('class_section_offering_id', $ids);
+            }
         }
 
         $query->update([
