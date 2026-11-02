@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 
 #[Fillable([
@@ -42,7 +43,15 @@ use Illuminate\Support\Facades\Hash;
 class StudentProfile extends Model
 {
     use HasFactory;
+    use Notifiable;
     use SoftDeletes;
+
+    public ?string $recoveryMailRecipient = null;
+
+    public function routeNotificationForMail(): ?string
+    {
+        return $this->recoveryMailRecipient ?? $this->email ?? $this->user?->email;
+    }
 
     protected function casts(): array
     {

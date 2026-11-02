@@ -33,14 +33,18 @@
     }
 
     const payload = {
-      email: form.email.value,
+      email: form.email ? form.email.value : "",
       portal: (form.portal && form.portal.value) || "portal"
     };
 
+    if (form.admission_number && form.admission_number.value) {
+      payload.admission_number = form.admission_number.value;
+    }
+
     if (kind === "reset") {
-      payload.token = form.token.value;
-      payload.password = form.password.value;
-      payload.password_confirmation = form.password_confirmation.value;
+      payload.token = form.token ? form.token.value : "";
+      payload.password = form.password ? form.password.value : "";
+      payload.password_confirmation = form.password_confirmation ? form.password_confirmation.value : "";
     }
 
     if (submit) submit.disabled = true;

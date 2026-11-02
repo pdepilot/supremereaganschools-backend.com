@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
     'user_id',
@@ -22,7 +23,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class GuardianProfile extends Model
 {
     use HasFactory;
+    use Notifiable;
     use SoftDeletes;
+
+    public function routeNotificationForMail(): ?string
+    {
+        return $this->email;
+    }
 
     public function user(): BelongsTo
     {

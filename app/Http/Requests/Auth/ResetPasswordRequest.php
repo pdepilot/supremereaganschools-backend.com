@@ -21,6 +21,7 @@ class ResetPasswordRequest extends FormRequest
 
         $this->merge([
             'email' => is_string($this->email) ? strtolower(trim($this->email)) : $this->email,
+            'admission_number' => is_string($this->admission_number) ? trim($this->admission_number) : $this->admission_number,
         ]);
     }
 
@@ -32,11 +33,13 @@ class ResetPasswordRequest extends FormRequest
         return [
             'token' => ['required', 'string'],
             'email' => ['required', 'email', 'max:255'],
+            'admission_number' => ['nullable', 'string', 'max:50'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'portal' => ['required', 'string', Rule::in([
                 AuthPortal::Portal->value,
                 AuthPortal::Staff->value,
                 AuthPortal::Parent->value,
+                AuthPortal::Student->value,
             ])],
         ];
     }

@@ -56,7 +56,7 @@ enum AuthPortal: string
 
     public function supportsEmailPassword(): bool
     {
-        return $this !== self::Student;
+        return $this !== self::Cbt;
     }
 
     public function passwordRequestRoute(): string
@@ -65,7 +65,7 @@ enum AuthPortal: string
             self::Portal => 'password.request',
             self::Staff => 'staff.password.request',
             self::Parent => 'parent.password.request',
-            self::Student => 'student.login',
+            self::Student => 'student.password.request',
             self::Cbt => 'cbt.login',
         };
     }
@@ -76,7 +76,7 @@ enum AuthPortal: string
             self::Portal => 'password.reset',
             self::Staff => 'staff.password.reset',
             self::Parent => 'parent.password.reset',
-            self::Student => 'student.login',
+            self::Student => 'student.password.reset',
             self::Cbt => 'cbt.login',
         };
     }
@@ -251,7 +251,7 @@ enum AuthPortal: string
             return self::Parent;
         }
 
-        if ($request->is('student/login')) {
+        if ($request->is('student/login', 'student/forgot-password', 'student/reset-password', 'student/reset-password/*')) {
             return self::Student;
         }
 

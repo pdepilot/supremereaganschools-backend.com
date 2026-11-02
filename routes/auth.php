@@ -46,6 +46,10 @@ Route::get('/parent/forgot-password', [PasswordResetController::class, 'requestF
     ->middleware('guest.portal')
     ->name('parent.password.request');
 
+Route::get('/student/forgot-password', [PasswordResetController::class, 'requestForm'])
+    ->middleware('guest.portal')
+    ->name('student.password.request');
+
 Route::post('/forgot-password', [PasswordResetController::class, 'send'])
     ->middleware('guest.portal')
     ->name('password.email');
@@ -61,6 +65,10 @@ Route::get('/staff/reset-password/{token}', [PasswordResetController::class, 're
 Route::get('/parent/reset-password/{token}', [PasswordResetController::class, 'resetForm'])
     ->middleware('guest.portal')
     ->name('parent.password.reset');
+
+Route::get('/student/reset-password/{token}', [PasswordResetController::class, 'resetForm'])
+    ->middleware('guest.portal')
+    ->name('student.password.reset');
 
 Route::post('/reset-password', [PasswordResetController::class, 'update'])
     ->middleware('guest.portal')

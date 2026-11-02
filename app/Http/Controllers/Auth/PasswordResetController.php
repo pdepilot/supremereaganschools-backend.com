@@ -13,6 +13,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PasswordResetController extends Controller
 {
@@ -39,7 +42,20 @@ class PasswordResetController extends Controller
 
     public function send(ForgotPasswordRequest $request): JsonResponse|RedirectResponse
     {
-        $this->resets->send($request->validated('email'), $request->portal());
+        $throttleKey = Str::transliterate(Str::lower($request->validated('email')).'|'.$request->ip());
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            throw ValidationException::withMessages([
+                'email' => 'Too many restoration attempts. Please try again in '.$seconds.' seconds.',
+            ]);
+        }
+        RateLimiter::hit($throttleKey, 60);
+
+        $this->resets->send(
+            $request->validated('email'),
+            $request->portal(),
+            $request->validated('admission_number'),
+        );
 
         $redirect = route($request->portal()->loginRoute(), absolute: false);
 
@@ -54,12 +70,24 @@ class PasswordResetController extends Controller
 
     public function update(ResetPasswordRequest $request): JsonResponse|RedirectResponse
     {
+        $throttleKey = Str::transliterate(Str::lower($request->validated('email')).'|'.$request->ip());
+        if (RateLimiter::tooManyAttempts($throttleKey, 10)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            throw ValidationException::withMessages([
+                'email' => 'Too many reset attempts. Please try again in '.$seconds.' seconds.',
+            ]);
+        }
+        RateLimiter::hit($throttleKey, 60);
+
         $this->resets->reset(
             $request->validated('email'),
             $request->validated('token'),
             $request->validated('password'),
             $request->portal(),
+            $request->validated('admission_number'),
         );
+
+        RateLimiter::clear($throttleKey);
 
         $redirect = route($request->portal()->loginRoute(), absolute: false);
 
@@ -87,11 +115,16 @@ class PasswordResetController extends Controller
         return $this->frontend->response($file, [
             '{{CSRF_TOKEN}}' => csrf_token(),
             '{{PORTAL}}' => $portal->value,
-            '{{BODY_CLASS}}' => $portal === AuthPortal::Parent ? 'parent-auth' : 'staff-auth',
+            '{{BODY_CLASS}}' => match ($portal) {
+                AuthPortal::Parent => 'parent-auth',
+                AuthPortal::Student => 'student-auth',
+                default => 'staff-auth',
+            },
             '{{DESK}}' => $portal->deskName(),
             '{{LOGIN_HREF}}' => route($portal->loginRoute(), absolute: false),
             '{{TOKEN}}' => e((string) $token),
             '{{EMAIL}}' => e((string) $request->query('email', '')),
+            '{{ADMISSION_NUMBER}}' => e((string) $request->query('admission_number', '')),
         ], 'auth');
     }
 }
