@@ -72,7 +72,6 @@ class UpdateStudentRequest extends FormRequest
                 'email',
                 'max:255',
                 $this->filled('guardian.password') ? 'required' : null,
-                $this->filled('guardian.email') ? Rule::unique('users', 'email')->ignore($this->primaryGuardianUserId()) : null,
             ]),
             'guardian.password' => ['nullable', 'string', 'min:8'],
             'password' => ['nullable', 'string', 'min:8'],

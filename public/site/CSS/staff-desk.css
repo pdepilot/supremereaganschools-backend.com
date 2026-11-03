@@ -150,6 +150,12 @@ ul {
   background: var(--gold);
 }
 
+.rail-nav a[href*="my_attendance"],
+.rail-nav a[href*="my-attendance"] {
+  min-height: 64px;
+  margin: 0.25rem 0;
+}
+
 .rail-exit {
   width: 100%;
   min-height: 118px;
@@ -1111,6 +1117,12 @@ ul {
   .rail-btn span {
     writing-mode: horizontal-tb;
     transform: none;
+  }
+
+  .rail-nav a[href*="my_attendance"],
+  .rail-nav a[href*="my-attendance"] {
+    min-height: 0;
+    margin: 0;
   }
 
   .rail-btn.active::before {

@@ -28,7 +28,6 @@ class StoreGuardianRequest extends FormRequest
                 'email',
                 'max:255',
                 $this->filled('password') ? 'required' : null,
-                $this->filled('password') ? Rule::unique('users', 'email') : null,
             ]),
             'password' => ['nullable', 'string', 'min:8'],
             'occupation' => ['nullable', 'string', 'max:100'],

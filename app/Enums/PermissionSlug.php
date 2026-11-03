@@ -201,6 +201,7 @@ enum PermissionSlug: string
             self::StaffView, self::StaffCreate, self::StaffEdit, self::StaffDelete => ['teachers'],
             self::AcademicsView, self::AcademicsManage => ['classes', 'academic_sessions', 'nursery', 'primary', 'secondary', 'wing'],
             self::TimetableView, self::TimetableManage => ['timetable'],
+            self::AttendanceView, self::AttendanceManage => ['attendance'],
             self::MarksView, self::MarksManage => ['grades'],
             self::FeesView, self::FeesManage, self::PaymentsView, self::PaymentsManage => ['fees'],
             self::AdmissionsView, self::AdmissionsManage => ['contact'],

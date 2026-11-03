@@ -28,6 +28,7 @@ class StaffHousePagesTest extends TestCase
     {
         return [
             ['/staff/students', 'students', 'portal-people.js', 'data-assigned-students'],
+            ['/staff/my-attendance', 'my_attendance', 'portal-staff-attendance.js', 'btnClockIn'],
             ['/staff/attendance', 'attendance', 'portal-attendance.js', 'attendanceDate'],
             ['/staff/assignments', 'assignments', 'portal-classroom.js', 'assignmentForm'],
             ['/staff/grades', 'grades', 'portal-grades.js', 'gradesBody'],
@@ -77,5 +78,25 @@ class StaffHousePagesTest extends TestCase
             ->assertOk()
             ->assertSee('data-page="grades"', false)
             ->assertSee('portal-grades.js', false);
+    }
+
+    public function test_staff_my_attendance_html_redirects_to_canonical_url(): void
+    {
+        $teacher = $this->userWithRole(RoleSlug::Teacher);
+
+        $this->actingAs($teacher)
+            ->get('/staff/my_attendance.html')
+            ->assertRedirect('/staff/my-attendance');
+
+        $this->actingAs($teacher)
+            ->get('/staff/my-attendance.html')
+            ->assertRedirect('/staff/my-attendance');
+
+        $this->actingAs($teacher)
+            ->get('/staff/my-attendance')
+            ->assertOk()
+            ->assertSee('data-page="my_attendance"', false)
+            ->assertSee('portal-staff-attendance.js', false)
+            ->assertSee('href="/staff/my-attendance"', false);
     }
 }

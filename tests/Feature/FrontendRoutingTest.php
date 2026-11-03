@@ -329,8 +329,10 @@ class FrontendRoutingTest extends TestCase
         $this->get('/site/staffLogin.html')->assertRedirect('/staff/login');
         $this->get('/site/portal/dashboard.html')->assertRedirect('/portal/dashboard');
         $this->get('/site/staff/attendance.html')->assertRedirect('/staff/attendance');
+        $this->get('/site/staff/my_attendance.html')->assertRedirect('/staff/my-attendance');
         $this->get('/site/parent_student/fees.html')->assertRedirect('/parent/fees');
         $this->get('/site/admin/dashboard.html')->assertRedirect('/portal/dashboard');
+        $this->get('/site/admin/attendance.html')->assertRedirect('/portal/attendance');
     }
 
     public function test_staff_and_parent_pages_require_login(): void
@@ -389,5 +391,33 @@ class FrontendRoutingTest extends TestCase
             ->assertOk()
             ->assertSee('href="/parent/assignments"', false)
             ->assertSee('data-page="parent-desk"', false);
+    }
+
+    public function test_attendance_and_my_attendance_routes_and_html_redirects(): void
+    {
+        $admin = $this->admin();
+        $teacher = $this->userWithRole(RoleSlug::Teacher);
+
+        // Staff desk HTML redirects
+        $this->actingAs($teacher)
+            ->get('/staff/my_attendance.html')
+            ->assertRedirect('/staff/my-attendance');
+
+        $this->actingAs($teacher)
+            ->get('/staff/my-attendance')
+            ->assertOk()
+            ->assertSee('My Attendance', false)
+            ->assertSee('portal-staff-attendance.js', false);
+
+        // Portal desk HTML redirects
+        $this->actingAs($admin)
+            ->get('/portal/attendance.html')
+            ->assertRedirect('/portal/attendance');
+
+        $this->actingAs($admin)
+            ->get('/portal/attendance')
+            ->assertOk()
+            ->assertSee('Staff Attendance Command', false)
+            ->assertSee('portal-admin-attendance.js', false);
     }
 }

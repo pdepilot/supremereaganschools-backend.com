@@ -222,12 +222,8 @@ class PasswordResetService
     {
         $existingUser = User::query()->whereRaw('LOWER(email) = ?', [$mailbox])->first();
 
-        if ($existingUser !== null) {
-            if ($existingUser->status === UserStatus::Active && $existingUser->hasRole(RoleSlug::Parent)) {
-                return $existingUser;
-            }
-
-            return null;
+        if ($existingUser !== null && $existingUser->status === UserStatus::Active && $existingUser->hasRole(RoleSlug::Parent)) {
+            return $existingUser;
         }
 
         $guardians = GuardianProfile::query()
@@ -250,6 +246,10 @@ class PasswordResetService
                 return $user;
             }
 
+            return null;
+        }
+
+        if ($existingUser !== null) {
             return null;
         }
 
@@ -370,10 +370,6 @@ class PasswordResetService
             return $user;
         }
 
-        if (User::query()->whereRaw('LOWER(email) = ?', [$mailbox])->exists()) {
-            return null;
-        }
-
         $guardians = GuardianProfile::query()
             ->whereRaw('LOWER(email) = ?', [$mailbox])
             ->get();
@@ -391,7 +387,7 @@ class PasswordResetService
         if ($linkedUserIds->count() === 1) {
             $user = User::query()->find($linkedUserIds->first());
 
-            if (! $user->hasRole(RoleSlug::Parent)) {
+            if (! $user || ! $user->hasRole(RoleSlug::Parent)) {
                 return null;
             }
 
@@ -404,12 +400,16 @@ class PasswordResetService
             return $user;
         }
 
+        if (User::query()->whereRaw('LOWER(email) = ?', [$mailbox])->exists()) {
+            return null;
+        }
+
         if ($guardians->count() === 1) {
             $guardian = $guardians->first();
 
             $user = User::query()->create([
                 'name' => $guardian->full_name,
-                'email' => $mailbox,
+                'email' => $guardian->householdEmail(),
                 'password' => $password,
                 'status' => UserStatus::Active,
                 'remember_token' => Str::random(60),

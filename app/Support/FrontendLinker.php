@@ -96,6 +96,7 @@ class FrontendLinker
                 'dashboard.html' => '/portal/dashboard',
                 'students.html' => '/portal/students',
                 'teachers.html' => '/portal/teachers',
+                'attendance.html' => '/portal/attendance',
                 'classes.html' => '/portal/classes',
                 'academic_sessions.html' => '/portal/academic-sessions',
                 'timetable.html' => '/portal/timetable',
@@ -120,6 +121,8 @@ class FrontendLinker
             'staff' => [
                 'staff.html' => '/staff',
                 'students.html' => '/staff/students',
+                'my_attendance.html' => '/staff/my-attendance',
+                'my-attendance.html' => '/staff/my-attendance',
                 'attendance.html' => '/staff/attendance',
                 'assignments.html' => '/staff/assignments',
                 'grades.html' => '/staff/grades',

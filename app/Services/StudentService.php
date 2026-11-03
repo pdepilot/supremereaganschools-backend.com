@@ -247,8 +247,6 @@ class StudentService
         );
 
         if ($shared !== null) {
-            $this->assertEmailIsAvailableForParent($payload['email'] ?? null, $shared);
-
             $update = $payload;
             unset($update['password']); // keep the existing parent login passphrase
             $this->guardians->update($shared, $update);
@@ -262,38 +260,11 @@ class StudentService
             return;
         }
 
-        $this->assertEmailIsAvailableForParent($payload['email'] ?? null);
-
         $this->guardians->create(array_merge($payload, [
             'student_profile_id' => $student->id,
             'is_primary' => true,
             'can_login' => true,
         ]));
-    }
-
-    private function assertEmailIsAvailableForParent(?string $email, ?GuardianProfile $forGuardian = null): void
-    {
-        $email = strtolower(trim((string) $email));
-        if ($email === '') {
-            return;
-        }
-
-        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
-        if ($user === null) {
-            return;
-        }
-
-        if ($forGuardian?->user_id && (int) $forGuardian->user_id === (int) $user->id) {
-            return;
-        }
-
-        if ($user->hasRole(RoleSlug::Parent) || GuardianProfile::query()->where('user_id', $user->id)->exists()) {
-            return;
-        }
-
-        throw ValidationException::withMessages([
-            'guardian.email' => 'This email belongs to another school account and cannot be used for a parent login.',
-        ]);
     }
 
     private function requirePhoto(mixed $photo): string

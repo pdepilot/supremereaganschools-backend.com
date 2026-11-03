@@ -100,8 +100,10 @@ Route::get('/student/home', [AuthenticatedSessionController::class, 'studentHome
 
 Route::middleware(['auth', 'role:portal'])->group(function () {
     Route::get('/portal', fn () => redirect('/portal/dashboard'));
-    Route::get('/portal/{page}.html', fn (string $page) => redirect('/portal/'.$page, 301))
-        ->where('page', '[A-Za-z0-9_\-]+');
+    Route::get('/portal/{page}.html', function (string $page) {
+        $canonical = str_replace('_', '-', $page);
+        return redirect('/portal/'.$canonical, 301);
+    })->where('page', '[A-Za-z0-9_\-]+');
     Route::get('/portal/{page}', [FrontendController::class, 'portalPage'])
         ->where('page', '[A-Za-z0-9_\-]+')
         ->name('portal.page');
@@ -109,6 +111,10 @@ Route::middleware(['auth', 'role:portal'])->group(function () {
 
 Route::middleware(['auth', 'role:'.RoleSlug::staffDeskMiddleware()])->group(function () {
     Route::get('/staff', [FrontendController::class, 'staffPage'])->name('staff.desk');
+    Route::get('/staff/{page}.html', function (string $page) {
+        $canonical = str_replace('_', '-', $page);
+        return redirect('/staff/'.$canonical, 301);
+    })->where('page', '[A-Za-z0-9_\-]+');
     Route::get('/staff/{page}', [FrontendController::class, 'staffPage'])
         ->where('page', '[A-Za-z0-9_\-]+')
         ->name('staff.page');
@@ -116,6 +122,10 @@ Route::middleware(['auth', 'role:'.RoleSlug::staffDeskMiddleware()])->group(func
 
 Route::middleware(['auth', 'role:parent'])->group(function () {
     Route::get('/parent', [FrontendController::class, 'parentPage'])->name('parent.desk');
+    Route::get('/parent/{page}.html', function (string $page) {
+        $canonical = str_replace('_', '-', $page);
+        return redirect('/parent/'.$canonical, 301);
+    })->where('page', '[A-Za-z0-9_\-]+');
     Route::get('/parent/{page}', [FrontendController::class, 'parentPage'])
         ->where('page', '[A-Za-z0-9_\-]+')
         ->name('parent.page');
@@ -123,6 +133,10 @@ Route::middleware(['auth', 'role:parent'])->group(function () {
 
 Route::middleware(['auth', 'role:student'])->group(function () {
     Route::get('/student', [FrontendController::class, 'studentPage'])->name('student.desk');
+    Route::get('/student/{page}.html', function (string $page) {
+        $canonical = str_replace('_', '-', $page);
+        return redirect('/student/'.$canonical, 301);
+    })->where('page', '[A-Za-z0-9_\-]+');
     Route::get('/student/{page}', [FrontendController::class, 'studentPage'])
         ->where('page', '[A-Za-z0-9_\-]+')
         ->name('student.page');

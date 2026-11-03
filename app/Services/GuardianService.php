@@ -9,6 +9,7 @@ use App\Models\GuardianProfile;
 use App\Models\GuardianStudent;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,10 +39,23 @@ class GuardianService
         }
 
         if ($phone !== '') {
-            return GuardianProfile::query()
-                ->where('phone', $phone)
+            $byPhone = GuardianProfile::query()
+                ->where(function ($q) use ($phone) {
+                    $q->where('phone', $phone)
+                        ->orWhere('alternate_phone', $phone);
+                })
                 ->orderBy('id')
                 ->first();
+            if ($byPhone) {
+                return $byPhone;
+            }
+
+            $guardians = GuardianProfile::query()->whereNotNull('phone')->get();
+            foreach ($guardians as $candidate) {
+                if (Phone::matches($phone, (string) $candidate->phone) || ($candidate->alternate_phone && Phone::matches($phone, (string) $candidate->alternate_phone))) {
+                    return $candidate;
+                }
+            }
         }
 
         return null;
@@ -53,31 +67,10 @@ class GuardianService
     public function create(array $attributes): GuardianProfile
     {
         return DB::transaction(function () use ($attributes) {
-            $userId = null;
             $email = isset($attributes['email']) ? strtolower(trim((string) $attributes['email'])) : null;
 
-            if (! empty($attributes['password']) && filled($email)) {
-                $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
-
-                if ($user === null) {
-                    $user = User::query()->create([
-                        'name' => $attributes['full_name'],
-                        'email' => $email,
-                        'password' => $attributes['password'],
-                        'status' => UserStatus::Active,
-                    ]);
-                    $user->assignRole(RoleSlug::Parent);
-                } elseif (! $user->hasRole(RoleSlug::Parent)) {
-                    throw ValidationException::withMessages([
-                        'email' => 'This email belongs to another school account and cannot be used for a parent login.',
-                    ]);
-                }
-
-                $userId = $user->id;
-            }
-
             $guardian = GuardianProfile::query()->create([
-                'user_id' => $userId,
+                'user_id' => null,
                 'full_name' => $attributes['full_name'],
                 'phone' => $attributes['phone'] ?? null,
                 'alternate_phone' => $attributes['alternate_phone'] ?? null,
@@ -85,6 +78,19 @@ class GuardianService
                 'occupation' => $attributes['occupation'] ?? null,
                 'address' => $attributes['address'] ?? null,
             ]);
+
+            if (! empty($attributes['password'])) {
+                $user = User::query()->create([
+                    'name' => $attributes['full_name'],
+                    'email' => $guardian->householdEmail(),
+                    'password' => $attributes['password'],
+                    'status' => UserStatus::Active,
+                ]);
+                $user->assignRole(RoleSlug::Parent);
+
+                $guardian->user_id = $user->id;
+                $guardian->save();
+            }
 
             if (! empty($attributes['student_profile_id'])) {
                 $this->link($guardian, [
@@ -105,10 +111,19 @@ class GuardianService
     public function update(GuardianProfile $guardian, array $attributes): GuardianProfile
     {
         return DB::transaction(function () use ($guardian, $attributes) {
-            if (! empty($attributes['password']) && ! empty($attributes['email']) && ! $guardian->user) {
+            $email = isset($attributes['email']) ? strtolower(trim((string) $attributes['email'])) : null;
+
+            if (isset($attributes['email'])) {
+                $guardian->email = $email ?: null;
+            }
+            if (isset($attributes['full_name'])) {
+                $guardian->full_name = $attributes['full_name'];
+            }
+
+            if (! empty($attributes['password']) && ! $guardian->user) {
                 $user = User::query()->create([
                     'name' => $attributes['full_name'] ?? $guardian->full_name,
-                    'email' => $attributes['email'],
+                    'email' => $guardian->householdEmail(),
                     'password' => $attributes['password'],
                     'status' => UserStatus::Active,
                 ]);
@@ -116,16 +131,25 @@ class GuardianService
                 $guardian->user_id = $user->id;
                 $guardian->save();
             } elseif (isset($attributes['password']) && $guardian->user) {
-                $guardian->user->update([
-                    'password' => $attributes['password'],
-                    'name' => $attributes['full_name'] ?? $guardian->full_name,
-                    'email' => $attributes['email'] ?? $guardian->user->email,
-                ]);
+                $userUpdates = ['password' => $attributes['password']];
+                if (isset($attributes['full_name'])) {
+                    $userUpdates['name'] = $attributes['full_name'];
+                }
+                if (isset($attributes['email'])) {
+                    $userUpdates['email'] = $guardian->householdEmail();
+                }
+                $guardian->user->update($userUpdates);
             } elseif (isset($attributes['full_name']) || isset($attributes['email'])) {
-                $guardian->user?->update(array_filter([
-                    'name' => $attributes['full_name'] ?? null,
-                    'email' => $attributes['email'] ?? null,
-                ]));
+                $userUpdates = [];
+                if (isset($attributes['full_name'])) {
+                    $userUpdates['name'] = $attributes['full_name'];
+                }
+                if (isset($attributes['email'])) {
+                    $userUpdates['email'] = $guardian->householdEmail();
+                }
+                if (! empty($userUpdates) && $guardian->user) {
+                    $guardian->user->update($userUpdates);
+                }
             }
 
             unset($attributes['password'], $attributes['student_profile_id'], $attributes['relationship'], $attributes['is_primary'], $attributes['can_login']);

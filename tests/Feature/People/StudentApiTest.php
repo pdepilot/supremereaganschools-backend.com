@@ -10,6 +10,7 @@ use App\Enums\RoleSlug;
 use App\Enums\StudentStatus;
 use App\Enums\UserStatus;
 use App\Mail\SchoolCircularMail;
+use App\Models\GuardianProfile;
 use App\Models\Invoice;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -743,6 +744,261 @@ class StudentApiTest extends TestCase
             ->getJson('/api/v1/students?wing=college')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('wing');
+    }
+
+    public function test_teacher_email_can_be_used_as_guardian_email_during_pupil_onboarding(): void
+    {
+        $admin = $this->admin();
+        $offering = $this->offering();
+
+        // 1. Existing staff member (Teacher) already in the system
+        $teacher = $this->userWithRole(RoleSlug::Teacher, [
+            'name' => 'Mrs. Grace Teacher',
+            'email' => 'grace.teacher@supremereagan.test',
+            'password' => 'teacher-secure-pass',
+        ]);
+
+        // 2. Register pupil #1 with the teacher's email as guardian
+        $firstPupil = $this->registerPupil([
+            'admission_number' => 'SRS/2026/0101',
+            'surname' => 'Teacher',
+            'first_name' => 'Samuel',
+            'gender' => Gender::Male->value,
+            'class_section_id' => $offering->class_section_id,
+            'academic_session_id' => $offering->academic_session_id,
+            'status' => StudentStatus::Active->value,
+            'guardian' => [
+                'full_name' => 'Mrs. Grace Teacher',
+                'email' => 'grace.teacher@supremereagan.test',
+                'phone' => '08031112233',
+                'password' => 'parent-pass-1234',
+                'relationship' => GuardianRelationship::Mother->value,
+            ],
+        ], $admin);
+
+        $firstPupil->assertCreated()
+            ->assertJsonPath('data.admission_number', 'SRS/2026/0101');
+
+        // Verify staff user is completely intact
+        $teacher->refresh();
+        $this->assertSame('grace.teacher@supremereagan.test', $teacher->email);
+        $this->assertTrue($teacher->hasRole(RoleSlug::Teacher));
+        $this->assertFalse($teacher->hasRole(RoleSlug::Parent));
+        $this->assertTrue(Hash::check('teacher-secure-pass', $teacher->getAuthPassword()));
+
+        // Verify staff login still works with staff credentials
+        $this->post('/login', [
+            'email' => 'grace.teacher@supremereagan.test',
+            'password' => 'teacher-secure-pass',
+            'portal' => 'staff',
+        ])->assertRedirect(route('staff.home'));
+        $this->assertAuthenticatedAs($teacher);
+        $this->post('/logout');
+
+        // Verify GuardianProfile and synthetic parent user
+        $guardian = GuardianProfile::query()->where('email', 'grace.teacher@supremereagan.test')->firstOrFail();
+        $this->assertSame('08031112233', $guardian->phone);
+        $this->assertNotNull($guardian->user_id);
+        $this->assertNotSame($teacher->id, $guardian->user_id);
+
+        $parentUser = $guardian->user;
+        $this->assertSame('parent-'.$guardian->id.'@household.srs.invalid', $parentUser->email);
+        $this->assertTrue($parentUser->hasRole(RoleSlug::Parent));
+        $this->assertTrue(Hash::check('parent-pass-1234', $parentUser->getAuthPassword()));
+
+        // 3. Register pupil #2 (sibling) with the same teacher email
+        $secondPupil = $this->registerPupil([
+            'admission_number' => 'SRS/2026/0102',
+            'surname' => 'Teacher',
+            'first_name' => 'Hannah',
+            'gender' => Gender::Female->value,
+            'class_section_id' => $offering->class_section_id,
+            'academic_session_id' => $offering->academic_session_id,
+            'status' => StudentStatus::Active->value,
+            'guardian' => [
+                'full_name' => 'Mrs. Grace Teacher',
+                'email' => 'grace.teacher@supremereagan.test',
+                'phone' => '08031112233',
+                'relationship' => GuardianRelationship::Mother->value,
+            ],
+        ], $admin);
+
+        $secondPupil->assertCreated()
+            ->assertJsonPath('data.admission_number', 'SRS/2026/0102');
+
+        // Verify both pupils share the SAME GuardianProfile
+        $this->assertSame(1, GuardianProfile::query()->where('email', 'grace.teacher@supremereagan.test')->count());
+        $guardian->refresh();
+        $this->assertCount(2, $guardian->students);
+        $this->assertSame($parentUser->id, $guardian->user_id);
+
+        // 4. Test parent portal login via email + parent password
+        $this->post('/login', [
+            'email' => 'grace.teacher@supremereagan.test',
+            'password' => 'parent-pass-1234',
+            'portal' => 'parent',
+        ])->assertRedirect(route('parent.home'));
+        $this->assertAuthenticatedAs($parentUser);
+
+        // Verify family desk shows both children
+        $desk = $this->getJson('/api/v1/parent-desk')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.metrics.children', 2)
+            ->json('data.children');
+        $this->assertCount(2, $desk);
+
+        $this->post('/logout');
+
+        // 5. Test parent portal login via email + phone
+        $this->post('/login', [
+            'email' => 'grace.teacher@supremereagan.test',
+            'password' => '08031112233',
+            'portal' => 'parent',
+        ])->assertRedirect(route('parent.home'));
+        $this->assertAuthenticatedAs($parentUser);
+        $this->post('/logout');
+
+        // 6. Test parent portal login via admission number + phone
+        $this->post('/login', [
+            'admission_number' => 'SRS/2026/0101',
+            'password' => '08031112233',
+            'portal' => 'parent',
+        ])->assertRedirect(route('parent.home'));
+        $this->assertAuthenticatedAs($parentUser);
+        $this->post('/logout');
+
+        // 7. Test parent password reset works without modifying teacher staff password
+        \Illuminate\Support\Facades\Notification::fake();
+
+        $this->postJson('/forgot-password', [
+            'email' => 'grace.teacher@supremereagan.test',
+            'portal' => 'parent',
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $resetRecord = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', 'parent|grace.teacher@supremereagan.test')
+            ->first();
+        $this->assertNotNull($resetRecord);
+
+        // Reset password
+        $token = 'parent-reset-token-123';
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', 'parent|grace.teacher@supremereagan.test')
+            ->update(['token' => Hash::make($token), 'created_at' => now()]);
+
+        $this->postJson('/reset-password', [
+            'token' => $token,
+            'email' => 'grace.teacher@supremereagan.test',
+            'password' => 'new-parent-pass-5678',
+            'password_confirmation' => 'new-parent-pass-5678',
+            'portal' => 'parent',
+        ])->assertOk();
+
+        // Staff password remains unchanged!
+        $teacher->refresh();
+        $this->assertTrue(Hash::check('teacher-secure-pass', $teacher->getAuthPassword()));
+
+        // Parent user password is updated!
+        $parentUser->refresh();
+        $this->assertTrue(Hash::check('new-parent-pass-5678', $parentUser->getAuthPassword()));
+
+        // Staff member can still log in to staff portal with staff password
+        $this->post('/login', [
+            'email' => 'grace.teacher@supremereagan.test',
+            'password' => 'teacher-secure-pass',
+            'portal' => 'staff',
+        ])->assertRedirect(route('staff.home'));
+        $this->assertAuthenticatedAs($teacher);
+        $this->post('/logout');
+
+        // Parent can log in to parent portal with new parent password
+        $this->post('/login', [
+            'email' => 'grace.teacher@supremereagan.test',
+            'password' => 'new-parent-pass-5678',
+            'portal' => 'parent',
+        ])->assertRedirect(route('parent.home'));
+        $this->assertAuthenticatedAs($parentUser);
+        $this->post('/logout');
+    }
+
+    public function test_pupil_guardian_email_can_be_updated_to_existing_teacher_email(): void
+    {
+        $admin = $this->admin();
+        $offering = $this->offering();
+
+        $teacher = $this->userWithRole(RoleSlug::Teacher, [
+            'name' => 'Mr. Peter Teacher',
+            'email' => 'peter.teacher@supremereagan.test',
+            'password' => 'staff-pass-999',
+        ]);
+
+        $pupil = $this->registerPupil([
+            'admission_number' => 'SRS/2026/0201',
+            'surname' => 'Eze',
+            'first_name' => 'Chidi',
+            'gender' => Gender::Male->value,
+            'class_section_id' => $offering->class_section_id,
+            'academic_session_id' => $offering->academic_session_id,
+            'status' => StudentStatus::Active->value,
+            'guardian' => [
+                'full_name' => 'Mr. Eze Senior',
+                'email' => 'eze.senior@external.test',
+                'phone' => '08022223344',
+                'password' => 'parent-pass-initial',
+                'relationship' => GuardianRelationship::Father->value,
+            ],
+        ], $admin);
+        $pupil->assertCreated();
+
+        $studentId = $pupil->json('data.id');
+
+        // Update the pupil's primary guardian email to the teacher's email
+        $update = $this->actingAs($admin)->putJson('/api/v1/students/'.$studentId, [
+            'guardian' => [
+                'full_name' => 'Mr. Peter Teacher',
+                'email' => 'peter.teacher@supremereagan.test',
+                'phone' => '08022223344',
+                'relationship' => GuardianRelationship::Guardian->value,
+            ],
+        ]);
+        $update->assertOk();
+
+        // Verify teacher staff account is intact
+        $teacher->refresh();
+        $this->assertSame('peter.teacher@supremereagan.test', $teacher->email);
+        $this->assertTrue($teacher->hasRole(RoleSlug::Teacher));
+        $this->assertFalse($teacher->hasRole(RoleSlug::Parent));
+        $this->assertTrue(Hash::check('staff-pass-999', $teacher->getAuthPassword()));
+    }
+
+    public function test_guardian_can_be_created_with_teacher_email(): void
+    {
+        $admin = $this->admin();
+        $teacher = $this->userWithRole(RoleSlug::Teacher, [
+            'name' => 'Mrs. Mary Teacher',
+            'email' => 'mary.teacher@supremereagan.test',
+            'password' => 'staff-pass-111',
+        ]);
+
+        $res = $this->actingAs($admin)->postJson('/api/v1/guardians', [
+            'full_name' => 'Mrs. Mary Teacher',
+            'email' => 'mary.teacher@supremereagan.test',
+            'phone' => '08044445566',
+            'password' => 'parent-mary-pass',
+        ]);
+        $res->assertCreated();
+
+        $guardian = GuardianProfile::query()->where('email', 'mary.teacher@supremereagan.test')->firstOrFail();
+        $this->assertNotNull($guardian->user_id);
+        $this->assertNotSame($teacher->id, $guardian->user_id);
+        $this->assertSame('parent-'.$guardian->id.'@household.srs.invalid', $guardian->user->email);
+        $this->assertTrue($guardian->user->hasRole(RoleSlug::Parent));
+
+        // Teacher account intact
+        $teacher->refresh();
+        $this->assertTrue($teacher->hasRole(RoleSlug::Teacher));
+        $this->assertFalse($teacher->hasRole(RoleSlug::Parent));
     }
 
     /**

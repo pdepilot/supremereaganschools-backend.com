@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>My Attendance | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/staff-desk.css?v=20260913c">
+  <style>
+    .attendance-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    @media (min-width: 900px) {
+      .attendance-grid {
+        grid-template-columns: 1.2fr 0.8fr;
+      }
+    }
+    .gps-card {
+      background: var(--surface, #ffffff);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-soft, #e2e8f0);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .gps-card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      color: var(--text-heading, #0f172a);
+    }
+    .gps-card-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted, #64748b);
+      margin-bottom: 1.25rem;
+    }
+    .campus-select-wrapper {
+      margin-bottom: 1.25rem;
+    }
+    .campus-select-wrapper label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+      color: var(--text-muted, #64748b);
+    }
+    .campus-select-wrapper select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft, #cbd5e1);
+      font-family: inherit;
+      font-size: 0.95rem;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .gps-status-box {
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+    .gps-status-box.acquiring {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e40af;
+    }
+    .gps-status-box.success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
+    .gps-status-box.warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+    .gps-status-box.error {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
+    }
+    .gps-status-main {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .gps-status-details {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    .clock-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .clock-btn {
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      border: none;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .clock-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .clock-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .clock-btn-in {
+      background: #16a34a;
+      color: white;
+    }
+    .clock-btn-in:hover:not(:disabled) {
+      background: #15803d;
+    }
+    .clock-btn-out {
+      background: #ea580c;
+      color: white;
+    }
+    .clock-btn-out:hover:not(:disabled) {
+      background: #c2410c;
+    }
+    .clock-btn small {
+      font-size: 0.75rem;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+    .today-summary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .today-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 0.9rem;
+    }
+    .today-summary-row:last-child {
+      border-bottom: none;
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pill-success { background: #dcfce7; color: #166534; }
+    .pill-warning { background: #fef3c7; color: #92400e; }
+    .pill-danger { background: #fee2e2; color: #991b1b; }
+    .pill-info { background: #e0f2fe; color: #075985; }
+    .pill-secondary { background: #f1f5f9; color: #475569; }
+    .table-action-btn {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+    .desk-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: fadeIn 0.3s ease;
+    }
+    .toast-success { background: #16a34a; }
+    .toast-error { background: #dc2626; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="faculty-house" data-page="my_attendance">
+  <div class="house">
+    <aside class="rail" aria-label="Faculty navigation">
+      <div class="rail-mark">FACULTY</div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="staff.html"><span>Desk</span></a>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn active" href="my_attendance.html" aria-current="page"><span>Clock In</span></a>
+        <a class="rail-btn" href="attendance.html"><span>Roll</span></a>
+        <a class="rail-btn" href="assignments.html"><span>Work</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Bells</span></a>
+        <a class="rail-btn" href="materials.html"><span>Papers</span></a>
+        <a class="rail-btn" href="messages.html"><span>Letters</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="profile.html"><span>Profile</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../staffLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="kicker">Faculty · Smart smartphone attendance</p>
+            <h1>My Attendance</h1>
+            <p class="head-copy">GPS-verified clock-in and clock-out for teachers and faculty staff.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Lagos Time</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Present Days</span><span class="value" id="kpiPresent">0</span><span class="delta" id="kpiMonthLabel">This Month</span></article>
+          <article class="metric"><span class="label">Late Arrivals</span><span class="value" id="kpiLate">0</span><span class="delta">After 08:00 AM</span></article>
+          <article class="metric"><span class="label">Missing Clock-Outs</span><span class="value" id="kpiMissing">0</span><span class="delta">Incomplete days</span></article>
+          <article class="metric"><span class="label">Total Hours</span><span class="value" id="kpiHours">0h</span><span class="delta">Recorded</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <div class="attendance-grid">
+          <!-- GPS Clock Actions Card -->
+          <section class="gps-card">
+            <h2 class="gps-card-title">GPS Clock Deck</h2>
+            <p class="gps-card-subtitle">Verify your physical presence at an approved campus using your smartphone's GPS.</p>
+
+            <div class="campus-select-wrapper">
+              <label for="attendanceCampusSelect">Assigned Campus</label>
+              <select id="attendanceCampusSelect">
+                <option value="">Loading assigned campuses...</option>
+              </select>
+            </div>
+
+            <div class="gps-status-box" id="gpsStatusBox">
+              <div class="gps-status-main">
+                <span id="gpsStatusText">Waiting for GPS fix...</span>
+              </div>
+              <div class="gps-status-details">
+                <span id="gpsAccuracyText">Accuracy: checking...</span> · 
+                <span id="gpsDistanceText">Distance: checking...</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <button class="ghost-btn" type="button" id="btnAcquireGps" style="width: 100%;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                Re-acquire Location
+              </button>
+            </div>
+
+            <div class="clock-actions">
+              <button class="clock-btn clock-btn-in" type="button" id="btnClockIn">
+                <span id="clockInLabel">Clock In</span>
+                <small>Morning arrival</small>
+              </button>
+              <button class="clock-btn clock-btn-out" type="button" id="btnClockOut" disabled>
+                <span id="clockOutLabel">Clock Out</span>
+                <small>Evening departure</small>
+              </button>
+            </div>
+
+            <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 1.25rem; text-align: center;">
+              <strong>Privacy Assurance:</strong> GPS coordinates are queried only at the exact instant you press Clock In or Clock Out. No background tracking occurs.
+            </p>
+          </section>
+
+          <!-- Today's Attendance Overview Card -->
+          <section class="gps-card">
+            <h2 class="gps-card-title">Today's Session</h2>
+            <p class="gps-card-subtitle">Real-time status of your attendance record for today.</p>
+
+            <div class="today-summary-list">
+              <div class="today-summary-row">
+                <span style="color: #64748b;">Current Status</span>
+                <span id="todayStatusBadge" class="status-pill pill-secondary">Checking...</span>
+              </div>
+              <div class="today-summary-row">
+                <span style="color: #64748b;">Campus</span>
+                <strong id="todayCampusName">—</strong>
+              </div>
+              <div class="today-summary-row">
+                <span style="color: #64748b;">Clock-In Time</span>
+                <strong id="todayClockInTime">Not clocked in</strong>
+              </div>
+              <div class="today-summary-row">
+                <span style="color: #64748b;">Clock-Out Time</span>
+                <strong id="todayClockOutTime">Not clocked out</strong>
+              </div>
+              <div class="today-summary-row">
+                <span style="color: #64748b;">Schedule Guidelines</span>
+                <span>Expected 07:45 AM (Grace: 15 min)</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Attendance History Ledger -->
+        <section class="panel">
+          <div class="attendance-list-header">
+            <div>
+              <h4>Attendance History</h4>
+              <p>Your recent verified attendance records and adjustment requests.</p>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; font-size: 0.85rem; color: #64748b;">
+                  <th style="padding: 0.75rem;">Date</th>
+                  <th style="padding: 0.75rem;">Campus</th>
+                  <th style="padding: 0.75rem;">Clock In</th>
+                  <th style="padding: 0.75rem;">Clock Out</th>
+                  <th style="padding: 0.75rem;">Duration</th>
+                  <th style="padding: 0.75rem;">Status</th>
+                  <th style="padding: 0.75rem;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="historyTbody">
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="historyEmptyState" style="text-align: center; padding: 2rem; color: #94a3b8;" hidden>
+            <p>No past attendance records found for this period.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Correction Request Modal Dialog -->
+  <div class="desk-alert" id="correctionModal" hidden>
+    <div class="desk-alert-backdrop" id="btnCancelCorrection"></div>
+    <div class="desk-alert-card" role="dialog" aria-modal="true" style="max-width: 480px;">
+      <p class="kicker">Attendance Correction</p>
+      <h2>Request Adjustment</h2>
+      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">
+        Submit a formal correction for record on <strong id="correctionRecordDate"></strong>.
+      </p>
+
+      <form id="correctionForm">
+        <input type="hidden" id="correctionRecordId">
+        
+        <div class="field" style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem;">Corrected Clock-In Time</label>
+          <input type="time" id="correctionClockIn" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+        </div>
+
+        <div class="field" style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem;">Corrected Clock-Out Time</label>
+          <input type="time" id="correctionClockOut" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+        </div>
+
+        <div class="field" style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem;">Reason for Adjustment</label>
+          <textarea id="correctionReason" rows="3" required placeholder="E.g. Delayed by official morning gate duty or temporary phone failure..." style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div class="desk-alert-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" class="ghost-btn" id="btnCancelCorrection">Cancel</button>
+          <button type="submit" class="solid-btn">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="attendanceToast" class="desk-toast" hidden>
+    <span id="attendanceToastText">Notification</span>
+  </div>
+
+  <script src="../JS/portal-staff-chrome.js"></script>
+  <script src="../JS/portal-staff-attendance.js"></script>
+</body>
+</html>
+

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use App\Models\User;
 
 #[Fillable([
     'user_id',
@@ -29,6 +30,17 @@ class GuardianProfile extends Model
     public function routeNotificationForMail(): ?string
     {
         return $this->email;
+    }
+
+    public function householdEmail(): string
+    {
+        $email = is_string($this->email) ? strtolower(trim($this->email)) : '';
+
+        if ($email !== '' && ! User::query()->whereRaw('LOWER(email) = ?', [$email])->where('id', '!=', $this->user_id ?? 0)->exists()) {
+            return $email;
+        }
+
+        return 'parent-'.$this->id.'@household.srs.invalid';
     }
 
     public function user(): BelongsTo

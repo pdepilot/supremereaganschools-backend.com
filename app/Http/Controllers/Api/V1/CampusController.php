@@ -44,6 +44,18 @@ class CampusController extends Controller
             ]);
         }
 
+        if ($campus->staffAttendanceRecords()->exists() || $campus->clockOutStaffAttendanceRecords()->exists()) {
+            throw ValidationException::withMessages([
+                'campus' => 'This campus cannot be deleted because staff attendance records are associated with it. Please deactivate the campus instead.',
+            ]);
+        }
+
+        if ($campus->staffCampusAssignments()->exists()) {
+            throw ValidationException::withMessages([
+                'campus' => 'This campus cannot be deleted because staff assignments exist. Please deactivate the campus instead.',
+            ]);
+        }
+
         $campus->delete();
 
         return ApiResponse::success('Campus deleted.');

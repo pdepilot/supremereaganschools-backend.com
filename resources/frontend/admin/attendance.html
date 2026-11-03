@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/site/Image/logo_main.png">
+  <link rel="apple-touch-icon" href="/site/Image/logo_main.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Staff Attendance Command | Supreme Reagan Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../CSS/admin-command.css?v=20260913e">
+  <style>
+    .sub-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .sub-tab-btn {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: #64748b;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .sub-tab-btn:hover {
+      color: #0f172a;
+    }
+    .sub-tab-btn.active {
+      color: var(--primary, #0f172a);
+      border-bottom-color: #0284c7;
+    }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 0.55rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-family: inherit;
+      font-size: 0.85rem;
+      background: #fff;
+    }
+    .geofence-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.25rem;
+    }
+    .gps-card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 1.25rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pill-success { background: #dcfce7; color: #166534; }
+    .pill-warning { background: #fef3c7; color: #92400e; }
+    .pill-danger { background: #fee2e2; color: #991b1b; }
+    .pill-info { background: #e0f2fe; color: #075985; }
+    .pill-secondary { background: #f1f5f9; color: #475569; }
+    .table-action-btn {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+    .desk-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: fadeIn 0.3s ease;
+    }
+    .toast-success { background: #16a34a; }
+    .toast-error { background: #dc2626; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive Modal Architecture */
+    .desk-alert-card.modal-responsive {
+      width: min(620px, calc(100vw - 2rem));
+      max-width: 620px;
+      max-height: min(90vh, 800px);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: 8px;
+      overflow: hidden;
+      margin: auto;
+      box-sizing: border-box;
+    }
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem 0.85rem;
+      border-bottom: 1px solid #e2e8f0;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+    .modal-head .eyebrow {
+      margin: 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #0284c7;
+    }
+    .modal-head h2 {
+      font-family: "Montserrat", Arial, sans-serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0.2rem 0 0.25rem;
+      color: #0f172a;
+    }
+    .modal-head p {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.4;
+    }
+    .modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.75rem;
+      line-height: 1;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0.2rem 0.45rem;
+      border-radius: 6px;
+      margin: -0.25rem -0.25rem 0 0;
+      transition: color 0.15s ease, background 0.15s ease;
+      flex-shrink: 0;
+    }
+    .modal-close-btn:hover {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+    .modal-scroll-body {
+      padding: 1.2rem 1.5rem;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1 1 auto;
+      min-height: 0;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
+    }
+    .modal-scroll-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .modal-scroll-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .modal-scroll-body::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
+    }
+    .modal-actions-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1.5rem 1.1rem;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+      flex-shrink: 0;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .form-grid-60-40 {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .modal-field {
+      margin-bottom: 0.75rem;
+    }
+    .modal-field label,
+    .modal-scroll-body .field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #475569;
+      margin-bottom: 0.35rem;
+    }
+    .modal-field input,
+    .modal-field select,
+    .modal-field textarea,
+    .modal-scroll-body .field input,
+    .modal-scroll-body .field select,
+    .modal-scroll-body .field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: #0f172a;
+      background: #ffffff;
+      min-height: 38px;
+    }
+    .modal-field input:focus,
+    .modal-field select:focus,
+    .modal-field textarea:focus,
+    .modal-scroll-body .field input:focus,
+    .modal-scroll-body .field select:focus,
+    .modal-scroll-body .field textarea:focus {
+      border-color: #0284c7;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+    }
+    @media (max-width: 640px) {
+      .desk-alert {
+        padding: 0.75rem 0.5rem;
+      }
+      .desk-alert-card.modal-responsive {
+        width: 100%;
+        max-height: 94vh;
+        border-radius: 6px;
+      }
+      .modal-head {
+        padding: 1rem 1rem 0.6rem;
+      }
+      .modal-head h2 {
+        font-size: 1.15rem;
+      }
+      .modal-scroll-body {
+        padding: 0.85rem 1rem;
+      }
+      .modal-actions-footer {
+        padding: 0.75rem 1rem 0.9rem;
+        flex-direction: column-reverse;
+      }
+      .modal-actions-footer button {
+        width: 100%;
+        justify-content: center;
+      }
+      .form-grid-2,
+      .form-grid-60-40,
+      .form-grid-3 {
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+      }
+    }
+    @media (min-width: 480px) and (max-width: 640px) {
+      .form-grid-3 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .form-grid-3 > :last-child {
+        grid-column: span 2;
+      }
+    }
+  </style>
+</head>
+<body data-page="attendance">
+  <div class="vault">
+    <aside class="rail" aria-label="School command navigation">
+      <div class="rail-logo"><img src="/site/Image/logo_rail.png" alt="Supreme Reagan Schools" width="60" height="62"></div>
+      <nav class="rail-nav">
+        <a class="rail-btn" href="dashboard.html"><span>Desk</span></a>
+        <div class="rail-wings">
+          <a class="rail-btn" href="nursery.html"><span>Nursery</span></a>
+          <a class="rail-btn" href="primary.html"><span>Primary</span></a>
+          <a class="rail-btn" href="secondary.html"><span>Secondary</span></a>
+        </div>
+        <a class="rail-btn" href="students.html"><span>Pupils</span></a>
+        <a class="rail-btn" href="teachers.html"><span>Staff</span></a>
+        <a class="rail-btn active" aria-current="page" href="attendance.html"><span>Attendance</span></a>
+        <a class="rail-btn" href="classes.html"><span>Classes</span></a>
+        <a class="rail-btn" href="academic_sessions.html"><span>Session</span></a>
+        <a class="rail-btn" href="timetable.html"><span>Times</span></a>
+        <a class="rail-btn" href="fees.html"><span>Fees</span></a>
+        <a class="rail-btn" href="grades.html"><span>Marks</span></a>
+        <a class="rail-btn" href="announcements.html"><span>Notices</span></a>
+        <a class="rail-btn" href="news.html"><span>News</span></a>
+        <a class="rail-btn" href="events.html"><span>Events</span></a>
+        <a class="rail-btn" href="email.html"><span>Email</span></a>
+        <a class="rail-btn" href="contact.html"><span>Contact</span></a>
+        <a class="rail-btn" href="messages.html"><span>Mail</span></a>
+        <a class="rail-btn" href="reports.html"><span>Reports</span></a>
+        <a class="rail-btn" href="settings.html"><span>Setup</span></a>
+      </nav>
+      <a class="rail-exit" href="../superAdminLogin.html" data-logout title="Log out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"></path>
+          <path d="M15 12H3"></path>
+          <path d="M6 9l-3 3 3 3"></path>
+        </svg>
+        <strong>Log out</strong>
+      </a>
+    </aside>
+
+    <div class="stage">
+      <header class="stage-head compact">
+        <div class="head-top">
+          <div>
+            <p class="eyebrow">Command · Staff Attendance & Geofences</p>
+            <h1 class="head-title">Faculty Attendance</h1>
+            <p class="head-copy">Monitor smartphone GPS attendance across all school campuses, adjust policies, and audit logs.</p>
+          </div>
+          <div class="live-pill"><i class="live-dot"></i> <span data-clock>00:00:00</span> · Desk open</div>
+        </div>
+        <div class="metric-rail">
+          <article class="metric"><span class="label">Total Active Staff</span><span class="value" id="kpiTotalStaff">0</span><span class="delta">On payroll</span></article>
+          <article class="metric"><span class="label">Present Today</span><span class="value" id="kpiPresent">0</span><span class="delta">On campus</span></article>
+          <article class="metric"><span class="label">Late Arrivals</span><span class="value" id="kpiLate">0</span><span class="delta">Past grace</span></article>
+          <article class="metric"><span class="label">Absent Today</span><span class="value" id="kpiAbsent">0</span><span class="delta">Unrecorded</span></article>
+          <article class="metric"><span class="label">Incomplete</span><span class="value" id="kpiMissingOut">0</span><span class="delta">No clock-out</span></article>
+          <article class="metric"><span class="label">Rejected / Alerts</span><span class="value" id="kpiRejected">0</span><span class="delta">GPS anomalies</span></article>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <nav class="sub-tabs">
+          <button class="sub-tab-btn active" type="button" data-tab-target="roll">Live Attendance Roll</button>
+          <button class="sub-tab-btn" type="button" data-tab-target="geofences">Campus Geofences</button>
+          <button class="sub-tab-btn" type="button" data-tab-target="assignments">Campus Assignments</button>
+          <button class="sub-tab-btn" type="button" data-tab-target="logs">GPS Verification Logs</button>
+          <button class="sub-tab-btn" type="button" data-tab-target="adjustments">Correction Requests</button>
+        </nav>
+
+        <!-- TAB 1: Live Attendance Roll -->
+        <section data-tab-section="roll" class="panel">
+          <div class="filter-bar">
+            <input type="date" id="filterDate">
+            <select id="filterCampus">
+              <option value="">All Campuses</option>
+            </select>
+            <select id="filterStatus">
+              <option value="">All Statuses</option>
+              <option value="present">Present</option>
+              <option value="late">Late Arrival</option>
+              <option value="early_departure">Early Departure</option>
+              <option value="absent">Absent</option>
+              <option value="approved_exception">Approved Exception</option>
+            </select>
+            <input type="search" id="filterSearch" placeholder="Search staff name or #">
+            <button class="ghost-btn" type="button" id="btnApplyFilters">Apply Filter</button>
+            <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+              <button class="ghost-btn" type="button" id="btnExportCsv">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export CSV
+              </button>
+              <button class="solid-btn" type="button" id="btnOpenManualModal">Record Manual Entry</button>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; font-size: 0.85rem; color: #64748b;">
+                  <th style="padding: 0.75rem;">Date</th>
+                  <th style="padding: 0.75rem;">Staff Member</th>
+                  <th style="padding: 0.75rem;">Campus</th>
+                  <th style="padding: 0.75rem;">Clock In</th>
+                  <th style="padding: 0.75rem;">Clock Out</th>
+                  <th style="padding: 0.75rem;">Duration</th>
+                  <th style="padding: 0.75rem;">Status</th>
+                  <th style="padding: 0.75rem;">Audit</th>
+                  <th style="padding: 0.75rem;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="rollTbody">
+                <!-- Dynamically loaded -->
+              </tbody>
+            </table>
+          </div>
+          <div id="rollEmpty" style="text-align: center; padding: 2.5rem; color: #94a3b8;" hidden>
+            No attendance records match the selected filters.
+          </div>
+        </section>
+
+        <!-- TAB 2: Campus Geofences -->
+        <section data-tab-section="geofences" class="panel" hidden>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 0.25rem 0;">Registered Campuses & Geofencing Parameters</h3>
+              <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Configure latitude, longitude coordinates, allowable geofence radius, operating hours, and grace periods.</p>
+            </div>
+            <button class="solid-btn" type="button" id="btnOpenGeofenceModal">Register New Campus</button>
+          </div>
+
+          <div class="geofence-grid" id="geofenceGrid">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- TAB 3: Campus Assignments -->
+        <section data-tab-section="assignments" class="panel" hidden>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <select id="assignmentCampusFilter">
+                <option value="">All Campuses</option>
+              </select>
+            </div>
+            <button class="solid-btn" type="button" id="btnOpenAssignModal">Assign Staff to Campus</button>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; font-size: 0.85rem; color: #64748b;">
+                  <th style="padding: 0.75rem;">Staff Member</th>
+                  <th style="padding: 0.75rem;">Assigned Campus</th>
+                  <th style="padding: 0.75rem;">Assignment Type</th>
+                  <th style="padding: 0.75rem;">Effective Period</th>
+                  <th style="padding: 0.75rem;">Status</th>
+                  <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="assignmentsTbody">
+                <!-- Dynamically loaded -->
+              </tbody>
+            </table>
+          </div>
+          <div id="assignmentsEmpty" style="text-align: center; padding: 2.5rem; color: #94a3b8;" hidden>
+            No staff campus assignments recorded.
+          </div>
+        </section>
+
+        <!-- TAB 4: GPS Verification Logs -->
+        <section data-tab-section="logs" class="panel" hidden>
+          <div class="filter-bar">
+            <select id="logsFilterResult">
+              <option value="">All Results</option>
+              <option value="accepted">Accepted Only</option>
+              <option value="rejected">Rejected Only</option>
+              <option value="suspicious">Security / Suspicious Flags</option>
+            </select>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; font-size: 0.85rem; color: #64748b;">
+                  <th style="padding: 0.75rem;">Attempted At</th>
+                  <th style="padding: 0.75rem;">Staff Member</th>
+                  <th style="padding: 0.75rem;">Campus</th>
+                  <th style="padding: 0.75rem;">Action</th>
+                  <th style="padding: 0.75rem;">Location & Accuracy</th>
+                  <th style="padding: 0.75rem;">Result</th>
+                  <th style="padding: 0.75rem;">Details / Reason</th>
+                </tr>
+              </thead>
+              <tbody id="logsTbody">
+                <!-- Dynamically loaded -->
+              </tbody>
+            </table>
+          </div>
+          <div id="logsEmpty" style="text-align: center; padding: 2.5rem; color: #94a3b8;" hidden>
+            No verification logs found.
+          </div>
+        </section>
+
+        <!-- TAB 5: Correction Requests -->
+        <section data-tab-section="adjustments" class="panel" hidden>
+          <div style="margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 0.25rem 0;">Pending Staff Adjustment Requests</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Review and approve faculty requests for missed or erroneous timestamps.</p>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; font-size: 0.85rem; color: #64748b;">
+                  <th style="padding: 0.75rem;">Record Date</th>
+                  <th style="padding: 0.75rem;">Staff Member</th>
+                  <th style="padding: 0.75rem;">Campus</th>
+                  <th style="padding: 0.75rem;">Requested Adjustments</th>
+                  <th style="padding: 0.75rem;">Staff Reason</th>
+                  <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adjustmentsTbody">
+                <!-- Dynamically loaded -->
+              </tbody>
+            </table>
+          </div>
+          <div id="adjustmentsEmpty" style="text-align: center; padding: 2.5rem; color: #94a3b8;" hidden>
+            No pending correction requests.
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL: Campus Geofence -->
+  <div class="desk-alert" id="modalGeofence" hidden>
+    <div class="desk-alert-backdrop" data-dismiss-modal></div>
+    <div class="desk-alert-card modal-responsive" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Geofencing Engine</p>
+          <h2>Configure Campus Coordinates</h2>
+          <p>Set GPS coordinates, allowable radius, and attendance schedule.</p>
+        </div>
+        <button type="button" class="modal-close-btn" data-dismiss-modal aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="formGeofence" style="display: flex; flex-direction: column; flex: 1 1 auto; overflow: hidden; margin: 0;">
+        <input type="hidden" id="geofenceCampusId">
+        
+        <div class="modal-scroll-body">
+          <div class="form-grid-60-40">
+            <div class="field">
+              <label for="geofenceName">Campus Name *</label>
+              <input type="text" id="geofenceName" required placeholder="e.g. Primary School Campus">
+            </div>
+            <div class="field">
+              <label for="geofenceCode">Campus Code</label>
+              <input type="text" id="geofenceCode" placeholder="e.g. PRI-CAMPUS">
+            </div>
+          </div>
+
+          <div class="modal-field">
+            <label for="geofenceAddress">Campus Physical Address</label>
+            <input type="text" id="geofenceAddress" placeholder="e.g. 10 Reagan Blvd, Main Wing">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="geofenceLat">Latitude (Decimal) *</label>
+              <input type="number" step="0.0000001" id="geofenceLat" required placeholder="e.g. 5.485123">
+            </div>
+            <div class="field">
+              <label for="geofenceLng">Longitude (Decimal) *</label>
+              <input type="number" step="0.0000001" id="geofenceLng" required placeholder="e.g. 7.035412">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="geofenceRadius">Radius Threshold (Meters) *</label>
+              <input type="number" id="geofenceRadius" value="100" min="10" max="5000" required>
+            </div>
+            <div class="field">
+              <label for="geofenceAccuracy">Max GPS Accuracy (Meters) *</label>
+              <input type="number" id="geofenceAccuracy" value="50" min="5" max="300" required>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="geofenceHoursStart">Operating Hours Start</label>
+              <input type="time" id="geofenceHoursStart" value="06:30:00" step="1">
+            </div>
+            <div class="field">
+              <label for="geofenceHoursEnd">Operating Hours End</label>
+              <input type="time" id="geofenceHoursEnd" value="18:30:00" step="1">
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="field">
+              <label for="geofenceClockIn">Expected Clock In</label>
+              <input type="time" id="geofenceClockIn" value="07:45:00" step="1">
+            </div>
+            <div class="field">
+              <label for="geofenceGrace">Grace (Mins)</label>
+              <input type="number" id="geofenceGrace" value="15" min="0" max="120">
+            </div>
+            <div class="field">
+              <label for="geofenceClockOut">Expected Clock Out</label>
+              <input type="time" id="geofenceClockOut" value="16:00:00" step="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions-footer">
+          <button type="button" class="ghost-btn" data-dismiss-modal>Cancel</button>
+          <button type="submit" class="solid-btn">Save Geofence</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Assign Staff to Campus -->
+  <div class="desk-alert" id="modalAssign" hidden>
+    <div class="desk-alert-backdrop" data-dismiss-modal></div>
+    <div class="desk-alert-card modal-responsive" role="dialog" aria-modal="true" style="max-width: 520px;">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Multi-Campus Management</p>
+          <h2>Assign Staff to Campus</h2>
+          <p>Authorize a staff member to record GPS attendance at a specific campus.</p>
+        </div>
+        <button type="button" class="modal-close-btn" data-dismiss-modal aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="formAssign" style="display: flex; flex-direction: column; flex: 1 1 auto; overflow: hidden; margin: 0;">
+        <div class="modal-scroll-body">
+          <div class="modal-field">
+            <label for="assignStaffId">Select Staff Member *</label>
+            <select id="assignStaffId" required></select>
+          </div>
+
+          <div class="modal-field">
+            <label for="assignCampusId">Select Campus *</label>
+            <select id="assignCampusId" required></select>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="assignStartDate">Start Date *</label>
+              <input type="date" id="assignStartDate" required>
+            </div>
+            <div class="field">
+              <label for="assignEndDate">End Date (Optional)</label>
+              <input type="date" id="assignEndDate">
+            </div>
+          </div>
+
+          <div class="modal-field" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+            <input type="checkbox" id="assignIsPrimary" style="width: auto; min-height: auto;">
+            <label for="assignIsPrimary" style="margin-bottom: 0; cursor: pointer;">Designate as Primary Campus</label>
+          </div>
+
+          <div class="modal-field" style="margin-top: 0.75rem;">
+            <label for="assignNotes">Administrative Notes</label>
+            <input type="text" id="assignNotes" placeholder="E.g. Secondary school biology teacher">
+          </div>
+        </div>
+
+        <div class="modal-actions-footer">
+          <button type="button" class="ghost-btn" data-dismiss-modal>Cancel</button>
+          <button type="submit" class="solid-btn">Assign Campus</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Manual Attendance Entry -->
+  <div class="desk-alert" id="modalManual" hidden>
+    <div class="desk-alert-backdrop" data-dismiss-modal></div>
+    <div class="desk-alert-card modal-responsive" role="dialog" aria-modal="true" style="max-width: 520px;">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Administrative Override</p>
+          <h2>Record Manual Attendance</h2>
+          <p>Record an attendance entry or approved exception with audit justification.</p>
+        </div>
+        <button type="button" class="modal-close-btn" data-dismiss-modal aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="formManual" style="display: flex; flex-direction: column; flex: 1 1 auto; overflow: hidden; margin: 0;">
+        <div class="modal-scroll-body">
+          <div class="modal-field">
+            <label for="manualStaffId">Staff Member *</label>
+            <select id="manualStaffId" required></select>
+          </div>
+
+          <div class="modal-field">
+            <label for="manualCampusId">Campus *</label>
+            <select id="manualCampusId" required></select>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="manualDate">Date *</label>
+              <input type="date" id="manualDate" required>
+            </div>
+            <div class="field">
+              <label for="manualStatus">Status *</label>
+              <select id="manualStatus" required>
+                <option value="present">Present</option>
+                <option value="late">Late Arrival</option>
+                <option value="early_departure">Early Departure</option>
+                <option value="absent">Absent</option>
+                <option value="approved_exception">Approved Exception</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="manualClockIn">Clock-In Time</label>
+              <input type="time" id="manualClockIn">
+            </div>
+            <div class="field">
+              <label for="manualClockOut">Clock-Out Time</label>
+              <input type="time" id="manualClockOut">
+            </div>
+          </div>
+
+          <div class="modal-field">
+            <label for="manualReason">Mandatory Justification / Reason *</label>
+            <textarea id="manualReason" rows="2" required placeholder="E.g. Official off-campus academic inspection with state board" style="width: 100%; min-height: 60px;"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions-footer">
+          <button type="button" class="ghost-btn" data-dismiss-modal>Cancel</button>
+          <button type="submit" class="solid-btn">Save Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Review Adjustment -->
+  <div class="desk-alert" id="modalReview" hidden>
+    <div class="desk-alert-backdrop" data-dismiss-modal></div>
+    <div class="desk-alert-card modal-responsive" role="dialog" aria-modal="true" style="max-width: 480px;">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Adjustment Review</p>
+          <h2><span id="reviewActionText">Approve</span> Request</h2>
+          <p>Confirm decision and add review notes for the faculty ledger.</p>
+        </div>
+        <button type="button" class="modal-close-btn" data-dismiss-modal aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="formReview" style="display: flex; flex-direction: column; flex: 1 1 auto; overflow: hidden; margin: 0;">
+        <input type="hidden" id="reviewAdjustmentId">
+        <input type="hidden" id="reviewIsApprove">
+
+        <div class="modal-scroll-body">
+          <div class="modal-field">
+            <label for="reviewNotes">Review Notes (Optional)</label>
+            <textarea id="reviewNotes" rows="3" placeholder="Enter notes or confirmation details..." style="width: 100%; min-height: 80px;"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions-footer">
+          <button type="button" class="ghost-btn" data-dismiss-modal>Cancel</button>
+          <button type="submit" class="solid-btn">Confirm Decision</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="adminToast" class="desk-toast" hidden>
+    <span id="adminToastText">Notification</span>
+  </div>
+
+  <script src="../JS/admin-command.js"></script>
+  <script src="../JS/portal-admin-attendance.js"></script>
+</body>
+</html>
+

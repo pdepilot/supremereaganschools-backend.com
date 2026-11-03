@@ -390,16 +390,23 @@ class AuthenticationService
             return null;
         }
 
-        $guardian = GuardianProfile::query()
+        $guardians = GuardianProfile::query()
             ->whereRaw('LOWER(email) = ?', [$mailbox])
-            ->first();
+            ->with('user')
+            ->get();
 
-        if ($guardian && $this->guardianPhoneMatches($guardian, $password)) {
-            return $this->ensureGuardianUser($guardian);
+        foreach ($guardians as $guardian) {
+            if ($this->guardianPhoneMatches($guardian, $password)) {
+                return $this->ensureGuardianUser($guardian);
+            }
+
+            if ($guardian->user && $guardian->user->hasRole(RoleSlug::Parent) && Hash::check($password, $guardian->user->getAuthPassword())) {
+                return $guardian->user;
+            }
         }
 
         $user = User::query()->whereRaw('LOWER(email) = ?', [$mailbox])->first();
-        if ($user && Hash::check($password, $user->getAuthPassword())) {
+        if ($user && $user->hasRole(RoleSlug::Parent) && Hash::check($password, $user->getAuthPassword())) {
             return $user;
         }
 
@@ -413,7 +420,7 @@ class AuthenticationService
         if ($user === null) {
             $user = User::query()->create([
                 'name' => $guardian->full_name,
-                'email' => $this->householdEmail($guardian),
+                'email' => $guardian->householdEmail(),
                 'password' => Str::password(32),
                 'status' => UserStatus::Active,
             ]);
@@ -430,13 +437,7 @@ class AuthenticationService
 
     private function householdEmail(GuardianProfile $guardian): string
     {
-        $email = is_string($guardian->email) ? strtolower(trim($guardian->email)) : '';
-
-        if ($email !== '' && ! User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
-            return $email;
-        }
-
-        return 'parent-'.$guardian->id.'@household.srs.invalid';
+        return $guardian->householdEmail();
     }
 
     private function guardianPhoneMatches(GuardianProfile $guardian, string $attempt): bool

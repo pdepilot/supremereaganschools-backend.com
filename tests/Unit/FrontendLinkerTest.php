@@ -52,6 +52,28 @@ HTML, 'public');
         $this->assertStringNotContainsString('href="roles.html"', $html);
     }
 
+    public function test_rewrites_attendance_html_to_portal_attendance(): void
+    {
+        $html = (new FrontendLinker)->rewrite(
+            '<a class="rail-btn" href="attendance.html"><span>Attendance</span></a>',
+            'admin',
+        );
+
+        $this->assertStringContainsString('href="/portal/attendance"', $html);
+        $this->assertStringNotContainsString('href="attendance.html"', $html);
+    }
+
+    public function test_rewrites_my_attendance_html_to_staff_my_attendance(): void
+    {
+        $html = (new FrontendLinker)->rewrite(
+            '<a class="rail-btn" href="my_attendance.html"><span>Clock In</span></a>',
+            'staff',
+        );
+
+        $this->assertStringContainsString('href="/staff/my-attendance"', $html);
+        $this->assertStringNotContainsString('href="my_attendance.html"', $html);
+    }
+
     public function test_rewrites_admins_and_account_html_to_portal_routes(): void
     {
         $html = (new FrontendLinker)->rewrite(

@@ -134,6 +134,21 @@ a {
   background: var(--gold);
 }
 
+/* Attendance button in rail needs proper vertical breathing room to avoid crowding Classes */
+.rail-btn.rail-btn-attendance,
+.rail-nav a[href*="attendance"] {
+  min-height: 84px;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.rail-btn.rail-btn-attendance span,
+.rail-nav a[href*="attendance"] span {
+  font-size: 0.52rem;
+  letter-spacing: 0.05em;
+}
+
 .rail-wings {
   display: flex;
   flex-direction: column;
@@ -1301,6 +1316,19 @@ button.cell.is-active {
     transform: none;
   }
 
+  .rail-btn.rail-btn-attendance,
+  .rail-nav a[href*="attendance"] {
+    min-height: 0;
+    margin: 0;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .rail-btn.rail-btn-attendance span,
+  .rail-nav a[href*="attendance"] span {
+    font-size: inherit;
+    letter-spacing: inherit;
+  }
+
   .rail-btn.active::before {
     left: 20%;
     right: 20%;
@@ -2112,9 +2140,12 @@ table.ledger .row-actions {
   position: fixed;
   inset: 0;
   z-index: 120;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .desk-alert[hidden] {
@@ -2122,7 +2153,7 @@ table.ledger .row-actions {
 }
 
 .desk-alert-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(36, 58, 143, 0.64);
   backdrop-filter: blur(6px);
@@ -2131,11 +2162,14 @@ table.ledger .row-actions {
 .desk-alert-card {
   position: relative;
   width: min(440px, 100%);
+  max-height: min(92vh, 850px);
+  margin: auto;
   background: var(--paper);
   border: 1px solid var(--line);
   border-left: 4px solid var(--navy);
   padding: 1.7rem 1.55rem 1.4rem;
   box-shadow: 0 28px 70px rgba(36, 58, 143, 0.32);
+  box-sizing: border-box;
 }
 
 .desk-alert-card.is-danger {
