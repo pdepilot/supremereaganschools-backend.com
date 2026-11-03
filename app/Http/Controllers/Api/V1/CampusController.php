@@ -50,6 +50,12 @@ class CampusController extends Controller
             ]);
         }
 
+        if ($campus->staffAttendanceVerificationLogs()->exists()) {
+            throw ValidationException::withMessages([
+                'campus' => 'This campus cannot be deleted because staff attendance verification logs are associated with it. Please deactivate the campus instead.',
+            ]);
+        }
+
         if ($campus->staffCampusAssignments()->exists()) {
             throw ValidationException::withMessages([
                 'campus' => 'This campus cannot be deleted because staff assignments exist. Please deactivate the campus instead.',

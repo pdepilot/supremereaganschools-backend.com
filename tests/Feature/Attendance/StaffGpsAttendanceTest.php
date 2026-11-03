@@ -503,11 +503,16 @@ class StaffGpsAttendanceTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'data');
 
-        // Delete assignment
+        // End assignment (preserves history)
         $this->actingAs($admin)->deleteJson("/api/v1/admin/staff-attendance/assignments/{$assignmentId}")
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonPath('message', 'Staff campus assignment ended successfully.');
 
-        $this->assertDatabaseMissing('staff_campus_assignments', ['id' => $assignmentId]);
+        $this->assertDatabaseHas('staff_campus_assignments', [
+            'id' => $assignmentId,
+            'is_active' => false,
+            'is_primary' => false,
+        ]);
     }
 
     public function test_admin_can_record_attendance_manually(): void
@@ -758,6 +763,32 @@ class StaffGpsAttendanceTest extends TestCase
         $this->assertDatabaseHas('campuses', ['id' => $this->primaryCampus->id]);
     }
 
+    public function test_campus_deletion_is_blocked_when_verification_logs_exist(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-09 07:30:00', 'Africa/Lagos'));
+
+        StaffAttendanceVerificationLog::query()->create([
+            'staff_profile_id' => $this->staffMember->id,
+            'campus_id' => $this->primaryCampus->id,
+            'action' => 'clock_in',
+            'latitude' => 5.485123,
+            'longitude' => 7.035412,
+            'gps_accuracy' => 15.0,
+            'distance_meters' => 20.0,
+            'result' => 'accepted',
+            'attempted_at' => Carbon::now(),
+        ]);
+
+        $admin = $this->userWithRole(RoleSlug::SuperAdmin);
+
+        $response = $this->actingAs($admin)->deleteJson("/api/v1/campuses/{$this->primaryCampus->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['campus']);
+
+        $this->assertDatabaseHas('campuses', ['id' => $this->primaryCampus->id]);
+    }
+
     public function test_admin_overview_correctly_scopes_active_staff_to_filtered_campus(): void
     {
         // Create a second staff member assigned ONLY to Secondary Campus
@@ -934,5 +965,47 @@ class StaffGpsAttendanceTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['campus_id']);
+    }
+
+    public function test_cannot_reactivate_ended_campus_assignment(): void
+    {
+        $admin = $this->userWithRole(RoleSlug::SuperAdmin);
+
+        $assignment = StaffCampusAssignment::query()->create([
+            'staff_profile_id' => $this->staffMember->id,
+            'campus_id' => $this->secondaryCampus->id,
+            'is_primary' => false,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-31',
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($admin)->putJson("/api/v1/admin/staff-attendance/assignments/{$assignment->id}", [
+            'is_active' => true,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['is_active']);
+    }
+
+    public function test_inactive_campus_assignment_cannot_be_primary(): void
+    {
+        $admin = $this->userWithRole(RoleSlug::SuperAdmin);
+
+        $assignment = StaffCampusAssignment::query()->create([
+            'staff_profile_id' => $this->staffMember->id,
+            'campus_id' => $this->secondaryCampus->id,
+            'is_primary' => false,
+            'start_date' => '2026-11-01',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->putJson("/api/v1/admin/staff-attendance/assignments/{$assignment->id}", [
+            'is_active' => false,
+            'is_primary' => true,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['is_primary']);
     }
 }

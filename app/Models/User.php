@@ -45,6 +45,26 @@ class User extends Authenticatable
         return $this->hasOne(StaffProfile::class);
     }
 
+    public function staffCampusAssignmentsAssigned(): HasMany
+    {
+        return $this->hasMany(StaffCampusAssignment::class, 'assigned_by');
+    }
+
+    public function verifiedStaffAttendanceRecords(): HasMany
+    {
+        return $this->hasMany(StaffAttendanceRecord::class, 'verified_by');
+    }
+
+    public function staffAttendanceAdjustmentsRequested(): HasMany
+    {
+        return $this->hasMany(StaffAttendanceAdjustment::class, 'requested_by');
+    }
+
+    public function staffAttendanceAdjustmentsReviewed(): HasMany
+    {
+        return $this->hasMany(StaffAttendanceAdjustment::class, 'reviewed_by');
+    }
+
     public function studentProfile(): HasOne
     {
         return $this->hasOne(StudentProfile::class);

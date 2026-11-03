@@ -120,12 +120,39 @@ class StaffCampusAssignmentController extends Controller
         $validated = $request->validate([
             'is_primary' => ['sometimes', 'boolean'],
             'start_date' => ['sometimes', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'end_date' => ['sometimes', 'nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        if (! empty($validated['is_active']) && ! $assignment->is_active) {
+        $newStartDate = $validated['start_date'] ?? $assignment->start_date?->toDateString();
+        $newEndDate = $validated['end_date'] ?? $assignment->end_date?->toDateString();
+
+        if (
+            isset($validated['end_date'])
+            && $validated['end_date'] !== null
+            && $newStartDate !== null
+            && $validated['end_date'] < $newStartDate
+        ) {
+            throw ValidationException::withMessages([
+                'end_date' => 'The end date must be on or after the assignment start date.',
+            ]);
+        }
+
+        $deactivating = $assignment->is_active
+            && array_key_exists('is_active', $validated)
+            && ! $validated['is_active'];
+
+        $reactivating = ! $assignment->is_active
+            && ! empty($validated['is_active']);
+
+        if ($reactivating && $assignment->end_date !== null) {
+            throw ValidationException::withMessages([
+                'is_active' => 'An ended assignment cannot be reactivated. Create a new campus assignment instead.',
+            ]);
+        }
+
+        if ($reactivating) {
             $duplicateActive = StaffCampusAssignment::query()
                 ->where('staff_profile_id', $assignment->staff_profile_id)
                 ->where('campus_id', $assignment->campus_id)
@@ -140,7 +167,23 @@ class StaffCampusAssignmentController extends Controller
             }
         }
 
-        DB::transaction(function () use ($assignment, $validated) {
+        if (
+            array_key_exists('is_primary', $validated)
+            && $validated['is_primary']
+            && array_key_exists('is_active', $validated)
+            && ! $validated['is_active']
+        ) {
+            throw ValidationException::withMessages([
+                'is_primary' => 'An inactive campus assignment cannot be primary.',
+            ]);
+        }
+
+        DB::transaction(function () use ($assignment, &$validated, $deactivating) {
+            if ($deactivating) {
+                $validated['end_date'] = $validated['end_date'] ?? now()->toDateString();
+                $validated['is_primary'] = false;
+            }
+
             if (! empty($validated['is_primary'])) {
                 StaffCampusAssignment::query()
                     ->where('staff_profile_id', $assignment->staff_profile_id)
@@ -153,7 +196,9 @@ class StaffCampusAssignmentController extends Controller
 
         return ApiResponse::success(
             'Staff campus assignment updated.',
-            (new StaffCampusAssignmentResource($assignment->fresh(['staffProfile.user', 'campus', 'assigner'])))->resolve()
+            (new StaffCampusAssignmentResource(
+                $assignment->fresh(['staffProfile.user', 'campus', 'assigner'])
+            ))->resolve()
         );
     }
 
@@ -161,8 +206,18 @@ class StaffCampusAssignmentController extends Controller
     {
         $this->authorizeManage($request);
 
-        $assignment->delete();
+        DB::transaction(function () use ($assignment) {
+            if ($assignment->is_active || $assignment->end_date === null) {
+                $assignment->update([
+                    'is_active' => false,
+                    'is_primary' => false,
+                    'end_date' => $assignment->end_date ?? now()->toDateString(),
+                ]);
+            }
+        });
 
-        return ApiResponse::success('Staff campus assignment removed.');
+        return ApiResponse::success(
+            'Staff campus assignment ended successfully.'
+        );
     }
 }

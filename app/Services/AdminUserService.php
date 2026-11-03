@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuthPortal;
 use App\Enums\PermissionSlug;
 use App\Enums\RoleSlug;
 use App\Enums\UserStatus;
@@ -292,7 +293,11 @@ class AdminUserService
             || $admin->markedAttendance()->exists()
             || $admin->enteredScores()->exists()
             || $admin->uploadedDocuments()->exists()
-            || $admin->assignedEnquiries()->exists()) {
+            || $admin->assignedEnquiries()->exists()
+            || $admin->staffCampusAssignmentsAssigned()->exists()
+            || $admin->verifiedStaffAttendanceRecords()->exists()
+            || $admin->staffAttendanceAdjustmentsRequested()->exists()
+            || $admin->staffAttendanceAdjustmentsReviewed()->exists()) {
             return false;
         }
 
@@ -373,12 +378,12 @@ class AdminUserService
             'login_summary' => [
                 'total_logins' => $totalLogins,
                 'last_login_at' => $lastLogin?->logged_in_at?->toIso8601String(),
-                'last_portal' => $lastLogin?->portal instanceof \App\Enums\AuthPortal
+                'last_portal' => $lastLogin?->portal instanceof AuthPortal
                     ? $lastLogin->portal->value
                     : ($lastLogin?->portal ? (string) $lastLogin->portal : null),
                 'recent' => $logins->map(fn (LoginActivity $row) => [
                     'logged_in_at' => $row->logged_in_at?->toIso8601String(),
-                    'portal' => $row->portal instanceof \App\Enums\AuthPortal
+                    'portal' => $row->portal instanceof AuthPortal
                         ? $row->portal->value
                         : (string) $row->portal,
                     'ip_address' => $row->ip_address,

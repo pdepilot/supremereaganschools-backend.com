@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\RoleSlug;
 use App\Enums\StaffStatus;
 use App\Enums\UserStatus;
+use App\Models\Role;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Support\Phone;
@@ -82,7 +83,7 @@ class StaffService
                 $role = RoleSlug::from($attributes['role']);
                 $this->assertStaffRole($role);
                 $staff->user->roles()->sync([
-                    \App\Models\Role::query()->where('slug', $role->value)->firstOrFail()->id,
+                    Role::query()->where('slug', $role->value)->firstOrFail()->id,
                 ]);
                 $staff->user->unsetRelation('roles');
             }
@@ -122,6 +123,15 @@ class StaffService
 
             $staff->user?->update(['status' => UserStatus::Inactive]);
             $staff->update(['status' => StaffStatus::Inactive]);
+
+            $staff->campusAssignments()
+                ->where('is_active', true)
+                ->update([
+                    'is_active' => false,
+                    'end_date' => $endedOn,
+                    'is_primary' => false,
+                ]);
+
             $staff->delete();
         });
     }
