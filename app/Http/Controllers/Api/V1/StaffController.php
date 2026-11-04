@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\RoleSlug;
+use App\Enums\PermissionSlug;
 use App\Enums\StaffStatus;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -10,6 +10,7 @@ use App\Http\Requests\People\StoreStaffRequest;
 use App\Http\Requests\People\UpdateStaffRequest;
 use App\Http\Resources\People\StaffResource;
 use App\Models\StaffProfile;
+use App\Services\PeopleAccessService;
 use App\Services\StaffService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -17,17 +18,25 @@ use Illuminate\Http\Request;
 
 class StaffController extends Controller
 {
-    public function __construct(private readonly StaffService $staff) {}
+    public function __construct(
+        private readonly StaffService $staff,
+        private readonly PeopleAccessService $access,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', StaffProfile::class);
 
-        $isAdmin = $request->user()?->hasAnyRole(RoleSlug::SuperAdmin, RoleSlug::SchoolAdmin) ?? false;
+        $canViewDirectory = $this->access->allows(
+            $request->user(),
+            PermissionSlug::StaffView,
+            PermissionSlug::StaffEdit,
+            PermissionSlug::AttendanceManage,
+        );
 
         $query = StaffProfile::query()->with($this->staff->defaultRelations());
 
-        if (! $isAdmin) {
+        if (! $canViewDirectory) {
             $query->where('user_id', $request->user()?->id);
         }
 
@@ -91,7 +100,7 @@ class StaffController extends Controller
         $rows = $query->orderBy('staff_number')->paginate($perPage);
 
         $summaryQuery = StaffProfile::query();
-        if (! $isAdmin) {
+        if (! $canViewDirectory) {
             $summaryQuery->where('user_id', $request->user()?->id);
         }
 

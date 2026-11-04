@@ -142,42 +142,161 @@
     });
   }
 
+  function isPointInPolygon(latitude, longitude, polygon) {
+    if (!Array.isArray(polygon) || polygon.length < 3) {
+      return null;
+    }
+
+    const points = [];
+
+    for (const vertex of polygon) {
+      if (!vertex || typeof vertex !== 'object' || Array.isArray(vertex)) {
+        return null;
+      }
+
+      const pointLatitude = Number(vertex.latitude ?? vertex.lat);
+      const pointLongitude = Number(vertex.longitude ?? vertex.lng);
+
+      if (
+        !Number.isFinite(pointLatitude) ||
+        !Number.isFinite(pointLongitude) ||
+        pointLatitude < -90 ||
+        pointLatitude > 90 ||
+        pointLongitude < -180 ||
+        pointLongitude > 180
+      ) {
+        return null;
+      }
+
+      points.push({
+        latitude: pointLatitude,
+        longitude: pointLongitude,
+      });
+    }
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return null;
+    }
+
+    let inside = false;
+
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+      const current = points[i];
+      const previous = points[j];
+
+      const intersects = (
+        (current.latitude > latitude) !== (previous.latitude > latitude)
+      ) && (
+        longitude <
+        ((previous.longitude - current.longitude) *
+          (latitude - current.latitude)) /
+          (previous.latitude - current.latitude) +
+          current.longitude
+      );
+
+      if (intersects) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
+  }
+
   function updateGpsStatusDisplay() {
     if (!cachedPosition) return;
 
     if (elements.gpsAccuracyText) {
-      elements.gpsAccuracyText.textContent = `Accuracy: ±${Math.round(cachedPosition.accuracy)}m`;
+      elements.gpsAccuracyText.textContent =
+        `Accuracy: ±${Math.round(cachedPosition.accuracy)}m`;
     }
 
-    if (activeCampus && activeCampus.latitude && activeCampus.longitude) {
+    if (
+      activeCampus &&
+      activeCampus.latitude != null &&
+      activeCampus.longitude != null
+    ) {
+      const campusLatitude = Number(activeCampus.latitude);
+      const campusLongitude = Number(activeCampus.longitude);
+      const latitude = Number(cachedPosition.latitude);
+      const longitude = Number(cachedPosition.longitude);
+      const accuracy = Number(cachedPosition.accuracy);
+
+      if (
+        !Number.isFinite(campusLatitude) ||
+        !Number.isFinite(campusLongitude) ||
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        !Number.isFinite(accuracy)
+      ) {
+        if (elements.gpsStatusText && elements.gpsStatusBox) {
+          elements.gpsStatusText.textContent =
+            'GPS coordinates are invalid. Please acquire your location again.';
+          elements.gpsStatusBox.className = 'gps-status-box error';
+        }
+        return;
+      }
+
       const dist = calculateDistance(
-        cachedPosition.latitude,
-        cachedPosition.longitude,
-        activeCampus.latitude,
-        activeCampus.longitude
+        latitude,
+        longitude,
+        campusLatitude,
+        campusLongitude
       );
-      const isInside = dist <= (activeCampus.radius_meters || 100);
-      const isAccurate = cachedPosition.accuracy <= (activeCampus.gps_accuracy_threshold || 50);
+
+      const radius = Number(activeCampus.radius_meters ?? 100);
+      const accuracyThreshold = Number(
+        activeCampus.gps_accuracy_threshold ?? 50
+      );
+
+      const isAccurate = accuracy > 0 && accuracy <= accuracyThreshold;
+      const isPolygon = activeCampus.geofence_type === 'polygon';
+
+      const isInside = isPolygon
+        ? isPointInPolygon(
+            latitude,
+            longitude,
+            activeCampus.boundary_coordinates
+          )
+        : dist <= radius;
 
       if (elements.gpsDistanceText) {
-        elements.gpsDistanceText.textContent = `Distance: ${Math.round(dist)}m from ${activeCampus.name} (Boundary: ${activeCampus.radius_meters || 100}m)`;
+        elements.gpsDistanceText.textContent = isPolygon
+          ? `Distance from ${activeCampus.name} centre: ${Math.round(dist)}m (Polygon boundary)`
+          : `Distance: ${Math.round(dist)}m from ${activeCampus.name} (Boundary: ${radius}m)`;
       }
 
       if (elements.gpsStatusText && elements.gpsStatusBox) {
         if (!isAccurate) {
-          elements.gpsStatusText.textContent = `GPS accuracy low (±${Math.round(cachedPosition.accuracy)}m). Minimum required is ${activeCampus.gps_accuracy_threshold || 50}m.`;
+          elements.gpsStatusText.textContent =
+            `GPS accuracy is insufficient (±${Math.round(accuracy)}m). Maximum allowed is ${accuracyThreshold}m.`;
           elements.gpsStatusBox.className = 'gps-status-box warning';
+        } else if (isInside === null) {
+          elements.gpsStatusText.textContent =
+            'The campus polygon configuration is invalid. Please contact the administrator.';
+          elements.gpsStatusBox.className = 'gps-status-box error';
         } else if (isInside) {
-          elements.gpsStatusText.textContent = `Verified inside ${activeCampus.name} premises (${Math.round(dist)}m). Ready to clock.`;
+          elements.gpsStatusText.textContent =
+            `Your GPS position appears to be inside ${activeCampus.name}. Submit your clock action for server verification.`;
           elements.gpsStatusBox.className = 'gps-status-box success';
         } else {
-          elements.gpsStatusText.textContent = `Outside campus boundary (${Math.round(dist)}m away). Maximum radius is ${activeCampus.radius_meters || 100}m.`;
+          elements.gpsStatusText.textContent = isPolygon
+            ? `Your GPS position appears to be outside the approved ${activeCampus.name} polygon.`
+            : `Your GPS position appears to be outside the ${activeCampus.name} boundary (${Math.round(dist)}m away).`;
+
           elements.gpsStatusBox.className = 'gps-status-box error';
         }
       }
     } else {
       if (elements.gpsStatusText && elements.gpsStatusBox) {
-        elements.gpsStatusText.textContent = 'GPS location acquired. Please choose an assigned campus.';
+        elements.gpsStatusText.textContent =
+          'GPS location acquired. Please choose an assigned campus.';
         elements.gpsStatusBox.className = 'gps-status-box success';
       }
     }
@@ -496,11 +615,6 @@
     // Initial data load
     loadOverview();
     loadHistory();
-
-    // Auto-prompt location acquisition on page load for convenience
-    setTimeout(() => {
-      acquireGpsPosition().catch(() => {});
-    }, 800);
   }
 
   if (document.readyState === 'loading') {

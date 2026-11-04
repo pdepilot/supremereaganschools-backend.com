@@ -40,15 +40,15 @@ class Role extends Model
                     return (int) $permission->id;
                 }
 
-                if (is_int($permission) || ctype_digit((string) $permission)) {
+                if ($permission instanceof \App\Enums\PermissionSlug) {
+                    return (int) Permission::query()->where('slug', $permission->value)->firstOrFail()->id;
+                }
+
+                if (is_int($permission) || (is_string($permission) && ctype_digit($permission))) {
                     return (int) $permission;
                 }
 
-                $slug = $permission instanceof \App\Enums\PermissionSlug
-                    ? $permission->value
-                    : (string) $permission;
-
-                return (int) Permission::query()->where('slug', $slug)->firstOrFail()->id;
+                return (int) Permission::query()->where('slug', (string) $permission)->firstOrFail()->id;
             })
             ->unique()
             ->values()

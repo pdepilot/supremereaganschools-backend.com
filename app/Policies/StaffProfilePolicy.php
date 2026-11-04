@@ -13,8 +13,12 @@ class StaffProfilePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->access->allows($user, PermissionSlug::StaffView)
-            || $this->access->isTeacher($user);
+        return $this->access->allows(
+            $user,
+            PermissionSlug::StaffView,
+            PermissionSlug::StaffEdit,
+            PermissionSlug::AttendanceManage,
+        ) || $this->access->isTeacher($user);
     }
 
     public function view(User $user, StaffProfile $staff): bool

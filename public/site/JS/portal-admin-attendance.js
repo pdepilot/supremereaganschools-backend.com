@@ -109,10 +109,25 @@
     return json;
   }
 
+  function getLagosDateString() {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Lagos',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+
+    const year = parts.find((part) => part.type === 'year').value;
+    const month = parts.find((part) => part.type === 'month').value;
+    const day = parts.find((part) => part.type === 'day').value;
+
+    return `${year}-${month}-${day}`;
+  }
+
   // Set default filter date to today (Lagos timezone)
   function initDefaultDate() {
     if (elements.filterDate) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLagosDateString();
       elements.filterDate.value = today;
     }
   }
@@ -270,7 +285,21 @@
     campusesList.forEach((c) => {
       const card = document.createElement('div');
       card.className = 'gps-card';
-      const hasCoords = c.latitude !== null && c.longitude !== null;
+
+      const latitude = c.latitude == null ? null : Number(c.latitude);
+      const longitude = c.longitude == null ? null : Number(c.longitude);
+
+      const hasCoords =
+        latitude !== null &&
+        longitude !== null &&
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
+
+      const gracePeriod = c.grace_period_minutes ?? 15;
 
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
@@ -284,12 +313,12 @@
         </div>
 
         <div style="font-size:0.85rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:1rem; background:#f8fafc; padding:0.75rem; border-radius:8px;">
-          <div><strong>Coordinates:</strong> ${hasCoords ? `${c.latitude.toFixed(6)}, ${c.longitude.toFixed(6)}` : 'Not configured'}</div>
+          <div><strong>Coordinates:</strong> ${hasCoords ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}` : 'Not configured'}</div>
           <div><strong>Radius:</strong> ${c.radius_meters || 100} meters</div>
           <div><strong>GPS Accuracy Max:</strong> ${c.gps_accuracy_threshold || 50} meters</div>
           <div><strong>Boundary Type:</strong> ${(c.geofence_type || 'circle').toUpperCase()}</div>
           <div><strong>Hours:</strong> ${c.operating_hours_start || '06:30'} - ${c.operating_hours_end || '18:30'}</div>
-          <div><strong>Expected In:</strong> ${c.expected_clock_in_time || '07:45'} (Grace: ${c.grace_period_minutes || 15}m)</div>
+          <div><strong>Expected In:</strong> ${c.expected_clock_in_time || '07:45'} (Grace: ${gracePeriod}m)</div>
         </div>
 
         <div style="display:flex; justify-content:flex-end;">
@@ -342,19 +371,46 @@
     const url = isNew ? '/api/v1/campuses' : `/api/v1/campuses/${id}`;
     const method = isNew ? 'POST' : 'PUT';
 
+    const latitudeInput = document.getElementById('geofenceLat').value.trim();
+    const longitudeInput = document.getElementById('geofenceLng').value.trim();
+    const graceInput = document.getElementById('geofenceGrace').value.trim();
+
+    const latitude = latitudeInput === '' ? null : Number(latitudeInput);
+    const longitude = longitudeInput === '' ? null : Number(longitudeInput);
+    const gracePeriod = graceInput === '' ? 15 : Number.parseInt(graceInput, 10);
+
+    if (
+      latitude === null ||
+      longitude === null ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      showToast('Please enter valid campus GPS coordinates.', 'error');
+      return;
+    }
+
+    if (!Number.isInteger(gracePeriod) || gracePeriod < 0 || gracePeriod > 120) {
+      showToast('Grace period must be between 0 and 120 minutes.', 'error');
+      return;
+    }
+
     const payload = {
       name: document.getElementById('geofenceName').value.trim(),
       code: document.getElementById('geofenceCode').value.trim() || null,
       address: document.getElementById('geofenceAddress').value.trim() || null,
-      latitude: parseFloat(document.getElementById('geofenceLat').value) || null,
-      longitude: parseFloat(document.getElementById('geofenceLng').value) || null,
+      latitude,
+      longitude,
       radius_meters: parseInt(document.getElementById('geofenceRadius').value, 10) || 100,
       gps_accuracy_threshold: parseInt(document.getElementById('geofenceAccuracy').value, 10) || 50,
       operating_hours_start: document.getElementById('geofenceHoursStart').value,
       operating_hours_end: document.getElementById('geofenceHoursEnd').value,
       expected_clock_in_time: document.getElementById('geofenceClockIn').value,
       expected_clock_out_time: document.getElementById('geofenceClockOut').value,
-      grace_period_minutes: parseInt(document.getElementById('geofenceGrace').value, 10) || 15,
+      grace_period_minutes: gracePeriod,
     };
 
     try {
@@ -462,7 +518,7 @@
     elements.formAssign.reset();
     const scrollBody = elements.modalAssign.querySelector('.modal-scroll-body');
     if (scrollBody) scrollBody.scrollTop = 0;
-    document.getElementById('assignStartDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('assignStartDate').value = getLagosDateString();
     elements.modalAssign.hidden = false;
   }
 
@@ -524,6 +580,23 @@
         const isSuccess = l.result === 'accepted';
         const isSuspicious = l.is_suspicious;
 
+        const latitude = l.latitude == null ? null : Number(l.latitude);
+        const longitude = l.longitude == null ? null : Number(l.longitude);
+
+        const hasGpsFix =
+          latitude !== null &&
+          longitude !== null &&
+          Number.isFinite(latitude) &&
+          Number.isFinite(longitude);
+
+        const distance = l.distance_meters == null
+          ? null
+          : Number(l.distance_meters);
+
+        const accuracy = l.gps_accuracy == null
+          ? null
+          : Number(l.gps_accuracy);
+
         tr.innerHTML = `
           <td><strong>${l.attempted_at_formatted || '—'}</strong></td>
           <td>
@@ -533,8 +606,8 @@
           <td>${l.campus_name || '—'}</td>
           <td><span class="status-pill ${l.action === 'clock_in' ? 'pill-info' : 'pill-secondary'}">${l.action}</span></td>
           <td>
-            <div>${l.latitude ? `${l.latitude.toFixed(6)}, ${l.longitude.toFixed(6)}` : 'No fix'}</div>
-            <div style="font-size:0.75rem; color:#64748b;">Dist: ${l.distance_meters !== null ? Math.round(l.distance_meters) + 'm' : '—'} · Acc: ${l.gps_accuracy !== null ? '±' + Math.round(l.gps_accuracy) + 'm' : '—'}</div>
+            <div>${hasGpsFix ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}` : 'No fix'}</div>
+            <div style="font-size:0.75rem; color:#64748b;">Dist: ${Number.isFinite(distance) ? Math.round(distance) + 'm' : '—'} · Acc: ${Number.isFinite(accuracy) ? '±' + Math.round(accuracy) + 'm' : '—'}</div>
           </td>
           <td>
             <span class="status-pill ${isSuccess ? 'pill-success' : 'pill-danger'}">
@@ -653,7 +726,7 @@
 
     if (prefill.staff_id) document.getElementById('manualStaffId').value = prefill.staff_id;
     if (prefill.campus_id) document.getElementById('manualCampusId').value = prefill.campus_id;
-    document.getElementById('manualDate').value = prefill.date || new Date().toISOString().split('T')[0];
+    document.getElementById('manualDate').value = prefill.date || getLagosDateString();
     if (prefill.status) document.getElementById('manualStatus').value = prefill.status;
 
     elements.modalManual.hidden = false;

@@ -424,6 +424,8 @@ class StaffAttendanceService
                 'address' => $campus->address,
                 'latitude' => $campus->latitude,
                 'longitude' => $campus->longitude,
+                'geofence_type' => $campus->geofence_type ?? 'circle',
+                'boundary_coordinates' => $campus->boundary_coordinates,
                 'radius_meters' => $campus->radius_meters,
                 'gps_accuracy_threshold' => $campus->gps_accuracy_threshold,
                 'is_primary' => (bool) ($campus->pivot->is_primary ?? false),

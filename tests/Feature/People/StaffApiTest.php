@@ -2,14 +2,17 @@
 
 namespace Tests\Feature\People;
 
+use App\Enums\PermissionSlug;
 use App\Enums\RoleSlug;
 use App\Enums\StaffStatus;
 use App\Enums\UserStatus;
 use App\Models\ClassTeacherAssignment;
+use App\Models\Role;
 use App\Models\StaffProfile;
 use App\Models\SubjectTeacherAssignment;
 use App\Models\User;
 use App\Support\Phone;
+use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +28,10 @@ class StaffApiTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(RoleSeeder::class);
+        $this->seed([
+            RoleSeeder::class,
+            PermissionSeeder::class,
+        ]);
     }
 
     public function test_admin_can_create_and_update_staff(): void
@@ -563,6 +569,89 @@ class StaffApiTest extends TestCase
             ->assertJsonPath('data.meta.total', 1)
             ->assertJsonPath('data.items.0.name', 'Active Master')
             ->assertJsonPath('data.items.0.status', 'active');
+    }
+
+    public function test_staff_directory_permissions_grant_full_directory_access(): void
+    {
+        $role = Role::query()
+            ->where('slug', RoleSlug::Accountant->value)
+            ->firstOrFail();
+
+        $staffA = $this->staff(
+            $this->userWithRole(RoleSlug::Teacher, ['name' => 'Teacher Alpha'])
+        );
+
+        $staffB = $this->staff(
+            $this->userWithRole(RoleSlug::Teacher, ['name' => 'Teacher Beta'])
+        );
+
+        $permissions = [
+            PermissionSlug::StaffView,
+            PermissionSlug::StaffEdit,
+            PermissionSlug::AttendanceManage,
+        ];
+
+        foreach ($permissions as $permission) {
+            $role->syncPermissions([$permission]);
+
+            $viewer = $this->userWithRole(RoleSlug::Accountant);
+
+            $response = $this->actingAs($viewer)
+                ->getJson('/api/v1/staff');
+
+            $response->assertOk()
+                ->assertJsonPath('data.meta.total', 2)
+                ->assertJsonCount(2, 'data.items')
+                ->assertJsonPath('data.summary.total', 2);
+
+            $this->assertEqualsCanonicalizing(
+                [$staffA->id, $staffB->id],
+                collect($response->json('data.items'))->pluck('id')->all(),
+            );
+        }
+    }
+
+    public function test_inactive_user_with_staff_permission_cannot_view_directory(): void
+    {
+        $role = Role::query()
+            ->where('slug', RoleSlug::Teacher->value)
+            ->firstOrFail();
+
+        $role->syncPermissions([PermissionSlug::StaffView]);
+
+        $inactiveUser = $this->userWithRole(RoleSlug::Teacher, [
+            'status' => UserStatus::Suspended,
+        ]);
+
+        $this->actingAs($inactiveUser)
+            ->getJson('/api/v1/staff')
+            ->assertForbidden();
+    }
+
+    public function test_staff_edit_permission_can_view_full_directory_without_staff_view(): void
+    {
+        $role = Role::query()
+            ->where('slug', RoleSlug::Accountant->value)
+            ->firstOrFail();
+
+        $role->syncPermissions([PermissionSlug::StaffEdit]);
+
+        $this->staff(
+            $this->userWithRole(RoleSlug::Teacher, ['name' => 'First Teacher'])
+        );
+
+        $this->staff(
+            $this->userWithRole(RoleSlug::Teacher, ['name' => 'Second Teacher'])
+        );
+
+        $viewer = $this->userWithRole(RoleSlug::Accountant);
+
+        $this->actingAs($viewer)
+            ->getJson('/api/v1/staff')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 2)
+            ->assertJsonCount(2, 'data.items')
+            ->assertJsonPath('data.summary.total', 2);
     }
 
     public function test_non_admin_users_remain_restricted_to_their_own_staff_profile(): void
