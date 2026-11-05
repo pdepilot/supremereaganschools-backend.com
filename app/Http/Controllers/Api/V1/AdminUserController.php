@@ -23,9 +23,24 @@ class AdminUserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        return ApiResponse::success(
+        $filters = $request->only(['search', 'role', 'status']);
+        $perPage = max(1, min(100, $request->integer('per_page', 10)));
+
+        if ($request->boolean('all') || $request->input('paginate') === '0') {
+            return ApiResponse::success(
+                'Admin users retrieved.',
+                AdminUserResource::collection($this->admins->list($filters))->resolve(),
+            );
+        }
+
+        $paginator = $this->admins->paginate($filters, $perPage);
+
+        return ApiResponse::paginated(
             'Admin users retrieved.',
-            AdminUserResource::collection($this->admins->list($request->only(['search', 'role', 'status'])))->resolve(),
+            AdminUserResource::collection($paginator->items())->resolve(),
+            $paginator,
+            200,
+            ['summary' => $this->admins->summary()]
         );
     }
 

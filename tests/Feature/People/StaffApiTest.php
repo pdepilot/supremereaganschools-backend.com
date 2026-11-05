@@ -377,12 +377,12 @@ class StaffApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.meta.current_page', 1)
-            ->assertJsonPath('data.meta.per_page', 25)
-            ->assertJsonPath('data.meta.last_page', 2)
+            ->assertJsonPath('data.meta.per_page', 5)
+            ->assertJsonPath('data.meta.last_page', 6)
             ->assertJsonPath('data.meta.from', 1)
-            ->assertJsonPath('data.meta.to', 25)
+            ->assertJsonPath('data.meta.to', 5)
             ->assertJsonPath('data.meta.total', 30)
-            ->assertJsonCount(25, 'data.items')
+            ->assertJsonCount(5, 'data.items')
             ->assertJsonPath('data.summary.total', 30)
             ->assertJsonPath('data.summary.active', 30);
     }
@@ -398,7 +398,7 @@ class StaffApiTest extends TestCase
             ]);
         }
 
-        foreach ([10, 50] as $size) {
+        foreach ([5, 10, 50] as $size) {
             $response = $this->actingAs($admin)->getJson("/api/v1/staff?per_page={$size}");
 
             $response->assertOk()
@@ -418,9 +418,9 @@ class StaffApiTest extends TestCase
             ]);
         }
 
-        $this->actingAs($admin)->getJson('/api/v1/staff?per_page=5')
+        $this->actingAs($admin)->getJson('/api/v1/staff?per_page=2')
             ->assertOk()
-            ->assertJsonPath('data.meta.per_page', 10);
+            ->assertJsonPath('data.meta.per_page', 5);
 
         $this->actingAs($admin)->getJson('/api/v1/staff?per_page=999')
             ->assertOk()

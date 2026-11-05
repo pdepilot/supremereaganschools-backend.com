@@ -3068,6 +3068,42 @@ body.desk-alert-open {
   gap: 0.5rem;
 }
 
+.staff-page-numbers {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.staff-page-numbers .ghost-btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 0.45rem;
+  font-size: 0.68rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.staff-page-numbers .ghost-btn.is-current,
+.staff-page-numbers .ghost-btn:hover {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--chalk);
+}
+
+.staff-page-numbers .ghost-btn[disabled],
+.staff-page-numbers .ghost-btn.is-current {
+  opacity: 1;
+  cursor: default;
+}
+
+.staff-page-numbers .pager-ellipsis {
+  padding: 0 0.25rem;
+  color: var(--muted, #64748b);
+  font-size: 0.75rem;
+}
+
 [data-staff-prev],
 [data-staff-next] {
   cursor: pointer;

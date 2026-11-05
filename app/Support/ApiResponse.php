@@ -15,18 +15,18 @@ class ApiResponse
         ], $status);
     }
 
-    public static function paginated(string $message, mixed $data, mixed $paginator, int $status = 200): JsonResponse
+    public static function paginated(string $message, mixed $data, mixed $paginator, int $status = 200, array $extraMeta = []): JsonResponse
     {
         return response()->json([
             'success' => true,
             'message' => $message,
             'data' => $data,
-            'meta' => [
+            'meta' => array_merge([
                 'current_page' => method_exists($paginator, 'currentPage') ? $paginator->currentPage() : 1,
                 'last_page' => method_exists($paginator, 'lastPage') ? $paginator->lastPage() : 1,
                 'per_page' => method_exists($paginator, 'perPage') ? $paginator->perPage() : count($data),
                 'total' => method_exists($paginator, 'total') ? $paginator->total() : count($data),
-            ],
+            ], $extraMeta),
         ], $status);
     }
 

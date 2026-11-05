@@ -249,6 +249,7 @@
   const noticeEl = document.querySelector("[data-contact-notice]");
   const formNoticeEl = document.querySelector("[data-contact-form-notice]");
   const listEl = document.querySelector("[data-contact-list]");
+  const contactPager = document.querySelector("[data-contact-pager]");
   const searchEl = document.getElementById("contactSearch");
   const filterEl = document.getElementById("contactFilter");
   const emptyEl = document.querySelector("[data-contact-letter-empty]");
@@ -262,6 +263,7 @@
   const applicationsTab = document.querySelector("[data-admissions-tab]");
   const applicationsMetric = document.querySelector("[data-metric-applications]");
   const applicationListEl = document.querySelector("[data-application-list]");
+  const applicationPager = document.querySelector("[data-application-pager]");
   const applicationSearchEl = document.getElementById("applicationSearch");
   const applicationFilterEl = document.getElementById("applicationFilter");
   const applicationEmptyEl = document.querySelector("[data-application-empty]");
@@ -280,6 +282,10 @@
   let selectedApplication = null;
   let activeTab = "letters";
   let pollTimer = null;
+  let contactPage = 1;
+  const contactPerPage = 10;
+  let applicationPage = 1;
+  const applicationPerPage = 10;
 
   const setNotice = function (el, message) {
     if (el) el.textContent = message || "";
@@ -308,6 +314,66 @@
     }
   };
 
+  const renderContactPagination = function (total, lastPage) {
+    if (!contactPager) return;
+    if (total === 0) {
+      contactPager.innerHTML = '<span class="pager-info">Showing 0 of 0 letters</span>';
+      return;
+    }
+    const start = (contactPage - 1) * contactPerPage + 1;
+    const end = Math.min(contactPage * contactPerPage, total);
+    const infoText = "Showing " + start + "–" + end + " of " + total + " letters";
+
+    let pageBtns = "";
+    if (lastPage > 1) {
+      for (let i = 1; i <= lastPage; i++) {
+        if (i === 1 || i === lastPage || (i >= contactPage - 2 && i <= contactPage + 2)) {
+          const isCurrent = i === contactPage;
+          pageBtns += '<button type="button" class="ghost-btn' + (isCurrent ? " is-current" : "") + '" data-contact-page="' + i + '"' + (isCurrent ? ' aria-current="page"' : "") + ">" + i + "</button>";
+        } else if (i === contactPage - 3 || i === contactPage + 3) {
+          pageBtns += '<span class="pager-ellipsis" aria-hidden="true">…</span>';
+        }
+      }
+    }
+
+    contactPager.innerHTML = '<span class="pager-info">' + escapeHtml(infoText) + '</span>'
+      + '<div class="pager-btns">'
+      + '<button type="button" class="ghost-btn" data-contact-prev' + (contactPage <= 1 ? " disabled" : "") + '>Previous</button>'
+      + (pageBtns ? '<div class="staff-page-numbers">' + pageBtns + '</div>' : "")
+      + '<button type="button" class="ghost-btn" data-contact-next' + (contactPage >= lastPage ? " disabled" : "") + '>Next</button>'
+      + '</div>';
+  };
+
+  const renderApplicationPagination = function (total, lastPage) {
+    if (!applicationPager) return;
+    if (total === 0) {
+      applicationPager.innerHTML = '<span class="pager-info">Showing 0 of 0 applications</span>';
+      return;
+    }
+    const start = (applicationPage - 1) * applicationPerPage + 1;
+    const end = Math.min(applicationPage * applicationPerPage, total);
+    const infoText = "Showing " + start + "–" + end + " of " + total + " applications";
+
+    let pageBtns = "";
+    if (lastPage > 1) {
+      for (let i = 1; i <= lastPage; i++) {
+        if (i === 1 || i === lastPage || (i >= applicationPage - 2 && i <= applicationPage + 2)) {
+          const isCurrent = i === applicationPage;
+          pageBtns += '<button type="button" class="ghost-btn' + (isCurrent ? " is-current" : "") + '" data-application-page="' + i + '"' + (isCurrent ? ' aria-current="page"' : "") + ">" + i + "</button>";
+        } else if (i === applicationPage - 3 || i === applicationPage + 3) {
+          pageBtns += '<span class="pager-ellipsis" aria-hidden="true">…</span>';
+        }
+      }
+    }
+
+    applicationPager.innerHTML = '<span class="pager-info">' + escapeHtml(infoText) + '</span>'
+      + '<div class="pager-btns">'
+      + '<button type="button" class="ghost-btn" data-application-prev' + (applicationPage <= 1 ? " disabled" : "") + '>Previous</button>'
+      + (pageBtns ? '<div class="staff-page-numbers">' + pageBtns + '</div>' : "")
+      + '<button type="button" class="ghost-btn" data-application-next' + (applicationPage >= lastPage ? " disabled" : "") + '>Next</button>'
+      + '</div>';
+  };
+
   const paintList = function () {
     if (!listEl) return;
     const query = ((searchEl && searchEl.value) || "").trim().toLowerCase();
@@ -318,10 +384,17 @@
 
     if (!rows.length) {
       listEl.innerHTML = "<p>" + (letters.length ? "No letters match that search." : "No letters from the website yet.") + "</p>";
+      renderContactPagination(0, 1);
       return;
     }
 
-    listEl.innerHTML = rows.map(function (item) {
+    const total = rows.length;
+    const lastPage = Math.max(1, Math.ceil(total / contactPerPage));
+    if (contactPage > lastPage) contactPage = lastPage;
+    const start = (contactPage - 1) * contactPerPage;
+    const pageRows = rows.slice(start, start + contactPerPage);
+
+    listEl.innerHTML = pageRows.map(function (item) {
       const active = String(item.id) === String(selectedId) ? " is-active" : "";
       return '<article class="ticket' + active + '" data-contact-id="' + escapeHtml(item.id) + '">' +
         '<div class="ticket-code">' + escapeHtml(clockStamp(item.created_at)) + "</div>" +
@@ -331,6 +404,8 @@
         '<span class="badge">' + escapeHtml(badgeFor(item)) + "</span>" +
         "</article>";
     }).join("");
+
+    renderContactPagination(total, lastPage);
   };
 
   const paintApplicationList = function () {
@@ -346,10 +421,17 @@
       applicationListEl.innerHTML = "<p>" + (applications.length
         ? "No applications match that search."
         : "No admission applications have been submitted yet.") + "</p>";
+      renderApplicationPagination(0, 1);
       return;
     }
 
-    applicationListEl.innerHTML = rows.map(function (item) {
+    const total = rows.length;
+    const lastPage = Math.max(1, Math.ceil(total / applicationPerPage));
+    if (applicationPage > lastPage) applicationPage = lastPage;
+    const start = (applicationPage - 1) * applicationPerPage;
+    const pageRows = rows.slice(start, start + applicationPerPage);
+
+    applicationListEl.innerHTML = pageRows.map(function (item) {
       const active = String(item.id) === String(selectedApplicationId) ? " is-active" : "";
       const line = [item.reference, item.class_applied || item.level_name, item.parent_name]
         .filter(Boolean)
@@ -362,6 +444,8 @@
         '<span class="badge">' + escapeHtml(statusLabel(item.status)) + "</span>" +
         "</article>";
     }).join("");
+
+    renderApplicationPagination(total, lastPage);
   };
 
   const paintThread = function (item) {
@@ -661,10 +745,87 @@
     });
   }
 
-  if (searchEl) searchEl.addEventListener("input", paintList);
-  if (filterEl) filterEl.addEventListener("change", paintList);
-  if (applicationSearchEl) applicationSearchEl.addEventListener("input", paintApplicationList);
-  if (applicationFilterEl) applicationFilterEl.addEventListener("change", paintApplicationList);
+  if (searchEl) searchEl.addEventListener("input", function () {
+    contactPage = 1;
+    paintList();
+  });
+  if (filterEl) filterEl.addEventListener("change", function () {
+    contactPage = 1;
+    paintList();
+  });
+  if (applicationSearchEl) applicationSearchEl.addEventListener("input", function () {
+    applicationPage = 1;
+    paintApplicationList();
+  });
+  if (applicationFilterEl) applicationFilterEl.addEventListener("change", function () {
+    applicationPage = 1;
+    paintApplicationList();
+  });
+
+  if (contactPager) {
+    contactPager.addEventListener("click", function (event) {
+      const pageBtn = event.target.closest("[data-contact-page]");
+      const prevBtn = event.target.closest("[data-contact-prev]");
+      const nextBtn = event.target.closest("[data-contact-next]");
+
+      if (pageBtn) {
+        const target = parseInt(pageBtn.getAttribute("data-contact-page"), 10);
+        if (target && target !== contactPage) {
+          contactPage = target;
+          paintList();
+        }
+      } else if (prevBtn && !prevBtn.disabled) {
+        if (contactPage > 1) {
+          contactPage--;
+          paintList();
+        }
+      } else if (nextBtn && !nextBtn.disabled) {
+        const query = ((searchEl && searchEl.value) || "").trim().toLowerCase();
+        const filter = (filterEl && filterEl.value) || "";
+        const rows = letters.filter(function (item) {
+          return matchesFilter(item, filter) && matchesSearch(item, query);
+        });
+        const last = Math.max(1, Math.ceil(rows.length / contactPerPage));
+        if (contactPage < last) {
+          contactPage++;
+          paintList();
+        }
+      }
+    });
+  }
+
+  if (applicationPager) {
+    applicationPager.addEventListener("click", function (event) {
+      const pageBtn = event.target.closest("[data-application-page]");
+      const prevBtn = event.target.closest("[data-application-prev]");
+      const nextBtn = event.target.closest("[data-application-next]");
+
+      if (pageBtn) {
+        const target = parseInt(pageBtn.getAttribute("data-application-page"), 10);
+        if (target && target !== applicationPage) {
+          applicationPage = target;
+          paintApplicationList();
+        }
+      } else if (prevBtn && !prevBtn.disabled) {
+        if (applicationPage > 1) {
+          applicationPage--;
+          paintApplicationList();
+        }
+      } else if (nextBtn && !nextBtn.disabled) {
+        const query = ((applicationSearchEl && applicationSearchEl.value) || "").trim().toLowerCase();
+        const filter = (applicationFilterEl && applicationFilterEl.value) || "";
+        const rows = applications.filter(function (item) {
+          if (filter && item.status !== filter) return false;
+          return matchesApplicationSearch(item, query);
+        });
+        const last = Math.max(1, Math.ceil(rows.length / applicationPerPage));
+        if (applicationPage < last) {
+          applicationPage++;
+          paintApplicationList();
+        }
+      }
+    });
+  }
 
   document.querySelectorAll("[data-desk-tab]").forEach(function (btn) {
     btn.addEventListener("click", function () {

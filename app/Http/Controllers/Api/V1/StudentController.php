@@ -55,7 +55,8 @@ class StudentController extends Controller
             $query->where('id', $user?->studentProfile?->id);
         }
 
-        if ($search = $request->string('q')->toString()) {
+        $search = $request->filled('q') ? $request->string('q')->toString() : $request->string('search')->toString();
+        if ($search !== '') {
             $query->where(function ($builder) use ($search) {
                 $builder->where('admission_number', 'like', '%'.$search.'%')
                     ->orWhere('surname', 'like', '%'.$search.'%')
@@ -68,9 +69,63 @@ class StudentController extends Controller
             $query->where('status', $request->string('status'));
         }
 
+        if ($request->filled('class_id') || $request->filled('school_class_id')) {
+            $classId = (int) ($request->input('class_id') ?: $request->input('school_class_id'));
+            $query->whereHas('enrollments', function ($enrollment) use ($classId) {
+                $enrollment->where('status', EnrollmentStatus::Active)
+                    ->whereHas(
+                        'classSectionOffering.classSection',
+                        fn ($section) => $section->where('school_class_id', $classId)
+                    );
+            });
+        }
+
+        if ($request->filled('class_section_id')) {
+            $sectionId = $request->integer('class_section_id');
+            $query->whereHas('enrollments', function ($enrollment) use ($sectionId) {
+                $enrollment->where('status', EnrollmentStatus::Active)
+                    ->whereHas(
+                        'classSectionOffering',
+                        fn ($offering) => $offering->where('class_section_id', $sectionId)
+                    );
+            });
+        }
+
+        if ($request->filled('class_section_offering_id')) {
+            $offeringId = $request->integer('class_section_offering_id');
+            $query->whereHas('enrollments', function ($enrollment) use ($offeringId) {
+                $enrollment->where('status', EnrollmentStatus::Active)
+                    ->where('class_section_offering_id', $offeringId);
+            });
+        }
+
+        if ($request->filled('campus_id')) {
+            $campusId = $request->integer('campus_id');
+            $query->whereHas('enrollments', function ($enrollment) use ($campusId) {
+                $enrollment->where('status', EnrollmentStatus::Active)
+                    ->whereHas(
+                        'classSectionOffering',
+                        fn ($offering) => $offering->where('campus_id', $campusId)
+                    );
+            });
+        }
+
+        if ($request->filled('academic_session_id')) {
+            $sessionId = $request->integer('academic_session_id');
+            $query->whereHas('enrollments', function ($enrollment) use ($sessionId) {
+                $enrollment->where('status', EnrollmentStatus::Active)
+                    ->where('academic_session_id', $sessionId);
+            });
+        }
+
         if ($request->filled('level_id')) {
-            $query->whereHas('enrollments.classSectionOffering.classSection.schoolClass', function ($class) use ($request) {
-                $class->where('level_id', $request->integer('level_id'));
+            $levelId = $request->integer('level_id');
+            $query->whereHas('enrollments', function ($enrollment) use ($levelId) {
+                $enrollment->where('status', EnrollmentStatus::Active)
+                    ->whereHas(
+                        'classSectionOffering.classSection.schoolClass',
+                        fn ($class) => $class->where('level_id', $levelId)
+                    );
             });
         }
 
@@ -92,14 +147,29 @@ class StudentController extends Controller
             });
         }
 
+        $query->orderBy('surname')->orderBy('first_name');
+
         $limit = $request->integer('limit');
         if ($limit > 0) {
-            $query->limit(min($limit, 50));
+            $students = $query->limit(min($limit, 50))->get();
+
+            return ApiResponse::success('Pupils retrieved.', StudentResource::collection($students)->resolve());
         }
 
-        $students = $query->orderBy('surname')->orderBy('first_name')->get();
+        if ($request->boolean('all') || $request->input('paginate') === '0') {
+            $students = $query->get();
 
-        return ApiResponse::success('Pupils retrieved.', StudentResource::collection($students)->resolve());
+            return ApiResponse::success('Pupils retrieved.', StudentResource::collection($students)->resolve());
+        }
+
+        $perPage = max(1, min(100, $request->integer('per_page', 10)));
+        $rows = $query->paginate($perPage);
+
+        return ApiResponse::paginated(
+            'Pupils retrieved.',
+            StudentResource::collection($rows->items())->resolve(),
+            $rows
+        );
     }
 
     public function store(StoreStudentRequest $request): JsonResponse

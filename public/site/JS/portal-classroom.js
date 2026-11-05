@@ -439,6 +439,8 @@
     if (!needsList && !form && !staffForm && !document.getElementById("noticeTitle")) return;
 
     let allRows = [];
+    let noticePage = 1;
+    const noticePerPage = 10;
     let fingerprint = "";
     let selectedId = 0;
     let pollTimer = 0;
@@ -446,6 +448,7 @@
     const formNotice = document.querySelector("[data-notice-form-notice]");
     const boardNotice = document.querySelector("[data-notice-notice]");
     const boardCopy = document.querySelector("[data-notice-copy]");
+    const pager = document.querySelector("[data-notice-pager]");
     const formTitle = document.querySelector("[data-notice-form-title]");
     const dispatchBtn = document.querySelector("[data-notice-dispatch]");
     const draftBtn = document.querySelector("[data-notice-draft]");
@@ -587,9 +590,49 @@
       }
     };
 
+    const renderNoticePagination = function (total, lastPage) {
+      if (!pager) return;
+      if (total === 0) {
+        pager.innerHTML = '<span class="pager-info">Showing 0 of 0 circulars</span>';
+        return;
+      }
+      const start = (noticePage - 1) * noticePerPage + 1;
+      const end = Math.min(noticePage * noticePerPage, total);
+      const infoText = "Showing " + start + "–" + end + " of " + total + " circulars";
+
+      let pageBtns = "";
+      if (lastPage > 1) {
+        for (let i = 1; i <= lastPage; i++) {
+          if (i === 1 || i === lastPage || (i >= noticePage - 2 && i <= noticePage + 2)) {
+            const isCurrent = i === noticePage;
+            pageBtns += '<button type="button" class="ghost-btn' + (isCurrent ? " is-current" : "") + '" data-notice-page="' + i + '"' + (isCurrent ? ' aria-current="page"' : "") + ">" + i + "</button>";
+          } else if (i === noticePage - 3 || i === noticePage + 3) {
+            pageBtns += '<span class="pager-ellipsis" aria-hidden="true">…</span>';
+          }
+        }
+      }
+
+      pager.innerHTML = '<span class="pager-info">' + escapeHtml(infoText) + '</span>'
+        + '<div class="pager-btns">'
+        + '<button type="button" class="ghost-btn" data-notice-prev' + (noticePage <= 1 ? " disabled" : "") + '>Previous</button>'
+        + (pageBtns ? '<div class="staff-page-numbers">' + pageBtns + '</div>' : "")
+        + '<button type="button" class="ghost-btn" data-notice-next' + (noticePage >= lastPage ? " disabled" : "") + '>Next</button>'
+        + '</div>';
+    };
+
     const paintBoard = function () {
-      if (board) renderAnnouncements(filteredRows(), selectedId);
-      else renderAnnouncements(allRows, selectedId);
+      if (board) {
+        const matches = filteredRows();
+        const total = matches.length;
+        const lastPage = Math.max(1, Math.ceil(total / noticePerPage));
+        if (noticePage > lastPage) noticePage = lastPage;
+        const start = (noticePage - 1) * noticePerPage;
+        const pageRows = matches.slice(start, start + noticePerPage);
+        renderAnnouncements(pageRows, selectedId);
+        renderNoticePagination(total, lastPage);
+      } else {
+        renderAnnouncements(allRows, selectedId);
+      }
     };
 
     const applyRows = function (rows, force) {
@@ -740,9 +783,43 @@
       ["noticeSearch", "noticeStatusFilter", "noticeAudienceFilter"].forEach(function (id) {
         const node = document.getElementById(id);
         if (!node) return;
-        node.addEventListener("input", paintBoard);
-        node.addEventListener("change", paintBoard);
+        node.addEventListener("input", function () {
+          noticePage = 1;
+          paintBoard();
+        });
+        node.addEventListener("change", function () {
+          noticePage = 1;
+          paintBoard();
+        });
       });
+
+      if (pager) {
+        pager.addEventListener("click", function (event) {
+          const pageBtn = event.target.closest("[data-notice-page]");
+          const prevBtn = event.target.closest("[data-notice-prev]");
+          const nextBtn = event.target.closest("[data-notice-next]");
+
+          if (pageBtn) {
+            const target = parseInt(pageBtn.getAttribute("data-notice-page"), 10);
+            if (target && target !== noticePage) {
+              noticePage = target;
+              paintBoard();
+            }
+          } else if (prevBtn && !prevBtn.disabled) {
+            if (noticePage > 1) {
+              noticePage--;
+              paintBoard();
+            }
+          } else if (nextBtn && !nextBtn.disabled) {
+            const matches = filteredRows();
+            const last = Math.max(1, Math.ceil(matches.length / noticePerPage));
+            if (noticePage < last) {
+              noticePage++;
+              paintBoard();
+            }
+          }
+        });
+      }
 
       if (board) {
         board.addEventListener("click", function (event) {

@@ -37,10 +37,22 @@ class InvoiceController extends Controller
     {
         $this->authorize('viewAny', Invoice::class);
 
-        $rows = $this->scopedQuery($request)
+        $query = $this->scopedQuery($request)
             ->with($this->invoices->defaultRelations())
-            ->orderByDesc('id')
-            ->get();
+            ->orderByDesc('id');
+
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = max(1, min(100, $request->integer('per_page', 10)));
+            $paginator = $query->paginate($perPage);
+
+            return ApiResponse::paginated(
+                'Invoices retrieved.',
+                InvoiceResource::collection($paginator->items())->resolve(),
+                $paginator
+            );
+        }
+
+        $rows = $query->get();
 
         return ApiResponse::success('Invoices retrieved.', InvoiceResource::collection($rows)->resolve());
     }

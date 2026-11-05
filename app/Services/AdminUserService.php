@@ -32,9 +32,9 @@ class AdminUserService
 
     /**
      * @param  array{search?: string|null, role?: string|null, status?: string|null}  $filters
-     * @return Collection<int, User>
+     * @return Builder<User>
      */
-    public function list(array $filters = []): Collection
+    public function query(array $filters = []): Builder
     {
         $query = User::query()
             ->where(function (Builder $outer) {
@@ -74,7 +74,54 @@ class AdminUserService
             });
         }
 
-        return $query->get();
+        return $query;
+    }
+
+    /**
+     * @param  array{search?: string|null, role?: string|null, status?: string|null}  $filters
+     * @return Collection<int, User>
+     */
+    public function list(array $filters = []): Collection
+    {
+        return $this->query($filters)->get();
+    }
+
+    /**
+     * @param  array{search?: string|null, role?: string|null, status?: string|null}  $filters
+     */
+    public function paginate(array $filters = [], int $perPage = 10): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return $this->query($filters)->paginate($perPage);
+    }
+
+    /**
+     * Metric counts for the admin users dashboard.
+     *
+     * @return array{admins: int, active: int, suspended: int, super: int}
+     */
+    public function summary(): array
+    {
+        $base = User::query()->where(function (Builder $outer) {
+            $outer->whereHas(
+                'roles',
+                fn (Builder $roles) => $roles->whereIn('slug', RoleSlug::appointableDeskRoleValues())
+            )->orWhereHas(
+                'roles',
+                fn (Builder $roles) => $roles->where('slug', 'like', 'desk_u_%')
+            );
+        });
+
+        $total = (clone $base)->count();
+        $active = (clone $base)->where('status', UserStatus::Active)->count();
+        $suspended = (clone $base)->where('status', UserStatus::Suspended)->count();
+        $super = (clone $base)->whereHas('roles', fn ($r) => $r->where('slug', RoleSlug::SuperAdmin->value))->count();
+
+        return [
+            'admins' => $total,
+            'active' => $active,
+            'suspended' => $suspended,
+            'super' => $super,
+        ];
     }
 
     /**

@@ -71,15 +71,27 @@ class AdmissionApplicationController extends Controller
         ]);
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', AdmissionApplication::class);
 
-        $rows = AdmissionApplication::query()
+        $query = AdmissionApplication::query()
             ->with(['documents', 'level', 'academicSession'])
             ->where('status', '!=', ApplicationStatus::PendingPayment)
-            ->orderByDesc('created_at')
-            ->get();
+            ->orderByDesc('created_at');
+
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = max(1, min(100, $request->integer('per_page', 10)));
+            $paginator = $query->paginate($perPage);
+
+            return ApiResponse::paginated(
+                'Applications retrieved.',
+                AdmissionApplicationResource::collection($paginator->items())->resolve(),
+                $paginator
+            );
+        }
+
+        $rows = $query->get();
 
         return ApiResponse::success(
             'Applications retrieved.',

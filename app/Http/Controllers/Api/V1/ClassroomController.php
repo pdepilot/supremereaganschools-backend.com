@@ -55,7 +55,20 @@ class ClassroomController extends Controller
     {
         $this->authorize('viewAny', Announcement::class);
 
-        $rows = $this->announcements->visibleTo($request->user())->get();
+        $query = $this->announcements->visibleTo($request->user());
+
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = max(1, min(100, $request->integer('per_page', 10)));
+            $paginator = $query->paginate($perPage);
+
+            return ApiResponse::paginated(
+                'Announcements retrieved.',
+                AnnouncementResource::collection($paginator->items())->resolve(),
+                $paginator
+            );
+        }
+
+        $rows = $query->get();
 
         return ApiResponse::success('Announcements retrieved.', AnnouncementResource::collection($rows)->resolve());
     }

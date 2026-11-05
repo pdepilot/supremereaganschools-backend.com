@@ -86,6 +86,17 @@ class AttendanceController extends Controller
             }
         }
 
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = max(1, min(100, $request->integer('per_page', 10)));
+            $paginator = $query->orderByDesc('marked_on')->orderBy('id')->paginate($perPage);
+
+            return ApiResponse::paginated(
+                'Attendance records retrieved.',
+                AttendanceRecordResource::collection($paginator->items())->resolve(),
+                $paginator
+            );
+        }
+
         $records = $query->orderByDesc('marked_on')->orderBy('id')->get();
 
         return ApiResponse::success('Attendance retrieved.', AttendanceRecordResource::collection($records)->resolve());

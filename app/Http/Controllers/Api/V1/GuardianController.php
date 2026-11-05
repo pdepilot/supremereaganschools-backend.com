@@ -13,16 +13,39 @@ use App\Models\GuardianStudent;
 use App\Services\GuardianService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class GuardianController extends Controller
 {
     public function __construct(private readonly GuardianService $guardians) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', GuardianProfile::class);
 
-        $guardians = GuardianProfile::query()->with(['user', 'students'])->orderBy('full_name')->get();
+        $query = GuardianProfile::query()->with(['user', 'students'])->orderBy('full_name');
+
+        if ($request->filled('search')) {
+            $search = '%' . trim((string) $request->input('search')) . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', $search)
+                    ->orWhere('phone', 'like', $search)
+                    ->orWhereHas('user', fn ($u) => $u->where('email', 'like', $search));
+            });
+        }
+
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = max(1, min(100, $request->integer('per_page', 10)));
+            $paginator = $query->paginate($perPage);
+
+            return ApiResponse::paginated(
+                'Guardians retrieved.',
+                GuardianResource::collection($paginator->items())->resolve(),
+                $paginator
+            );
+        }
+
+        $guardians = $query->get();
 
         return ApiResponse::success('Guardians retrieved.', GuardianResource::collection($guardians)->resolve());
     }

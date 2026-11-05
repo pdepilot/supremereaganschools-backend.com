@@ -17,14 +17,26 @@ class ContactEnquiryController extends Controller
 {
     public function __construct(private readonly EnquiryService $enquiries) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', ContactEnquiry::class);
 
-        $rows = ContactEnquiry::query()
+        $query = ContactEnquiry::query()
             ->with(['assignee', 'replies.author'])
-            ->orderByDesc('created_at')
-            ->get();
+            ->orderByDesc('created_at');
+
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = max(1, min(100, $request->integer('per_page', 10)));
+            $paginator = $query->paginate($perPage);
+
+            return ApiResponse::paginated(
+                'Enquiries retrieved.',
+                ContactEnquiryResource::collection($paginator->items())->resolve(),
+                $paginator
+            );
+        }
+
+        $rows = $query->get();
 
         return ApiResponse::success('Enquiries retrieved.', ContactEnquiryResource::collection($rows)->resolve());
     }

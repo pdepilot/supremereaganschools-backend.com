@@ -1001,6 +1001,153 @@ class StudentApiTest extends TestCase
         $this->assertFalse($teacher->hasRole(RoleSlug::Parent));
     }
 
+    public function test_admin_can_filter_students_by_class_and_only_enrolled_pupils_are_returned(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $campus = $this->campus();
+
+        $primaryLevel = $this->level(['name' => 'Primary', 'slug' => 'primary-filter-test']);
+        $classBasic1 = $this->schoolClass($primaryLevel, ['name' => 'Basic 1', 'short_code' => 'B1-F']);
+        $classBasic2 = $this->schoolClass($primaryLevel, ['name' => 'Basic 2', 'short_code' => 'B2-F']);
+
+        $sectionBasic1 = $this->section($classBasic1, ['arm' => 'A', 'name' => 'Basic 1 A']);
+        $sectionBasic2 = $this->section($classBasic2, ['arm' => 'A', 'name' => 'Basic 2 A']);
+
+        $offeringBasic1 = $this->offering($sectionBasic1, $session, $campus);
+        $offeringBasic2 = $this->offering($sectionBasic2, $session, $campus);
+
+        $studentBasic1 = $this->student(null, ['first_name' => 'Emeka', 'surname' => 'Okoro', 'admission_number' => 'SRS/2025/B101']);
+        $studentBasic2 = $this->student(null, ['first_name' => 'Ngozi', 'surname' => 'Eze', 'admission_number' => 'SRS/2025/B201']);
+
+        $this->enroll($studentBasic1, $offeringBasic1, ['status' => EnrollmentStatus::Active]);
+        $this->enroll($studentBasic2, $offeringBasic2, ['status' => EnrollmentStatus::Active]);
+
+        // Filter by Basic 1
+        $response1 = $this->actingAs($admin)->getJson('/api/v1/students?class_id='.$classBasic1->id);
+        $response1->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $studentBasic1->id)
+            ->assertJsonPath('data.0.first_name', 'Emeka')
+            ->assertJsonMissing(['first_name' => 'Ngozi']);
+
+        // Filter by Basic 2
+        $response2 = $this->actingAs($admin)->getJson('/api/v1/students?class_id='.$classBasic2->id);
+        $response2->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $studentBasic2->id)
+            ->assertJsonPath('data.0.first_name', 'Ngozi')
+            ->assertJsonMissing(['first_name' => 'Emeka']);
+
+        // Filter by All Classes (no class_id param)
+        $responseAll = $this->actingAs($admin)->getJson('/api/v1/students');
+        $responseAll->assertOk();
+        $this->assertGreaterThanOrEqual(2, count($responseAll->json('data')));
+    }
+
+    public function test_class_filter_ignores_inactive_historical_enrollments(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $previousSession = $this->academicSession(['name' => '2024/2025']);
+        $campus = $this->campus();
+
+        $primaryLevel = $this->level(['name' => 'Primary', 'slug' => 'primary-history-test']);
+        $classBasic1 = $this->schoolClass($primaryLevel, ['name' => 'Basic 1', 'short_code' => 'B1-H']);
+        $classBasic2 = $this->schoolClass($primaryLevel, ['name' => 'Basic 2', 'short_code' => 'B2-H']);
+
+        $offeringBasic1 = $this->offering($this->section($classBasic1), $previousSession, $campus);
+        $offeringBasic2 = $this->offering($this->section($classBasic2), $session, $campus);
+
+        $student = $this->student(null, ['first_name' => 'Chidi', 'surname' => 'Umeh', 'admission_number' => 'SRS/2025/H101']);
+
+        // Historical completed/inactive enrollment in Basic 1
+        $this->enroll($student, $offeringBasic1, [
+            'status' => EnrollmentStatus::Completed,
+            'enrolled_on' => '2024-09-01',
+        ]);
+
+        // Currently active enrollment in Basic 2
+        $this->enroll($student, $offeringBasic2, [
+            'status' => EnrollmentStatus::Active,
+            'enrolled_on' => '2025-09-08',
+        ]);
+
+        // Student should NOT appear under Basic 1 because historical enrollment is completed/inactive
+        $resBasic1 = $this->actingAs($admin)->getJson('/api/v1/students?class_id='.$classBasic1->id);
+        $resBasic1->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        // Student MUST appear under Basic 2 because active enrollment is in Basic 2
+        $resBasic2 = $this->actingAs($admin)->getJson('/api/v1/students?class_id='.$classBasic2->id);
+        $resBasic2->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $student->id);
+    }
+
+    public function test_student_directory_supports_pagination(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $campus = $this->campus();
+        $offering = $this->offering(null, $session, $campus);
+
+        for ($i = 1; $i <= 15; $i++) {
+            $s = $this->student(null, [
+                'admission_number' => 'SRS/PAG/'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'first_name' => 'Pupil'.$i,
+            ]);
+            $this->enroll($s, $offering);
+        }
+
+        $page1 = $this->actingAs($admin)->getJson('/api/v1/students?per_page=10&page=1');
+        $page1->assertOk()
+            ->assertJsonCount(10, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.per_page', 10);
+        $this->assertGreaterThanOrEqual(15, $page1->json('meta.total'));
+        $this->assertGreaterThanOrEqual(2, $page1->json('meta.last_page'));
+
+        $page2 = $this->actingAs($admin)->getJson('/api/v1/students?per_page=10&page=2');
+        $page2->assertOk()
+            ->assertJsonPath('meta.current_page', 2);
+        $this->assertGreaterThanOrEqual(5, count($page2->json('data')));
+    }
+
+    public function test_class_filter_combines_with_search(): void
+    {
+        $admin = $this->admin();
+        $session = $this->academicSession();
+        $campus = $this->campus();
+
+        $level = $this->level(['name' => 'Primary', 'slug' => 'primary-search-test']);
+        $basic1 = $this->schoolClass($level, ['name' => 'Basic 1', 'short_code' => 'B1-S']);
+        $basic2 = $this->schoolClass($level, ['name' => 'Basic 2', 'short_code' => 'B2-S']);
+
+        $offering1 = $this->offering($this->section($basic1), $session, $campus);
+        $offering2 = $this->offering($this->section($basic2), $session, $campus);
+
+        $s1 = $this->student(null, ['first_name' => 'Adaeze', 'surname' => 'Okoro', 'admission_number' => 'SRS/COMB/001']);
+        $s2 = $this->student(null, ['first_name' => 'Adaobi', 'surname' => 'Eze', 'admission_number' => 'SRS/COMB/002']);
+        $s3 = $this->student(null, ['first_name' => 'Adanna', 'surname' => 'Nwosu', 'admission_number' => 'SRS/COMB/003']);
+
+        $this->enroll($s1, $offering1); // Adaeze in Basic 1
+        $this->enroll($s2, $offering1); // Adaobi in Basic 1
+        $this->enroll($s3, $offering2); // Adanna in Basic 2
+
+        // Search 'Adaobi' in Basic 1
+        $res = $this->actingAs($admin)->getJson('/api/v1/students?class_id='.$basic1->id.'&search=Adaobi');
+        $res->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $s2->id)
+            ->assertJsonPath('data.0.first_name', 'Adaobi');
+
+        // Search 'Adanna' in Basic 1 (she is in Basic 2, should not appear)
+        $res2 = $this->actingAs($admin)->getJson('/api/v1/students?class_id='.$basic1->id.'&search=Adanna');
+        $res2->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */

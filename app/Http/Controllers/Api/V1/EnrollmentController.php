@@ -48,6 +48,17 @@ class EnrollmentController extends Controller
             $query->where('academic_session_id', $request->integer('academic_session_id'));
         }
 
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = max(1, min(100, $request->integer('per_page', 10)));
+            $paginator = $query->orderByDesc('enrolled_on')->paginate($perPage);
+
+            return ApiResponse::paginated(
+                'Enrollments retrieved.',
+                EnrollmentResource::collection($paginator->items())->resolve(),
+                $paginator
+            );
+        }
+
         return ApiResponse::success(
             'Enrollments retrieved.',
             EnrollmentResource::collection($query->orderByDesc('enrolled_on')->get())->resolve(),

@@ -236,6 +236,7 @@
     if (!table) return;
 
     const search = document.querySelector("[data-pupil-search]");
+    const classFilter = document.querySelector("[data-pupil-class]");
     const feeFilter = document.querySelector("[data-pupil-fees]");
     const statusFilter = document.querySelector("[data-pupil-status]");
     const pager = document.querySelector("[data-pupil-pager]");
@@ -262,7 +263,12 @@
     let rows = [];
     let offerings = [];
     let classArms = [];
+    let rawClasses = [];
     let school = {};
+    let pupilPage = 1;
+    let pupilPerPage = 10;
+    let pupilMeta = { current_page: 1, last_page: 1, per_page: 10, total: 0, from: 0, to: 0 };
+    let pupilSearchTimer = null;
     let viewing = null;
     let editingId = null;
     let photoFile = null;
@@ -677,41 +683,258 @@
       });
     };
 
+    const getSelectedClassFilter = function () {
+      if (!classFilter) return { classId: null, sectionId: null, rawValue: "", label: "" };
+      const raw = (classFilter.value || "").trim();
+      if (!raw || raw.toLowerCase() === "all" || raw.toLowerCase() === "all classes") {
+        return { classId: null, sectionId: null, rawValue: "", label: "All Classes" };
+      }
+      const opt = classFilter.selectedOptions && classFilter.selectedOptions[0];
+      const label = opt ? opt.textContent.trim().replace(/^↳\s*/, "") : raw;
+
+      if (raw.indexOf("class:") === 0) {
+        return { classId: parseInt(raw.substring(6), 10), sectionId: null, rawValue: raw, label: label };
+      }
+      if (raw.indexOf("section:") === 0) {
+        return { classId: null, sectionId: parseInt(raw.substring(8), 10), rawValue: raw, label: label };
+      }
+      if (opt && opt.dataset.classId) {
+        return {
+          classId: parseInt(opt.dataset.classId, 10),
+          sectionId: opt.dataset.sectionId ? parseInt(opt.dataset.sectionId, 10) : null,
+          rawValue: raw,
+          label: label
+        };
+      }
+      if (/^\d+$/.test(raw)) {
+        return { classId: parseInt(raw, 10), sectionId: null, rawValue: raw, label: label };
+      }
+      const matchedClass = rawClasses.find(function (c) {
+        return (c.name || "").toLowerCase() === raw.toLowerCase();
+      });
+      if (matchedClass) {
+        return { classId: matchedClass.id, sectionId: null, rawValue: raw, label: matchedClass.name };
+      }
+      const matchedArm = classArms.find(function (a) {
+        return (a.name || "").toLowerCase() === raw.toLowerCase();
+      });
+      if (matchedArm) {
+        return { classId: null, sectionId: matchedArm.id, rawValue: raw, label: matchedArm.name };
+      }
+      return { classId: null, sectionId: null, rawValue: raw, label: label };
+    };
+
+    const paintClassFilter = function () {
+      if (!classFilter) return;
+      const current = classFilter.value;
+      let html = '<option value="">All Classes</option>';
+
+      rawClasses.forEach(function (klass) {
+        if (klass.is_active === false || klass.is_active === 0 || klass.is_active === "0") return;
+        const sections = (klass.sections || []).filter(function (s) {
+          return !(s.is_active === false || s.is_active === 0 || s.is_active === "0");
+        });
+
+        html += '<option value="class:' + klass.id + '" data-class-id="' + klass.id + '" data-name="' + escapeHtml(klass.name) + '">' + escapeHtml(klass.name) + '</option>';
+
+        if (sections.length > 1) {
+          sections.forEach(function (sec) {
+            const secName = sec.name || ((klass.name || "Class") + (sec.arm ? " " + sec.arm : ""));
+            html += '<option value="section:' + sec.id + '" data-class-id="' + klass.id + '" data-section-id="' + sec.id + '" data-name="' + escapeHtml(secName) + '">&nbsp;&nbsp;↳ ' + escapeHtml(secName) + '</option>';
+          });
+        }
+      });
+
+      classFilter.innerHTML = html;
+      if (current) classFilter.value = current;
+    };
+
     const matchesFilters = function (row) {
       const query = ((search && search.value) || "").trim().toLowerCase();
       const status = statusFilter && statusFilter.value;
       const feeState = feeFilter && feeFilter.value;
-      const hay = ((row.full_name || "") + " " + (row.admission_number || "")).toLowerCase();
-      if (query && hay.indexOf(query) === -1) return false;
+      const selected = getSelectedClassFilter();
+
+      if (query) {
+        const hay = ((row.full_name || "") + " " + (row.admission_number || "")).toLowerCase();
+        if (hay.indexOf(query) === -1) return false;
+      }
+
       if (status === "suspended") {
         if (row.account_status !== "suspended") return false;
       } else if (status && row.status !== status) return false;
+
       if (feeState && (row.fee_state || "none") !== feeState) return false;
+
+      if (selected.classId) {
+        if (row.school_class_id && Number(row.school_class_id) !== Number(selected.classId)) return false;
+        if (!row.school_class_id && row.class_name && row.class_name.toLowerCase() !== selected.label.toLowerCase()) return false;
+      } else if (selected.sectionId) {
+        if (row.class_section_id && Number(row.class_section_id) !== Number(selected.sectionId)) return false;
+        if (!row.class_section_id && row.current_form && row.current_form.toLowerCase() !== selected.label.toLowerCase()) return false;
+      }
+
       return true;
+    };
+
+    const renderPupilPagination = function () {
+      if (!pager) return;
+      const current = pupilMeta.current_page || 1;
+      const last = Math.max(1, pupilMeta.last_page || 1);
+      const total = (pupilMeta.total != null) ? pupilMeta.total : rows.length;
+      const from = (pupilMeta.from != null) ? pupilMeta.from : (total ? (current - 1) * pupilPerPage + 1 : 0);
+      const to = (pupilMeta.to != null) ? pupilMeta.to : Math.min(total, current * pupilPerPage);
+      pupilPage = current;
+
+      if (!total) {
+        pager.innerHTML = '<span class="pager-info">Showing 0 of 0 pupils</span>';
+        return;
+      }
+
+      let html = '<span class="pager-info">Showing ' + from + '–' + to + ' of ' + total + ' pupils</span>';
+      let buttons = '<div class="pager-btns">';
+      buttons += '<button type="button" data-pupil-page="' + (current - 1) + '"' + (current <= 1 ? ' disabled' : '') + '>Previous</button>';
+
+      for (let i = 1; i <= last; i++) {
+        if (last <= 7 || i === 1 || i === last || (i >= current - 1 && i <= current + 1)) {
+          buttons += '<button type="button" class="' + (i === current ? 'current' : '') + '" data-pupil-page="' + i + '"' + (i === current ? ' disabled aria-current="page"' : '') + '>' + i + '</button>';
+        } else if (i === current - 2 || i === current + 2) {
+          buttons += '<span class="pager-ellipsis" style="padding: 0 4px; color: var(--muted, #64748b);">…</span>';
+        }
+      }
+
+      buttons += '<button type="button" data-pupil-page="' + (current + 1) + '"' + (current >= last ? ' disabled' : '') + '>Next</button>';
+      buttons += '</div>';
+
+      pager.innerHTML = html + buttons;
     };
 
     const apply = function () {
       const visible = rows.filter(matchesFilters);
-      if (splitTables.nursery) {
-        fillPupilTable(splitTables.nursery, visible.filter(function (row) { return row.wing === "nursery"; }), "No nursery pupils on the roll.");
-        fillPupilTable(splitTables.primary, visible.filter(function (row) { return row.wing === "primary"; }), "No primary pupils on the roll.");
-        fillPupilTable(splitTables.secondary, visible.filter(function (row) { return row.wing === "secondary"; }), "No secondary students on the roll.");
-        const unplaced = visible.filter(function (row) { return !row.wing; });
-        fillPupilTable(splitTables.unplaced, unplaced, "No unplaced pupils.");
-        if (unplacedWrap) unplacedWrap.hidden = unplaced.length === 0;
-      } else {
-        fillPupilTable(table, visible, wing === "secondary" ? "No students on this desk yet." : "No pupils on this desk yet.");
+      const selected = getSelectedClassFilter();
+      const isClassSelected = !!(selected.classId || selected.sectionId);
+
+      let targetWing = null;
+      if (isClassSelected) {
+        const found = rawClasses.find(function (c) {
+          return c.id === selected.classId || (c.sections || []).some(function (s) { return s.id === selected.sectionId; });
+        });
+        const levelSlug = found && found.level && found.level.slug;
+        if (levelSlug === "nursery" || levelSlug === "activity") targetWing = "nursery";
+        else if (levelSlug === "primary") targetWing = "primary";
+        else if (levelSlug === "jss" || levelSlug === "ss" || levelSlug === "secondary") targetWing = "secondary";
       }
 
-      if (pager) pager.textContent = "Showing " + visible.length + " of " + rows.length;
+      if (splitTables.nursery) {
+        const nurseryWrap = splitTables.nursery.closest(".ledger-wrap");
+        const nurseryH3 = nurseryWrap && nurseryWrap.previousElementSibling && nurseryWrap.previousElementSibling.tagName === "H3" ? nurseryWrap.previousElementSibling : null;
+        const primaryWrap = splitTables.primary && splitTables.primary.closest(".ledger-wrap");
+        const primaryH3 = primaryWrap && primaryWrap.previousElementSibling && primaryWrap.previousElementSibling.tagName === "H3" ? primaryWrap.previousElementSibling : null;
+        const secondaryWrap = splitTables.secondary && splitTables.secondary.closest(".ledger-wrap");
+        const secondaryH3 = secondaryWrap && secondaryWrap.previousElementSibling && secondaryWrap.previousElementSibling.tagName === "H3" ? secondaryWrap.previousElementSibling : null;
+
+        if (isClassSelected && targetWing) {
+          if (nurseryWrap) nurseryWrap.hidden = (targetWing !== "nursery");
+          if (nurseryH3) nurseryH3.hidden = (targetWing !== "nursery");
+          if (primaryWrap) primaryWrap.hidden = (targetWing !== "primary");
+          if (primaryH3) primaryH3.hidden = (targetWing !== "primary");
+          if (secondaryWrap) secondaryWrap.hidden = (targetWing !== "secondary");
+          if (secondaryH3) secondaryH3.hidden = (targetWing !== "secondary");
+          if (unplacedWrap) unplacedWrap.hidden = true;
+
+          const emptyMsg = targetWing === "secondary"
+            ? ("No students enrolled in " + selected.label + ".")
+            : ("No pupils enrolled in " + selected.label + ".");
+
+          if (targetWing === "nursery") fillPupilTable(splitTables.nursery, visible, emptyMsg);
+          else if (targetWing === "primary") fillPupilTable(splitTables.primary, visible, emptyMsg);
+          else if (targetWing === "secondary") fillPupilTable(splitTables.secondary, visible, emptyMsg);
+        } else {
+          if (nurseryWrap) nurseryWrap.hidden = false;
+          if (nurseryH3) nurseryH3.hidden = false;
+          if (primaryWrap) primaryWrap.hidden = false;
+          if (primaryH3) primaryH3.hidden = false;
+          if (secondaryWrap) secondaryWrap.hidden = false;
+          if (secondaryH3) secondaryH3.hidden = false;
+
+          fillPupilTable(splitTables.nursery, visible.filter(function (row) { return row.wing === "nursery"; }), "No nursery pupils on the roll.");
+          fillPupilTable(splitTables.primary, visible.filter(function (row) { return row.wing === "primary"; }), "No primary pupils on the roll.");
+          fillPupilTable(splitTables.secondary, visible.filter(function (row) { return row.wing === "secondary"; }), "No secondary students on the roll.");
+          const unplaced = visible.filter(function (row) { return !row.wing; });
+          fillPupilTable(splitTables.unplaced, unplaced, "No unplaced pupils.");
+          if (unplacedWrap) unplacedWrap.hidden = unplaced.length === 0;
+        }
+      } else {
+        const emptyMsg = isClassSelected
+          ? ("No pupils enrolled in " + selected.label + ".")
+          : (wing === "secondary" ? "No students on this desk yet." : "No pupils on this desk yet.");
+        fillPupilTable(table, visible, emptyMsg);
+      }
+
+      renderPupilPagination();
+
       if (!wing) {
-        setMetricValue("on-roll", String(rows.length));
+        const totalCount = pupilMeta.total != null ? pupilMeta.total : rows.length;
+        setMetricValue("on-roll", String(totalCount));
         setMetricValue("active", String(rows.filter(function (row) { return row.status === "active"; }).length));
         setMetricValue("pending", String(rows.filter(function (row) { return row.status === "pending"; }).length));
         setMetricValue("inactive", String(rows.filter(function (row) {
           return row.status === "inactive" || row.status === "withdrawn" || row.status === "graduated";
         }).length));
       }
+    };
+
+    const pupilQueryString = function () {
+      const params = [];
+      params.push("page=" + encodeURIComponent(pupilPage));
+      params.push("per_page=" + encodeURIComponent(pupilPerPage));
+
+      const q = ((search && search.value) || "").trim();
+      if (q) params.push("q=" + encodeURIComponent(q));
+
+      const stat = statusFilter && statusFilter.value;
+      if (stat) params.push("status=" + encodeURIComponent(stat));
+
+      const selected = getSelectedClassFilter();
+      if (selected.classId) params.push("class_id=" + encodeURIComponent(selected.classId));
+      if (selected.sectionId) params.push("class_section_id=" + encodeURIComponent(selected.sectionId));
+
+      if (wing) params.push("wing=" + encodeURIComponent(wing));
+
+      return params.join("&");
+    };
+
+    const fetchPupils = function () {
+      const qs = pupilQueryString();
+      return request("/api/v1/students?" + qs).then(function (result) {
+        if (!result.ok) {
+          fillPupilTable(table, [], firstError(result.body));
+          if (splitTables.nursery) {
+            fillPupilTable(splitTables.primary, [], firstError(result.body));
+            fillPupilTable(splitTables.secondary, [], firstError(result.body));
+          }
+          renderPupilPagination();
+          return;
+        }
+
+        const data = result.body.data;
+        rows = Array.isArray(data) ? data : ((data && data.items) || []);
+        pupilMeta = result.body.meta || (data && data.meta) || {
+          current_page: pupilPage,
+          last_page: 1,
+          per_page: pupilPerPage,
+          total: rows.length,
+          from: rows.length ? 1 : 0,
+          to: rows.length
+        };
+
+        if (pupilMeta.last_page > 0 && pupilPage > pupilMeta.last_page) {
+          pupilPage = pupilMeta.last_page;
+          return fetchPupils();
+        }
+
+        apply();
+      });
     };
 
     const fillOfferings = function (sessionId) {
@@ -819,9 +1042,9 @@
     };
 
     const load = function () {
-      const query = wing ? "?wing=" + encodeURIComponent(wing) : "";
+      const qs = pupilQueryString();
       return Promise.all([
-        request("/api/v1/students" + query),
+        request("/api/v1/students?" + qs),
         request("/api/v1/school-settings"),
         request("/api/v1/class-section-offerings?is_active=1"),
         request("/api/v1/campuses"),
@@ -834,15 +1057,26 @@
             fillPupilTable(splitTables.primary, [], firstError(results[0].body));
             fillPupilTable(splitTables.secondary, [], firstError(results[0].body));
           }
+          renderPupilPagination();
           return;
         }
 
-        rows = results[0].body.data || [];
+        const data = results[0].body.data;
+        rows = Array.isArray(data) ? data : ((data && data.items) || []);
+        pupilMeta = results[0].body.meta || (data && data.meta) || {
+          current_page: pupilPage,
+          last_page: 1,
+          per_page: pupilPerPage,
+          total: rows.length,
+          from: rows.length ? 1 : 0,
+          to: rows.length
+        };
         school = (results[1].ok && results[1].body.data) || {};
         offerings = (results[2].ok && results[2].body.data) || [];
         if (!Array.isArray(offerings)) offerings = [];
         const campuses = (results[3].ok && results[3].body.data) || [];
-        classArms = flattenClassArms((results[4].ok && results[4].body.data) || []);
+        rawClasses = (results[4].ok && results[4].body.data) || [];
+        classArms = flattenClassArms(rawClasses);
         const campus = campuses.find(function (row) { return row.is_active; }) || campuses[0];
         const session = school.current_academic_session || {};
         const sessionName = session.name || "";
@@ -859,15 +1093,48 @@
           document.title = "Pupils | " + school.name;
         }
         fillOfferings(school.current_academic_session_id || session.id || null);
+        paintClassFilter();
         apply();
       });
     };
 
-    [search, feeFilter, statusFilter].forEach(function (node) {
+    if (classFilter) {
+      classFilter.addEventListener("change", function () {
+        pupilPage = 1;
+        fetchPupils();
+      });
+    }
+
+    if (search) {
+      search.addEventListener("input", function () {
+        if (pupilSearchTimer) clearTimeout(pupilSearchTimer);
+        pupilSearchTimer = setTimeout(function () {
+          pupilPage = 1;
+          fetchPupils();
+        }, 300);
+      });
+    }
+
+    [feeFilter, statusFilter].forEach(function (node) {
       if (!node) return;
-      node.addEventListener("input", apply);
-      node.addEventListener("change", apply);
+      node.addEventListener("change", function () {
+        pupilPage = 1;
+        fetchPupils();
+      });
     });
+
+    if (pager) {
+      pager.addEventListener("click", function (event) {
+        const pageBtn = event.target.closest("[data-pupil-page]");
+        if (pageBtn) {
+          const target = parseInt(pageBtn.getAttribute("data-pupil-page"), 10);
+          if (target && target !== pupilPage) {
+            pupilPage = target;
+            fetchPupils();
+          }
+        }
+      });
+    }
 
     rollRoot.addEventListener("click", function (event) {
       const viewBtn = event.target.closest("[data-view-pupil]");
@@ -1191,14 +1458,14 @@
     const root = document.querySelector("[data-staff-root]") || table;
     const submit = form && form.querySelector("[data-staff-submit]");
     let rows = [];
-    let meta = { current_page: 1, last_page: 1, per_page: 25, total: 0 };
+    let meta = { current_page: 1, last_page: 1, per_page: 5, total: 0, from: 0, to: 0 };
     let summary = null;
     let departments = [];
     let offerings = [];
     let subjectCount = 0;
     let editingId = null;
     let currentPage = 1;
-    let perPage = 25;
+    let perPage = 5;
     let searchDebounceTimer = null;
     let selectedFormOfferings = [];
 
@@ -1406,16 +1673,40 @@
     const renderPagination = function () {
       const current = meta.current_page || 1;
       const last = Math.max(1, meta.last_page || 1);
+      const total = (meta.total != null) ? meta.total : rows.length;
+      const from = (meta.from != null) ? meta.from : (total ? (current - 1) * perPage + 1 : 0);
+      const to = (meta.to != null) ? meta.to : Math.min(total, current * perPage);
       currentPage = current;
 
       if (pageInfo) {
-        pageInfo.textContent = "Page " + current + " of " + last;
+        if (!total) {
+          pageInfo.textContent = "Showing 0 of 0 staff";
+        } else {
+          pageInfo.textContent = "Showing " + from + "–" + to + " of " + total + " staff";
+        }
       }
       if (prevBtn) {
         prevBtn.disabled = current <= 1;
       }
       if (nextBtn) {
         nextBtn.disabled = current >= last;
+      }
+
+      const numbers = document.querySelector("[data-staff-page-numbers]");
+      if (numbers) {
+        if (last <= 1) {
+          numbers.innerHTML = "";
+        } else {
+          let html = "";
+          for (let i = 1; i <= last; i++) {
+            if (last <= 7 || i === 1 || i === last || (i >= current - 1 && i <= current + 1)) {
+              html += '<button class="ghost-btn' + (i === current ? ' is-current' : '') + '" type="button" data-staff-page="' + i + '"' + (i === current ? ' disabled aria-current="page"' : '') + '>' + i + '</button>';
+            } else if (i === current - 2 || i === current + 2) {
+              html += '<span class="pager-ellipsis">…</span>';
+            }
+          }
+          numbers.innerHTML = html;
+        }
       }
     };
 
@@ -1530,6 +1821,19 @@
         if (currentPage < (meta.last_page || 1)) {
           currentPage++;
           fetchStaff();
+        }
+      });
+    }
+
+    if (pagination) {
+      pagination.addEventListener("click", function (event) {
+        const pageBtn = event.target.closest("[data-staff-page]");
+        if (pageBtn) {
+          const target = parseInt(pageBtn.getAttribute("data-staff-page"), 10);
+          if (target && target !== currentPage) {
+            currentPage = target;
+            fetchStaff();
+          }
         }
       });
     }

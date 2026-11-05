@@ -79,19 +79,21 @@ class StaffController extends Controller
             }
         }
 
-        $supportedPerPage = [10, 25, 50, 100];
-        $requestedPerPage = $request->integer('per_page', 25);
+        $supportedPerPage = [5, 10, 25, 50, 100];
+        $requestedPerPage = $request->integer('per_page', 5);
         if (! in_array($requestedPerPage, $supportedPerPage, true)) {
-            if ($requestedPerPage <= 10) {
-                $perPage = 10;
+            if ($requestedPerPage <= 5) {
+                $perPage = 5;
             } elseif ($requestedPerPage >= 100) {
                 $perPage = 100;
-            } elseif ($requestedPerPage > 10 && $requestedPerPage <= 37) {
+            } elseif ($requestedPerPage > 5 && $requestedPerPage <= 15) {
+                $perPage = 10;
+            } elseif ($requestedPerPage > 15 && $requestedPerPage <= 37) {
                 $perPage = 25;
             } elseif ($requestedPerPage > 37 && $requestedPerPage < 100) {
                 $perPage = 50;
             } else {
-                $perPage = 25;
+                $perPage = 5;
             }
         } else {
             $perPage = $requestedPerPage;

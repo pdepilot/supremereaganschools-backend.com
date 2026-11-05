@@ -101,6 +101,7 @@
   const search = document.querySelector("[data-admins-search]");
   const statusFilter = document.querySelector("[data-admins-status]");
   const roleFilter = document.querySelector("[data-admins-role]");
+  const pager = document.querySelector("[data-admins-pager]");
   const roleSelect = document.querySelector("[data-admins-role-select]");
   const permissionsBox = document.querySelector("[data-admins-permissions]");
   const permissionsField = document.querySelector("[data-admins-permissions-field]");
@@ -130,6 +131,10 @@
   let editingId = null;
   let viewingId = null;
   let me = window.srsMe || null;
+  let adminPage = 1;
+  const adminPerPage = 10;
+  let adminMeta = { current_page: 1, last_page: 1, per_page: 10, total: 0 };
+  let searchDebounceTimer = null;
 
   const isSuper = function () {
     return !!(me && (me.is_super_admin || (me.roles || []).indexOf("super_admin") !== -1));
@@ -366,26 +371,66 @@
     form.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
-  const filtered = function () {
-    const q = ((search && search.value) || "").trim().toLowerCase();
+  const buildAdminQuery = function () {
+    const params = new URLSearchParams();
+    params.set("page", String(adminPage));
+    params.set("per_page", String(adminPerPage));
+    const q = ((search && search.value) || "").trim();
+    if (q) params.set("search", q);
     const status = (statusFilter && statusFilter.value) || "";
+    if (status) params.set("status", status);
     const role = (roleFilter && roleFilter.value) || "";
-    return rows.filter(function (row) {
-      if (status && row.status !== status) return false;
-      if (role && row.role !== role && (row.roles || []).indexOf(role) === -1) return false;
-      if (!q) return true;
-      return String(row.name || "").toLowerCase().indexOf(q) !== -1
-        || String(row.email || "").toLowerCase().indexOf(q) !== -1;
-    });
+    if (role) params.set("role", role);
+    return params.toString();
+  };
+
+  const renderPagination = function () {
+    if (!pager) return;
+    const total = adminMeta.total || 0;
+    const lastPage = adminMeta.last_page || 1;
+    const current = adminMeta.current_page || 1;
+
+    if (total === 0) {
+      pager.innerHTML = '<span class="pager-info">Showing 0 of 0 desk accounts</span>';
+      return;
+    }
+
+    const start = (current - 1) * adminPerPage + 1;
+    const end = Math.min(current * adminPerPage, total);
+    const infoText = "Showing " + start + "–" + end + " of " + total + " desk accounts";
+
+    let pageBtns = "";
+    if (lastPage > 1) {
+      for (let i = 1; i <= lastPage; i++) {
+        if (i === 1 || i === lastPage || (i >= current - 2 && i <= current + 2)) {
+          const isCurrent = i === current;
+          pageBtns += '<button type="button" class="ghost-btn' + (isCurrent ? " is-current" : "") + '" data-admin-page="' + i + '"' + (isCurrent ? ' aria-current="page"' : "") + ">" + i + "</button>";
+        } else if (i === current - 3 || i === current + 3) {
+          pageBtns += '<span class="pager-ellipsis" aria-hidden="true">…</span>';
+        }
+      }
+    }
+
+    pager.innerHTML = '<span class="pager-info">' + escapeHtml(infoText) + '</span>'
+      + '<div class="pager-btns">'
+      + '<button type="button" class="ghost-btn" data-admin-prev' + (current <= 1 ? " disabled" : "") + '>Previous</button>'
+      + (pageBtns ? '<div class="staff-page-numbers">' + pageBtns + '</div>' : '')
+      + '<button type="button" class="ghost-btn" data-admin-next' + (current >= lastPage ? " disabled" : "") + '>Next</button>'
+      + '</div>';
   };
 
   const paint = function () {
-    const list = filtered();
-    setMetric("admins", String(rows.length));
-    setMetric("active", String(rows.filter(function (row) { return row.status === "active"; }).length));
-    setMetric("suspended", String(rows.filter(function (row) { return row.status === "suspended"; }).length));
-    setMetric("super", String(rows.filter(function (row) { return row.is_super_admin; }).length));
-    if (copy) copy.textContent = list.length + " of " + rows.length + " desk accounts";
+    const list = rows;
+    const total = adminMeta.total || rows.length;
+    if (copy) {
+      if (total === 0) {
+        copy.textContent = "0 desk accounts";
+      } else {
+        const start = (adminMeta.current_page - 1) * adminPerPage + 1;
+        const end = Math.min(adminMeta.current_page * adminPerPage, total);
+        copy.textContent = "Showing " + start + "–" + end + " of " + total + " desk accounts";
+      }
+    }
 
     if (!list.length) {
       table.innerHTML = '<tr><td colspan="6">No admin users match this search.</td></tr>';
@@ -420,21 +465,52 @@
     }).join("");
   };
 
-  const load = function () {
-    return Promise.all([
-      request("/api/v1/admins"),
-      request("/api/v1/admins/roles"),
-      request("/api/v1/admins/permissions")
-    ]).then(function (results) {
-      const listRes = results[0];
-      const rolesRes = results[1];
-      const permissionsRes = results[2];
+  const fetchAdmins = function () {
+    const qs = buildAdminQuery();
+    return request("/api/v1/admins?" + qs).then(function (listRes) {
       if (!listRes.ok) {
         setNotice(notice, firstError(listRes.body), false);
         table.innerHTML = '<tr><td colspan="6">Unable to load admin users.</td></tr>';
+        renderPagination();
         return;
       }
       rows = listRes.body.data || [];
+      adminMeta = listRes.body.meta || {
+        current_page: adminPage,
+        last_page: 1,
+        per_page: adminPerPage,
+        total: rows.length
+      };
+
+      if (adminMeta.summary) {
+        const s = adminMeta.summary;
+        setMetric("admins", String(s.admins != null ? s.admins : adminMeta.total));
+        setMetric("active", String(s.active != null ? s.active : "—"));
+        setMetric("suspended", String(s.suspended != null ? s.suspended : "—"));
+        setMetric("super", String(s.super != null ? s.super : "—"));
+      } else {
+        setMetric("admins", String(adminMeta.total));
+      }
+
+      if (adminMeta.last_page > 0 && adminPage > adminMeta.last_page) {
+        adminPage = adminMeta.last_page;
+        return fetchAdmins();
+      }
+
+      paint();
+      renderPagination();
+      setNotice(notice, "", true);
+    });
+  };
+
+  const load = function () {
+    return Promise.all([
+      fetchAdmins(),
+      request("/api/v1/admins/roles"),
+      request("/api/v1/admins/permissions")
+    ]).then(function (results) {
+      const rolesRes = results[1];
+      const permissionsRes = results[2];
       roles = (rolesRes.ok && rolesRes.body.data) || [];
       catalogue = (permissionsRes.ok && permissionsRes.body.data) || [];
       paintRoleOptions();
@@ -446,14 +522,55 @@
       } else {
         paintPermissions([]);
       }
-      paint();
-      setNotice(notice, "", true);
     });
   };
 
-  if (search) search.addEventListener("input", paint);
-  if (statusFilter) statusFilter.addEventListener("change", paint);
-  if (roleFilter) roleFilter.addEventListener("change", paint);
+  if (search) {
+    search.addEventListener("input", function () {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(function () {
+        adminPage = 1;
+        fetchAdmins();
+      }, 300);
+    });
+  }
+  if (statusFilter) {
+    statusFilter.addEventListener("change", function () {
+      adminPage = 1;
+      fetchAdmins();
+    });
+  }
+  if (roleFilter) {
+    roleFilter.addEventListener("change", function () {
+      adminPage = 1;
+      fetchAdmins();
+    });
+  }
+  if (pager) {
+    pager.addEventListener("click", function (event) {
+      const pageBtn = event.target.closest("[data-admin-page]");
+      const prevBtn = event.target.closest("[data-admin-prev]");
+      const nextBtn = event.target.closest("[data-admin-next]");
+
+      if (pageBtn) {
+        const target = parseInt(pageBtn.getAttribute("data-admin-page"), 10);
+        if (target && target !== adminPage) {
+          adminPage = target;
+          fetchAdmins();
+        }
+      } else if (prevBtn && !prevBtn.disabled) {
+        if (adminPage > 1) {
+          adminPage--;
+          fetchAdmins();
+        }
+      } else if (nextBtn && !nextBtn.disabled) {
+        if (adminPage < (adminMeta.last_page || 1)) {
+          adminPage++;
+          fetchAdmins();
+        }
+      }
+    });
+  }
   if (cancelEdit) cancelEdit.addEventListener("click", resetForm);
   if (roleSelect) {
     roleSelect.addEventListener("change", function () {
